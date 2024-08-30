@@ -1,7 +1,4 @@
 import BrandCard from "./BrandCard";
-// import PLATINUMBOX from "../../../public/images/cajas/Clutch.png";
-// import DELPHIBOX from "../../../public/images/cajas/cajaDelphiLogo.png";
-// import BRAKEPADSBOX from "../../../public/images/cajas/CajaPastilla.png";
 
 const Marcas = () => {
   return (
@@ -16,14 +13,14 @@ const Marcas = () => {
           text_button={"Conoce Más"}
         />
         <BrandCard
-          image={"cajaDelphiLogo"}
+          image={"CajaPastilla"}
           text={"Pastilla de Freno"}
           brand={"PLATINUM DRIVELINE"}
           link={"pastillas"}
           text_button={"Visitar"}
         />
         <BrandCard
-          image={"CajaPastilla"}
+          image={"cajaDelphiLogo"}
           text={"Suspensión"}
           brand={"DELPHI"}
           link={"delphi"}

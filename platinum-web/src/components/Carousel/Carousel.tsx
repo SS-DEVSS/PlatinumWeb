@@ -1,6 +1,3 @@
-"use client";
-
-import React, { useRef, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
 
@@ -12,7 +9,7 @@ import "./styles.css";
 
 const images = ["BANNER_1.jpg", "BANNER_2.jpg", "BANNER_3.jpg", "BANNER_4.jpg"];
 
-export default function App() {
+export default function Carousel() {
   return (
     <>
       <Swiper
@@ -32,7 +29,6 @@ export default function App() {
         {images.map((image) => (
           <SwiperSlide key={image}>
             <img
-              quality={60}
               src={`/images/carrousel/${image}`}
               alt="email"
               className="bg-cover"

@@ -46,8 +46,7 @@ const BrandCard = ({
         <img
           alt="marca"
           className="h-[300px] p-4 mx-auto my-3 rounded-t-lg"
-          // src={image}
-          src={`/cajas${image}.png`}
+          src={`/images/cajas/${image}.png`}
         />
       </div>
       <section className="px-10 py-6 border-t-2 bg-slate-200 flex flex-col flex-grow">

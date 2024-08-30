@@ -1,5 +1,6 @@
 import CardDownload from "./components/CardDownload";
 import CardProduct from "./components/CardProduct";
+import Carousel from "./components/Carousel/Carousel";
 import ContactButton from "./components/ContactButton";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
@@ -9,7 +10,7 @@ function page() {
   return (
     <main>
       <Header />
-      {/* <Carousel /> */}
+      <Carousel />
       <Marcas />
 
       <h1 className="py-6 lg:py-12">Nuevas Integraciones</h1>
