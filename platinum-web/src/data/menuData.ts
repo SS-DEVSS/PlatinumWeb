@@ -1,6 +1,6 @@
 export const menuItems = [
   { href: "/", text: "Inicio", icon: "arrowWhite.png" },
-  { href: "/QuienesSomos", text: "¿Quiénes Somos?", icon: "arrowWhite.png" },
+  { href: "/quienes-somos", text: "¿Quiénes Somos?", icon: "arrowWhite.png" },
   {
     href: "/Productos",
     text: "Componentes Embrague",

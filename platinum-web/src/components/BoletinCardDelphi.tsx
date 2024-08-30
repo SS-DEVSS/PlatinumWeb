@@ -1,6 +1,10 @@
-import Image from "next/image";
+type BoletinCardDelphi = {
+  img: string;
+  title: string;
+  href: string;
+};
 
-function BoletinCardDelphi({ img, title, href }) {
+function BoletinCardDelphi({ img, title, href }: BoletinCardDelphi) {
   return (
     <a
       href={`${href}`}
@@ -8,8 +12,7 @@ function BoletinCardDelphi({ img, title, href }) {
       className="bg-white rounded-xl flex flex-col items-center"
     >
       <section className="flex-shrink-0">
-        <Image
-          quality={50}
+        <img
           src={`/${img}`}
           alt="Kit"
           width={550}

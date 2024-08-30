@@ -21,7 +21,7 @@ function Header() {
 
   return (
     <main>
-      <section className="hidden nav2:flex bg-naranja px-[50px] 2xl:px-[60px] py-3 justify-between items-center">
+      <section className="hidden nav2:flex bg-naranja px-[50px] 2xl:px-[60px] py-2 justify-between items-center">
         <section className="flex gap-5">
           <Link
             to="https://www.facebook.com/PlatinumDrivelineMx/"
@@ -67,7 +67,7 @@ function Header() {
         <section
           className={`${
             isVisible ? "bg-white" : "bg-gris_oscuro"
-          } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[100px] h-[10vh] py-10`}
+          } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[100px] h-[10vh]`}
         >
           <section className="flex gap-4 items-center">
             <Link to="/">
@@ -93,7 +93,6 @@ function Header() {
                 href={item.href}
                 text={item.text}
                 icon={item.icon}
-                // isActive={pathname === item.href}
               />
             ))}
           </ul>

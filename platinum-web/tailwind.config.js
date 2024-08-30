@@ -17,6 +17,26 @@ module.exports = {
       },
     },
     extend: {
+      screens: {
+        sm: "640px",
+        // => @media (min-width: 640px) { ... }
+
+        md: "790px",
+        // => @media (min-width: 768px) { ... }
+
+        nav: "908px",
+
+        lg: "1024px",
+        // => @media (min-width: 1024px) { ... }
+
+        nav2: "1120px",
+
+        xl: "1280px",
+        // => @media (min-width: 1280px) { ... }
+
+        "2xl": "1536px",
+        // => @media (min-width: 1536px) { ... }
+      },
       colors: {
         naranja: "#d87e2e",
         gris_oscuro: "#20314f",

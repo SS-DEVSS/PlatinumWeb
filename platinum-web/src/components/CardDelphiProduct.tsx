@@ -1,11 +1,13 @@
-import Image from "next/image";
+type CardDelphiProduct = {
+  image: string;
+  title: string;
+};
 
-const CardDelphiProduct = ({ image, title }) => {
+const CardDelphiProduct = ({ image, title }: CardDelphiProduct) => {
   return (
     <main className="bg-white rounded-2xl w-full sm:w-[48%] md:w-[31%] flex flex-col items-center">
       <section className="bg-[#F4F4F4] m-4 mb-0 rounded-2xl flex-grow flex items-center justify-center">
-        <Image
-          quality={60}
+        <img
           src={`/delphi/${image}.png`}
           alt="Kit"
           width={500}

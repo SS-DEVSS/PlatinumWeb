@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 type CardDownload = {
   title: string;
   content: string;
@@ -5,6 +7,11 @@ type CardDownload = {
   href: string;
   page: string;
   volantes?: string[];
+};
+
+type LinkProps = {
+  target: string;
+  download: boolean;
 };
 
 function CardDownload({
@@ -15,7 +22,10 @@ function CardDownload({
   page,
   volantes,
 }: CardDownload) {
-  const linkProps = {};
+  const linkProps: LinkProps = {
+    target: "",
+    download: false,
+  };
   if (type === "web") {
     linkProps.target = "_blank";
   } else {
@@ -44,7 +54,7 @@ function CardDownload({
       )} shadow-xl text-center w-full max-w-[750px] rounded-2xl`}
     >
       {!volantes ? (
-        <a href={href} {...linkProps}>
+        <Link to={href} {...linkProps}>
           <section
             className={`${getColor(
               page
@@ -61,7 +71,7 @@ function CardDownload({
           <p className="leading-9 text-[#4C4C4C] pb-10 px-6 2xl:px-32">
             {content}
           </p>
-        </a>
+        </Link>
       ) : (
         <>
           <section

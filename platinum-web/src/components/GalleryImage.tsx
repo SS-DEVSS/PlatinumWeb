@@ -1,9 +1,7 @@
-import Image from "next/image";
-
-const GalleryImage = ({ image }) => {
+const GalleryImage = ({ image }: { image: string }) => {
   return (
     <article className="w-full sm:w-[48%] lg:w-[31%] mt-3 rounded-lg">
-      <Image
+      <img
         src={`/images/galeria/${image}`}
         width={700}
         height={500}

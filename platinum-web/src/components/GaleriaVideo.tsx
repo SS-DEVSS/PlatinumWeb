@@ -1,4 +1,4 @@
-const GaleriaVideo = ({ link }) => {
+const GaleriaVideo = ({ link }: { link: string }) => {
   return (
     <article className="w-full sm:w-[48%] lg:w-[31%] mt-3">
       <iframe

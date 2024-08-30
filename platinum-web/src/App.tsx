@@ -2,18 +2,16 @@ import CardDownload from "./components/CardDownload";
 import CardProduct from "./components/CardProduct";
 import Carousel from "./components/Carousel/Carousel";
 import ContactButton from "./components/ContactButton";
-import Footer from "./components/Footer";
-import Header from "./components/Header";
 import Marcas from "./components/Marcas";
+import PlatinumLayout from "./Layouts/PlatinumLayout";
 
 function page() {
   return (
-    <main>
-      <Header />
+    <PlatinumLayout>
       <Carousel />
       <Marcas />
 
-      <h1 className="py-6 lg:py-12">Nuevas Integraciones</h1>
+      <h1 className="py-6 lg:py-9">Nuevas Integraciones</h1>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 nav:grid-cols-3 gap-5 px-6 sm:px-5 xl:px-24 2xl:px-40">
         <CardProduct
@@ -116,9 +114,7 @@ function page() {
       </section>
 
       <ContactButton />
-
-      <Footer />
-    </main>
+    </PlatinumLayout>
   );
 }
 

@@ -1,11 +1,14 @@
-import Image from "next/image";
+type BoletinCardDelphi = {
+  img: string;
+  title: string;
+  description: string;
+};
 
-function BoletinCardDelphi({ img, title, description }) {
+function BoletinCardDelphi({ img, title, description }: BoletinCardDelphi) {
   return (
     <main className="rounded-xl text-white bg-naranja border border-slate-300 w-full sm:w-[48%] lg:w-[31%] lg:min-h-[580px] mb-8">
       <a href={`/download/${img}`} download>
-        <Image
-          quality={100}
+        <img
           src={`/download/${img}`}
           alt="Kit"
           width={1000}

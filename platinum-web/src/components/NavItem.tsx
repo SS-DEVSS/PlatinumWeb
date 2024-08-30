@@ -1,13 +1,13 @@
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Link } from "react-router-dom";
+} from "./ui/dropdown-menu";
 
 type NavItemProps = {
-  href: string;
+  href: string | undefined;
   text: string;
   icon: string;
   isActive?: boolean;
@@ -24,7 +24,11 @@ const NavItem = ({ href = "", text, icon, isActive }: NavItemProps) => {
         <DropdownMenu>
           <DropdownMenuTrigger className="flex flex-row gap-4 justify-between items-center">
             {text}
-            <img src="/icons/arrowDown.png" alt="dropdown arrow" />
+            <img
+              className="w-5"
+              src="/icons/arrowDown.png"
+              alt="dropdown arrow"
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem asChild>
@@ -50,7 +54,7 @@ const NavItem = ({ href = "", text, icon, isActive }: NavItemProps) => {
         <img
           src={isActive ? `/icons/active-${icon}` : `/icons/${icon}`}
           alt="menu icon"
-          className="float-end nav2:hidden ml-3"
+          className="float-end nav2:hidden w-5"
         />
       </Link>
     </li>
