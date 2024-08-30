@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,10 +31,10 @@ const NavItem = ({ href = "", text, icon, isActive }: NavItemProps) => {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem asChild>
-              <Link to="/delphi">Delphi</Link>
+              <a href="/delphi">Delphi</a>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/pastillas">Pastillas de Freno</Link>
+              <a href="/pastillas">Pastillas de Freno</a>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -49,14 +48,14 @@ const NavItem = ({ href = "", text, icon, isActive }: NavItemProps) => {
         isActive ? "border-b-2 border-naranja" : ""
       }`}
     >
-      <Link to={href} className="flex flex-row items-center gap-3">
+      <a href={href} className="flex flex-row items-center gap-3">
         {text}
         <img
           src={isActive ? `/icons/active-${icon}` : `/icons/${icon}`}
           alt="menu icon"
           className="float-end nav2:hidden w-5"
         />
-      </Link>
+      </a>
     </li>
   );
 };

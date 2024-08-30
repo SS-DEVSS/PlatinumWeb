@@ -70,13 +70,13 @@ function Header() {
           } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[100px] h-[10vh]`}
         >
           <section className="flex gap-4 items-center">
-            <Link to="/">
+            <a href="/">
               <img
                 src="/LOGOPlatinum.png"
                 alt="Kit"
                 className="w-[200px] h-auto"
               />
-            </Link>
+            </a>
           </section>
           <img
             onClick={toggleMenu}

@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { menuItemsFooter } from "../data/menuData";
 
 function Footer() {
@@ -38,9 +37,9 @@ function Footer() {
                     className="py-1 text-sm text-[#d3d3d3] text-center"
                     key={index}
                   >
-                    <Link
+                    <a
                       className="hover:underline transition-all flex items-center gap-2"
-                      to={item.href}
+                      href={item.href}
                     >
                       <p>{item.text}</p>
                       <img
@@ -49,7 +48,7 @@ function Footer() {
                         width={18}
                         height={18}
                       />
-                    </Link>
+                    </a>
                   </article>
                 )
               )}
