@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Category, CategoryAttributesTypes } from "../models/category";
 
-export const categoriesSample: Category[] = [
+const categoriesSample: Category[] = [
   {
     id: "1",
     image:
@@ -70,8 +70,9 @@ export const categoriesSample: Category[] = [
 
 export const useCategories = () => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [category, setCategory] = useState<Category>(categoriesSample[1]);
   useEffect(() => {
     setCategories(categoriesSample);
   }, []);
-  return { categories };
+  return { categories, category };
 };

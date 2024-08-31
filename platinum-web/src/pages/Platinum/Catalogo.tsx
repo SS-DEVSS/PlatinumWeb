@@ -10,26 +10,58 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCategories } from "../../hooks/useCategories";
 import FilterSection from "../../components/FilterSection";
 import { Input } from "../../components/ui/input";
+import ProductsTable from "../../components/ProductsTable";
 
 type CatalogoProps = {};
 
 const Catalogo = ({}: CatalogoProps) => {
+  const { categories } = useCategories();
+
   const [form, setForm] = useState({
     filtro: "Vehiculo",
-    categoria: "",
+    categoria: categories.length > 0 ? categories[0] : null,
     vehiculo: {},
     referencia: "",
   });
-  const { categories } = useCategories();
+
+  useEffect(() => {
+    if (categories.length > 0 && !form.categoria) {
+      setForm((prevForm) => ({
+        ...prevForm,
+        categoria: categories[0],
+      }));
+    }
+  }, [categories, form.categoria]);
+
+  const handleReference = (e: any) => {
+    setForm((prevform) => ({
+      ...prevform,
+      referencia: e.target.value,
+    }));
+  };
+
+  const handleCategoryChange = (value: string) => {
+    const selectedCategory = categories.find(
+      (category) => category.id === value
+    );
+    if (selectedCategory) {
+      setForm((prevForm) => ({
+        ...prevForm,
+        categoria: selectedCategory,
+      }));
+    }
+  };
+
+  console.log(form);
 
   return (
     <PlatinumLayout>
-      <section className="bg-black pl-20 pb-14">
-        <h2 className="font-bold text-4xl pt-36 pb-16 text-white">
+      <section className="bg-hero-catalog bg-cover pl-20 pb-14">
+        <h2 className="font-bold text-4xl pt-36 pb-20 text-white">
           Catálogo Electrónico Platinum
         </h2>
         <div className="flex gap-10">
@@ -87,19 +119,19 @@ const Catalogo = ({}: CatalogoProps) => {
             <Label className="font-semibold text-base mb-4 text-white">
               Categoría:
             </Label>
-            <Select>
+            <Select onValueChange={handleCategoryChange}>
               <SelectTrigger className="h-full">
-                {categories.length > 0 ? (
+                {form.categoria ? (
                   <div className="flex items-center">
                     <img
                       className="w-20 max-h-10"
-                      src={categories[0].image}
-                      alt="Logo"
+                      src={form.categoria.image}
+                      alt={form.categoria.name}
                     />
-                    <span className="ml-2 mx-4">{categories[0].name}</span>
+                    <span className="ml-2 mx-4">{form.categoria.name}</span>
                   </div>
                 ) : (
-                  <SelectValue placeholder="Platinum Driveline" />
+                  <SelectValue placeholder="Seleccionar Categoría" />
                 )}
               </SelectTrigger>
               <SelectContent>
@@ -121,10 +153,20 @@ const Catalogo = ({}: CatalogoProps) => {
           <FilterSection categories={categories} />
         ) : (
           <div className="flex gap-3 w-[40%]">
-            <Input placeholder="Ingresa un número de referencia" />
-            <Button className="bg-gris_oscuro">Mostrar Resultados</Button>
+            <Input
+              value={form.referencia}
+              onChange={handleReference}
+              placeholder="Ingresa un número de referencia"
+            />
+            <Button
+              disabled={form.referencia === ""}
+              className="bg-gris_oscuro"
+            >
+              Mostrar Resultados
+            </Button>
           </div>
         )}
+        <ProductsTable />
       </main>
     </PlatinumLayout>
   );

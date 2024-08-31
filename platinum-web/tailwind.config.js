@@ -17,6 +17,9 @@ module.exports = {
       },
     },
     extend: {
+      backgroundImage: {
+        "hero-catalog": "url('/test.svg')",
+      },
       screens: {
         sm: "640px",
         // => @media (min-width: 640px) { ... }
