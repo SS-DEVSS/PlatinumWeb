@@ -13,11 +13,16 @@ import Galeria from "./pages/Platinum/Galeria";
 import Contacto from "./pages/Platinum/Contacto";
 import DelphiPage from "./pages/Delphi/DelphiPage";
 import PastillasPage from "./pages/Pastillas/PastillasPage";
+import Catalogo from "./pages/Platinum/Catalogo";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
+  },
+  {
+    path: "/Catalogo",
+    element: <Catalogo />,
   },
   {
     path: "/quienes-somos",

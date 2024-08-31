@@ -1,0 +1,133 @@
+import PlatinumLayout from "../../Layouts/PlatinumLayout";
+import { Label } from "../../components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { Button } from "../../components/ui/button";
+import { useState } from "react";
+import { useCategories } from "../../hooks/useCategories";
+import FilterSection from "../../components/FilterSection";
+import { Input } from "../../components/ui/input";
+
+type CatalogoProps = {};
+
+const Catalogo = ({}: CatalogoProps) => {
+  const [form, setForm] = useState({
+    filtro: "Vehiculo",
+    categoria: "",
+    vehiculo: {},
+    referencia: "",
+  });
+  const { categories } = useCategories();
+
+  return (
+    <PlatinumLayout>
+      <section className="bg-black pl-20 pb-14">
+        <h2 className="font-bold text-4xl pt-36 pb-16 text-white">
+          Catálogo Electrónico Platinum
+        </h2>
+        <div className="flex gap-10">
+          <div className="flex flex-col">
+            <Label className="font-semibold text-base mb-4 text-white">
+              Marca:
+            </Label>
+            <div className="flex gap-5 bg-white text-black rounded-lg h-full items-center px-6">
+              <img className="w-20" src="/LOGOPlatinum.png" />
+              <p>Platinum Driveline</p>
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <Label className="font-semibold text-base mb-4 text-white">
+              Filtrar Por:
+            </Label>
+            <div className="flex gap-2 rounded-lg bg-white p-2 h-full items-center">
+              <Button
+                size={"lg"}
+                variant={"ghost"}
+                onClick={() =>
+                  setForm((prevForm) => ({
+                    ...prevForm,
+                    filtro: "Vehiculo",
+                  }))
+                }
+                className={
+                  form.filtro === "Vehiculo"
+                    ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
+                    : "text-black"
+                }
+              >
+                Vehículo
+              </Button>
+              <Button
+                size={"lg"}
+                variant={"ghost"}
+                onClick={() =>
+                  setForm((prevForm) => ({
+                    ...prevForm,
+                    filtro: "Referencia",
+                  }))
+                }
+                className={
+                  form.filtro === "Referencia"
+                    ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
+                    : "text-black"
+                }
+              >
+                Referencia
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <Label className="font-semibold text-base mb-4 text-white">
+              Categoría:
+            </Label>
+            <Select>
+              <SelectTrigger className="h-full">
+                {categories.length > 0 ? (
+                  <div className="flex items-center">
+                    <img
+                      className="w-20 max-h-10"
+                      src={categories[0].image}
+                      alt="Logo"
+                    />
+                    <span className="ml-2 mx-4">{categories[0].name}</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="Platinum Driveline" />
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Categorías</SelectLabel>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
+      <main className="px-20 py-8 bg-[#E4E4E4]">
+        {form.filtro === "Vehiculo" ? (
+          <FilterSection categories={categories} />
+        ) : (
+          <div className="flex gap-3 w-[40%]">
+            <Input placeholder="Ingresa un número de referencia" />
+            <Button className="bg-gris_oscuro">Mostrar Resultados</Button>
+          </div>
+        )}
+      </main>
+    </PlatinumLayout>
+  );
+};
+
+export default Catalogo;

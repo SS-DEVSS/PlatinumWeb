@@ -74,7 +74,7 @@ function Header() {
               <img
                 src="/LOGOPlatinum.png"
                 alt="Kit"
-                className="w-[200px] h-auto"
+                className="w-[160px] h-auto"
               />
             </a>
           </section>

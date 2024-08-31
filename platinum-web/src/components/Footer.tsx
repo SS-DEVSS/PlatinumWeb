@@ -5,7 +5,7 @@ function Footer() {
     <main className="bg-gris_oscuro py-7">
       <section className="flex flex-col nav:flex-row justify-between items-center px-5 lg:px-16">
         <div className="basis-1/3">
-          <img src="/LOGOPlatinum.png" alt="NS73-3" width={200} height={200} />
+          <img src="/LOGOPlatinum.png" alt="NS73-3" width={180} height={180} />
         </div>
 
         <section className="flex flex-col sm:flex-row justify-center gap-10 lg:gap-20 basis-1/3 text-center text-gris_ligero">
