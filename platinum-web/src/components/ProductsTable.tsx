@@ -19,52 +19,53 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { ProductSkeleton } from "../models/product";
+import { Product, ProductSkeleton } from "../models/product";
 import { useProducts } from "../hooks/useProducts";
-
-export const columns: ColumnDef<ProductSkeleton>[] = [
-  {
-    accessorKey: "image",
-    header: "Imagen",
-    cell: ({ row }) => (
-      <img className="w-20" src={`/src/assets/${row.getValue("image")}`} />
-    ),
-  },
-  {
-    accessorKey: "sku",
-    header: () => <div>SKU</div>,
-    cell: ({ row }) => <div>{row.getValue("sku")}</div>,
-  },
-  {
-    accessorKey: "brand",
-    header: () => <div>Marca</div>,
-    cell: ({ row }) => <div>{row.getValue("brand")}</div>,
-  },
-  {
-    accessorKey: "model",
-    header: () => <div>Modelo</div>,
-    cell: ({ row }) => <div>{row.getValue("model")}</div>,
-  },
-  {
-    accessorKey: "engine",
-    header: () => <div>Motor</div>,
-    cell: ({ row }) => <div>{row.getValue("engine")}</div>,
-  },
-  {
-    accessorKey: "year",
-    header: () => <div>Año</div>,
-    cell: ({ row }) => <div>{row.getValue("year")}</div>,
-  },
-  {
-    accessorKey: "diameter",
-    header: () => <div>Diametro</div>,
-    cell: ({ row }) => <div>{row.getValue("diameter")}</div>,
-  },
-];
+import { useCategories } from "../hooks/useCategories";
 
 const ProductsTable = () => {
+  const { category } = useCategories();
+  const columns: ColumnDef<ProductSkeleton>[] = [
+    {
+      accessorKey: "image",
+      header: "Imagen",
+      cell: ({ row }) => (
+        <img className="w-20" src={`/src/assets/${row.getValue("image")}`} />
+      ),
+    },
+    {
+      accessorKey: "sku",
+      header: () => <div>SKU</div>,
+      cell: ({ row }) => <div>{row.getValue("sku")}</div>,
+    },
+    // {
+    //   accessorKey: "brand",
+    //   header: () => <div>Marca</div>,
+    //   cell: ({ row }) => <div>{row.getValue("brand")}</div>,
+    // },
+    // {
+    //   accessorKey: "model",
+    //   header: () => <div>Modelo</div>,
+    //   cell: ({ row }) => <div>{row.getValue("model")}</div>,
+    // },
+    // {
+    //   accessorKey: "engine",
+    //   header: () => <div>Motor</div>,
+    //   cell: ({ row }) => <div>{row.getValue("engine")}</div>,
+    // },
+    // {
+    //   accessorKey: "year",
+    //   header: () => <div>Año</div>,
+    //   cell: ({ row }) => <div>{row.getValue("year")}</div>,
+    // },
+    // {
+    //   accessorKey: "diameter",
+    //   header: () => <div>Diametro</div>,
+    //   cell: ({ row }) => <div>{row.getValue("diameter")}</div>,
+    // },
+  ];
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -93,6 +94,11 @@ const ProductsTable = () => {
     },
   });
 
+  const navigate = useNavigate();
+  const handleRowClick = (id: Product["id"]) => {
+    navigate(`/producto/${id}`);
+  };
+
   return (
     <div className="mt-6">
       <div className="rounded-md border">
@@ -100,21 +106,19 @@ const ProductsTable = () => {
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      className="bg-[#333333] text-[#C4C4C4]"
-                      key={header.id}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    className="bg-[#333333] text-[#C4C4C4]"
+                    key={header.id}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -124,6 +128,8 @@ const ProductsTable = () => {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={() => handleRowClick(row.original.id)}
+                  className="cursor-pointer hover:bg-gray-100"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

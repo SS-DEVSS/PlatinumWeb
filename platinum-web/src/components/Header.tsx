@@ -67,7 +67,7 @@ function Header() {
         <section
           className={`${
             isVisible ? "bg-white" : "bg-gris_oscuro"
-          } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[100px] h-[10vh]`}
+          } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[50px] h-[10vh]`}
         >
           <section className="flex gap-4 items-center">
             <a href="/">

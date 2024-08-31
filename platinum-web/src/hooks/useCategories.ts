@@ -17,7 +17,7 @@ const categoriesSample: Category[] = [
           "https://www.platinumdriveline.com/wp-content/uploads/2020/07/NewBoxes-4-2048x1365.jpg",
       },
     ],
-    products: ["test", "dsad"],
+    variants: ["test", "dsad"],
   },
   {
     id: "2",
@@ -64,7 +64,7 @@ const categoriesSample: Category[] = [
         required: false,
       },
     ],
-    products: ["test", "dsad", "sadas"],
+    variants: ["test", "dsad", "sadas"],
   },
 ];
 

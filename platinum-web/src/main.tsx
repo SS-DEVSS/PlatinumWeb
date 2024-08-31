@@ -14,6 +14,7 @@ import Contacto from "./pages/Platinum/Contacto";
 import DelphiPage from "./pages/Delphi/DelphiPage";
 import PastillasPage from "./pages/Pastillas/PastillasPage";
 import Catalogo from "./pages/Platinum/Catalogo";
+import ProductDetail from "./pages/Platinum/ProductDetail";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
   {
     path: "/Catalogo",
     element: <Catalogo />,
+  },
+  {
+    path: "/producto/:productId",
+    element: <ProductDetail />,
   },
   {
     path: "/quienes-somos",
