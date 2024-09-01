@@ -19,14 +19,14 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Product, ProductSkeleton } from "../models/product";
-import { useProducts } from "../hooks/useProducts";
-import { useCategories } from "../hooks/useCategories";
+import { Card } from "./ui/card";
+// import { useCategories } from "../hooks/useCategories";
 
-const ProductsTable = () => {
-  const { category } = useCategories();
+const ProductsTable = (data: any) => {
+  // const { category } = useCategories();
   const columns: ColumnDef<ProductSkeleton>[] = [
     {
       accessorKey: "image",
@@ -73,10 +73,11 @@ const ProductsTable = () => {
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-  const { products } = useProducts();
+
+  console.log(data);
 
   const table = useReactTable<ProductSkeleton>({
-    data: products,
+    data: data,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -101,7 +102,7 @@ const ProductsTable = () => {
 
   return (
     <div className="mt-6">
-      <div className="rounded-md border">
+      <Card className="border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -153,7 +154,7 @@ const ProductsTable = () => {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="space-x-2">
           <Button

@@ -15,11 +15,13 @@ import { useCategories } from "../../hooks/useCategories";
 import FilterSection from "../../components/FilterSection";
 import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
+import { useProducts } from "../../hooks/useProducts";
 
 type CatalogoProps = {};
 
 const Catalogo = ({}: CatalogoProps) => {
   const { categories } = useCategories();
+  const { products } = useProducts();
 
   const [form, setForm] = useState({
     filtro: "Vehiculo",
@@ -55,8 +57,6 @@ const Catalogo = ({}: CatalogoProps) => {
       }));
     }
   };
-
-  console.log(form);
 
   return (
     <PlatinumLayout>
@@ -166,7 +166,7 @@ const Catalogo = ({}: CatalogoProps) => {
             </Button>
           </div>
         )}
-        <ProductsTable />
+        <ProductsTable data={products} />
       </main>
     </PlatinumLayout>
   );

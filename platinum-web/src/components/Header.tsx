@@ -37,7 +37,7 @@ function Header() {
           <section className="flex gap-5 text-[#edeaea] py-1">
             <Link to="https://catalogoplatinumdriveline.com/" target="_blank">
               <article className="flex items-center px-5 gap-3 rounded-xl bg-white py-2 hover:bg-slate-200">
-                <img src="/icons/webBlack.png" alt="email" />
+                <img className="w-5" src="/icons/webBlack.png" alt="email" />
                 <p className="font-medium text-gris_oscuro hover:underline">
                   Visita el Catálogo Electrónico
                 </p>
@@ -48,7 +48,7 @@ function Header() {
               target="_blank"
             >
               <article className="flex items-center px-5 gap-3 rounded-xl bg-white py-2 hover:bg-slate-200">
-                <img src="/icons/webBlack.png" alt="email" />
+                <img className="w-5" src="/icons/webBlack.png" alt="email" />
                 <p className="font-medium text-gris_oscuro hover:underline">
                   Visita el Catálogo Ligero
                 </p>
@@ -74,7 +74,7 @@ function Header() {
               <img
                 src="/LOGOPlatinum.png"
                 alt="Kit"
-                className="w-[160px] h-auto"
+                className="w-[160px] h-auto ml-8 nav:ml-0"
               />
             </a>
           </section>

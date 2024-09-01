@@ -5,10 +5,10 @@ function Footer() {
     <main className="bg-gris_oscuro py-7">
       <section className="flex flex-col nav:flex-row justify-between items-center px-5 lg:px-16">
         <div className="basis-1/3">
-          <img src="/LOGOPlatinum.png" alt="NS73-3" width={180} height={180} />
+          <img src="/LOGOPlatinum.png" alt="NS73-3" width={160} height={160} />
         </div>
 
-        <section className="flex flex-col sm:flex-row justify-center gap-10 lg:gap-20 basis-1/3 text-center text-gris_ligero">
+        <section className="flex flex-col mt-8 lg:mt-0 sm:flex-row justify-center gap-10 lg:gap-20 basis-1/3 text-center text-gris_ligero">
           <article className="text-sm">
             <h5 className="text-[19px] text-[#d3d3d3] mb-5">Contacto</h5>
             <h6>ventas@platinumdriveline.mx</h6>
