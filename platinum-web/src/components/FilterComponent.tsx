@@ -18,7 +18,7 @@ import { Category, CategoryAtributes } from "../models/category";
 
 type FilterComponentProps = {
   attribute: CategoryAtributes;
-  categories: Category[];
+  category: Category;
   open: boolean;
   selectedValue: string;
   enabled: boolean;
@@ -29,7 +29,7 @@ type FilterComponentProps = {
 
 const FilterComponent = ({
   attribute,
-  categories,
+  category,
   open,
   selectedValue,
   enabled,
@@ -74,21 +74,21 @@ const FilterComponent = ({
               No se encontró {attribute.name.toLowerCase()}.
             </CommandEmpty>
             <CommandGroup>
-              {categories.map((category) => (
+              {category.categoryAttributes?.map((attribute) => (
                 <CommandItem
-                  key={category.id}
-                  value={category.name}
-                  onSelect={() => onSelect(category.name)}
+                  key={attribute.id}
+                  value={attribute.name}
+                  onSelect={() => onSelect(attribute.name)}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedValue === category.name
+                      selectedValue === attribute.name
                         ? "opacity-100"
                         : "opacity-0"
                     )}
                   />
-                  {category.name}
+                  {attribute.name}
                 </CommandItem>
               ))}
             </CommandGroup>

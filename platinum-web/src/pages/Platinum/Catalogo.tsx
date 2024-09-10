@@ -15,13 +15,15 @@ import { useCategories } from "../../hooks/useCategories";
 import FilterSection from "../../components/FilterSection";
 import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
-import { useProducts } from "../../hooks/useProducts";
+import { useBrands } from "../../hooks/useBrands";
 
 type CatalogoProps = {};
 
 const Catalogo = ({}: CatalogoProps) => {
-  const { categories } = useCategories();
-  const { products } = useProducts();
+  const { getCategoryById, category } = useCategories();
+  const { brands } = useBrands();
+
+  const categories = brands?.categories || [];
 
   const [form, setForm] = useState({
     filtro: "Vehiculo",
@@ -31,11 +33,15 @@ const Catalogo = ({}: CatalogoProps) => {
   });
 
   useEffect(() => {
-    if (categories.length > 0 && !form.categoria) {
+    if (categories!.length > 0 && !form.categoria) {
       setForm((prevForm) => ({
         ...prevForm,
-        categoria: categories[0],
+        categoria: categories![0],
       }));
+    }
+
+    if (form.categoria) {
+      getCategoryById(form.categoria?.id);
     }
   }, [categories, form.categoria]);
 
@@ -47,7 +53,7 @@ const Catalogo = ({}: CatalogoProps) => {
   };
 
   const handleCategoryChange = (value: string) => {
-    const selectedCategory = categories.find(
+    const selectedCategory = categories!.find(
       (category) => category.id === value
     );
     if (selectedCategory) {
@@ -71,7 +77,7 @@ const Catalogo = ({}: CatalogoProps) => {
             </Label>
             <div className="flex gap-5 bg-white text-black rounded-lg h-full items-center px-6">
               <img className="w-20" src="/LOGOPlatinum.png" />
-              <p>Platinum Driveline</p>
+              <p>{brands?.name}</p>
             </div>
           </div>
           <div className="flex flex-col">
@@ -137,7 +143,7 @@ const Catalogo = ({}: CatalogoProps) => {
               <SelectContent>
                 <SelectGroup>
                   <SelectLabel>Categorías</SelectLabel>
-                  {categories.map((category) => (
+                  {categories?.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
@@ -150,7 +156,7 @@ const Catalogo = ({}: CatalogoProps) => {
       </section>
       <main className="px-20 py-8 bg-[#E4E4E4]">
         {form.filtro === "Vehiculo" ? (
-          <FilterSection categories={categories} />
+          <FilterSection category={category} />
         ) : (
           <div className="flex gap-3 w-[40%]">
             <Input
@@ -166,7 +172,7 @@ const Catalogo = ({}: CatalogoProps) => {
             </Button>
           </div>
         )}
-        <ProductsTable data={products} />
+        <ProductsTable data={category} />
       </main>
     </PlatinumLayout>
   );

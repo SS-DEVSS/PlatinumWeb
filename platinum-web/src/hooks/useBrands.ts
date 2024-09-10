@@ -1,34 +1,19 @@
 import { useEffect, useState } from "react";
 import { Brand } from "../models/brand";
-
-const brandsSample: Brand[] = [
-  {
-    id: "1",
-    logo_img_url: "LOGOPlatinum",
-    name: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: "2",
-    logo_img_url: "",
-    name: "Delphi",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: "3",
-    logo_img_url: "",
-    name: "FTE",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-];
+import axiosClient from "../services/axiosInstance";
 
 export const useBrands = () => {
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const client = axiosClient();
+  const [brands, setBrands] = useState<Brand | null>(null);
   useEffect(() => {
-    setBrands(brandsSample);
+    client
+      .get("/brands")
+      .then((response) => {
+        setBrands(response.data[1]);
+      })
+      .catch((error) => {
+        console.error("Error fetching brands:", error);
+      });
   }, []);
   return { brands };
 };

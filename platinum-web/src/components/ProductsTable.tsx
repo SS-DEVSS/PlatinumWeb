@@ -74,7 +74,7 @@ const ProductsTable = (data: any) => {
     React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
-  console.log(data);
+  // console.log(data);
 
   const table = useReactTable<ProductSkeleton>({
     data: data,

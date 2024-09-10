@@ -6,8 +6,9 @@ export type Category = {
   image: string;
   description: string;
   brands?: Brand[];
-  attributes?: CategoryAtributes[];
-  variants?: string[];
+  categoryAttributes?: CategoryAtributes[];
+  products?: string[];
+  variantAttributes?: VariantAtributes[];
 };
 
 export enum CategoryAttributesTypes {
@@ -26,4 +27,12 @@ export type CategoryAtributes = {
   name: string;
   type: CategoryAttributesTypes;
   required: boolean;
+};
+
+export type VariantAtributes = {
+  id: string;
+  name: string;
+  type: CategoryAttributesTypes;
+  required: boolean;
+  order: number;
 };

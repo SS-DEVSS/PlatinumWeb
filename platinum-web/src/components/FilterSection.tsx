@@ -1,25 +1,38 @@
 import { Category } from "../models/category";
-import { useState } from "react";
-import { useCategories } from "../hooks/useCategories";
+import { useEffect, useState } from "react";
 import FilterComponent from "./FilterComponent";
 
 type FilterSectionProps = {
-  categories: Category[];
+  category: Category | null;
 };
 
-const FilterSection = ({ categories }: FilterSectionProps) => {
-  const { category } = useCategories();
+const FilterSection = ({ category }: FilterSectionProps) => {
+  const [attributeStates, setAttributeStates] = useState<{
+    [key: string]: { open: boolean; selectedValue: string; disabled: boolean };
+  }>({});
 
-  const [attributeStates, setAttributeStates] = useState(() =>
-    category.attributes?.reduce((acc, attribute, index) => {
-      acc[attribute.id] = {
-        open: false,
-        selectedValue: "",
-        disabled: index !== 0,
-      };
-      return acc;
-    }, {} as { [key: string]: { open: boolean; selectedValue: string; disabled: boolean } })
-  );
+  useEffect(() => {
+    if (category?.categoryAttributes) {
+      const initialStates = category.categoryAttributes.reduce(
+        (acc, attribute, index) => {
+          acc[attribute.id] = {
+            open: false,
+            selectedValue: "",
+            disabled: index !== 0,
+          };
+          return acc;
+        },
+        {} as {
+          [key: string]: {
+            open: boolean;
+            selectedValue: string;
+            disabled: boolean;
+          };
+        }
+      );
+      setAttributeStates(initialStates);
+    }
+  }, [category]);
 
   const handleSelect = (attributeId: string, name: string) => {
     setAttributeStates((prevState: any) => {
@@ -72,19 +85,20 @@ const FilterSection = ({ categories }: FilterSectionProps) => {
 
   return (
     <div className="flex gap-4">
-      {category.attributes?.map((attribute) => (
-        <FilterComponent
-          key={attribute.id}
-          attribute={attribute}
-          categories={categories}
-          open={attributeStates![attribute.id]?.open}
-          selectedValue={attributeStates![attribute.id]?.selectedValue}
-          enabled={!attributeStates![attribute.id]?.disabled}
-          onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
-          onSelect={(name: string) => handleSelect(attribute.id, name)}
-          onReset={() => handleResetFrom(attribute.id)}
-        />
-      ))}
+      {category?.categoryAttributes !== undefined &&
+        category?.categoryAttributes?.map((attribute) => (
+          <FilterComponent
+            key={attribute.id}
+            attribute={attribute}
+            category={category}
+            open={attributeStates![attribute.id]?.open}
+            selectedValue={attributeStates![attribute.id]?.selectedValue}
+            enabled={!attributeStates![attribute.id]?.disabled}
+            onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
+            onSelect={(name: string) => handleSelect(attribute.id, name)}
+            onReset={() => handleResetFrom(attribute.id)}
+          />
+        ))}
     </div>
   );
 };
