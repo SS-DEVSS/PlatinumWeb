@@ -21,19 +21,36 @@ import { useEffect, useMemo, useState } from "react";
 
 const ProductsTable = ({ data }) => {
   const [mappedData, setMappedData] = useState([]);
-  const { variantAttributes, categoryAttributes, products, kits } = data || {};
+  const { variantAttributes, products, kits } = data || {};
 
-  // Flatten products and kits data into a unified structure
   useEffect(() => {
     const flattenVariants = (items, type) => {
       return items.flatMap((item) => {
         const variants =
           type === "product" ? item.productVariants : item.kitVariants;
         return variants.map((variant) => ({
+          id: variant.id,
           sku: variant.sku,
           name: variant.name,
           type,
-          attributes: variant.variantAttributes || [],
+          attributes:
+            type === "product"
+              ? variant.productVariantVariantAttributes.map((attribute) => ({
+                  id: attribute.id,
+                  valueString: attribute.valueS,
+                  valueNumber: attribute.valueN,
+                  valueBoolean: attribute.valueB,
+                  valueDate: attribute.valueD,
+                  id_var: attribute.id_var,
+                }))
+              : variant.kitVariantVariantAttributes.map((attribute) => ({
+                  id: attribute.id,
+                  valueString: attribute.valueString,
+                  valueNumber: attribute.valueNumber,
+                  valueBoolean: attribute.valueBoolean,
+                  valueDate: attribute.valueDate,
+                  id_var: attribute.id_variant_attribu,
+                })),
         }));
       });
     };
@@ -45,9 +62,6 @@ const ProductsTable = ({ data }) => {
     setMappedData([...mappedProducts, ...mappedKits]);
   }, [products, kits]);
 
-  console.log(mappedData);
-
-  // Define table columns
   const columns = useMemo(() => {
     const initialColumns = [
       {
@@ -69,12 +83,13 @@ const ProductsTable = ({ data }) => {
 
     const dynamicColumns =
       variantAttributes?.map((attribute) => ({
-        accessorKey: attribute.name,
+        accessorKey: attribute.id,
         header: attribute.name,
         cell: ({ row }) => {
           const value = row.original.attributes.find(
-            (attr) => attr.idVariantAttribute === attribute.id
+            (attr) => attr.id_var === attribute.id
           );
+          console.log(value);
           return (
             <div>
               {value?.valueString ||
@@ -90,7 +105,6 @@ const ProductsTable = ({ data }) => {
     return [...initialColumns, ...dynamicColumns];
   }, [variantAttributes]);
 
-  // Table state management
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
 
