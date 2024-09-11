@@ -17,49 +17,73 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { useMemo, useState } from "react";
-import { Category } from "../models/category";
-import { useProducts } from "../hooks/useProducts";
+import { useEffect, useMemo, useState } from "react";
 
-const ProductsTable = ({ data }: { data: Category | null }) => {
-  const { products } = useProducts();
-  const { variantAttributes } = data || {};
+const ProductsTable = ({ data }) => {
+  const [mappedData, setMappedData] = useState([]);
+  const { variantAttributes, categoryAttributes, products, kits } = data || {};
 
-  const productVariants_data = useMemo(() => {
-    if (!products) return [];
-    return products.flatMap((product) => product.productVariants || []);
-  }, [products]);
+  // Flatten products and kits data into a unified structure
+  useEffect(() => {
+    const flattenVariants = (items, type) => {
+      return items.flatMap((item) => {
+        const variants =
+          type === "product" ? item.productVariants : item.kitVariants;
+        return variants.map((variant) => ({
+          sku: variant.sku,
+          name: variant.name,
+          type,
+          attributes: variant.variantAttributes || [],
+        }));
+      });
+    };
 
-  // console.log(productVariants_data);
+    const mappedProducts = products ? flattenVariants(products, "product") : [];
+    const mappedKits = kits ? flattenVariants(kits, "kit") : [];
+
+    // Combine both arrays into a single mapped data array
+    setMappedData([...mappedProducts, ...mappedKits]);
+  }, [products, kits]);
+
+  console.log(mappedData);
 
   // Define table columns
   const columns = useMemo(() => {
-    // Basic SKU column
     const initialColumns = [
       {
         accessorKey: "sku",
-        header: () => <div>SKU</div>,
-        cell: ({ row }: { row: any }) => <div>{row.getValue("sku")}</div>,
+        header: "Sku",
+        cell: ({ row }) => <div>{row.getValue("sku")}</div>,
+      },
+      {
+        accessorKey: "name",
+        header: "Nombre",
+        cell: ({ row }) => <div>{row.getValue("name")}</div>,
+      },
+      {
+        accessorKey: "type",
+        header: "Tipo",
+        cell: ({ row }) => <div>{row.getValue("type")}</div>,
       },
     ];
 
-    // Dynamic columns based on variantAttributes
     const dynamicColumns =
       variantAttributes?.map((attribute) => ({
         accessorKey: attribute.name,
         header: attribute.name,
-        cell: ({ row }: { row: any }) => {
-          // Find the value associated with the variant attribute
-          const variantAttribute = row.original.variantAttributes.find(
-            (attr: any) => attr.idVariantAttribute === attribute.id
+        cell: ({ row }) => {
+          const value = row.original.attributes.find(
+            (attr) => attr.idVariantAttribute === attribute.id
           );
-
-          // Display the appropriate value based on its type
-          const value =
-            variantAttribute?.valueString ||
-            variantAttribute?.valueNumber ||
-            "";
-          return <div>{value}</div>;
+          return (
+            <div>
+              {value?.valueString ||
+                value?.valueNumber ||
+                value?.valueBoolean?.toString() ||
+                value?.valueDate ||
+                ""}
+            </div>
+          );
         },
       })) || [];
 
@@ -72,7 +96,7 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
 
   // Setting up table with React Table
   const table = useReactTable({
-    data: productVariants_data,
+    data: mappedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -89,7 +113,7 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
   const navigate = useNavigate();
 
   // Handle row click navigation
-  const handleRowClick = (id: string) => {
+  const handleRowClick = (id) => {
     navigate(`/producto/${id}`);
   };
 

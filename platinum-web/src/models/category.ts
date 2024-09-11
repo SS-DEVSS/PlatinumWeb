@@ -3,12 +3,13 @@ import { Brand } from "./brand";
 export type Category = {
   id: string;
   name: string;
-  image: string;
+  imgUrl: string;
   description: string;
   brands?: Brand[];
   categoryAttributes?: CategoryAtributes[];
-  products?: string[];
+  products?: [];
   variantAttributes?: VariantAtributes[];
+  kits: [];
 };
 
 export enum CategoryAttributesTypes {

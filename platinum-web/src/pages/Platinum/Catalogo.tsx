@@ -64,7 +64,7 @@ const Catalogo = ({}: CatalogoProps) => {
     }
   };
 
-  console.log(category);
+  // console.log(category);
 
   return (
     <PlatinumLayout>
@@ -133,7 +133,7 @@ const Catalogo = ({}: CatalogoProps) => {
                   <div className="flex items-center">
                     <img
                       className="w-20 max-h-10"
-                      src={form.categoria.image}
+                      src={form.categoria.imgUrl}
                       alt={form.categoria.name}
                     />
                     <span className="ml-2 mx-4">{form.categoria.name}</span>
