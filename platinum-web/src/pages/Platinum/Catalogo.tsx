@@ -64,6 +64,8 @@ const Catalogo = ({}: CatalogoProps) => {
     }
   };
 
+  console.log(category);
+
   return (
     <PlatinumLayout>
       <section className="bg-hero-catalog bg-cover pl-20 pb-14">

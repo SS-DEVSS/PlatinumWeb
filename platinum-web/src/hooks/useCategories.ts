@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Category } from "../models/category";
 import axiosClient from "../services/axiosInstance";
 
@@ -18,5 +18,5 @@ export const useCategories = () => {
         console.error("Failed to fetch category:", error);
       });
   };
-  return { category, getCategoryById };
+  return { category, getCategoryById, setCategory };
 };

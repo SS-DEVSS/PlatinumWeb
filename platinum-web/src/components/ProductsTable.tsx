@@ -1,9 +1,4 @@
-import * as React from "react";
 import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -21,66 +16,64 @@ import {
 } from "./ui/table";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Product, ProductSkeleton } from "../models/product";
 import { Card } from "./ui/card";
-// import { useCategories } from "../hooks/useCategories";
+import { useMemo, useState } from "react";
+import { Category } from "../models/category";
+import { useProducts } from "../hooks/useProducts";
 
-const ProductsTable = (data: any) => {
-  // const { category } = useCategories();
-  const columns: ColumnDef<ProductSkeleton>[] = [
-    {
-      accessorKey: "image",
-      header: "Imagen",
-      cell: ({ row }) => (
-        <img className="w-20" src={`/src/assets/${row.getValue("image")}`} />
-      ),
-    },
-    {
-      accessorKey: "sku",
-      header: () => <div>SKU</div>,
-      cell: ({ row }) => <div>{row.getValue("sku")}</div>,
-    },
-    // {
-    //   accessorKey: "brand",
-    //   header: () => <div>Marca</div>,
-    //   cell: ({ row }) => <div>{row.getValue("brand")}</div>,
-    // },
-    // {
-    //   accessorKey: "model",
-    //   header: () => <div>Modelo</div>,
-    //   cell: ({ row }) => <div>{row.getValue("model")}</div>,
-    // },
-    // {
-    //   accessorKey: "engine",
-    //   header: () => <div>Motor</div>,
-    //   cell: ({ row }) => <div>{row.getValue("engine")}</div>,
-    // },
-    // {
-    //   accessorKey: "year",
-    //   header: () => <div>Año</div>,
-    //   cell: ({ row }) => <div>{row.getValue("year")}</div>,
-    // },
-    // {
-    //   accessorKey: "diameter",
-    //   header: () => <div>Diametro</div>,
-    //   cell: ({ row }) => <div>{row.getValue("diameter")}</div>,
-    // },
-  ];
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+const ProductsTable = ({ data }: { data: Category | null }) => {
+  const { products } = useProducts();
+  const { variantAttributes } = data || {};
 
-  // console.log(data);
+  const productVariants_data = useMemo(() => {
+    if (!products) return [];
+    return products.flatMap((product) => product.productVariants || []);
+  }, [products]);
 
-  const table = useReactTable<ProductSkeleton>({
-    data: data,
+  // console.log(productVariants_data);
+
+  // Define table columns
+  const columns = useMemo(() => {
+    // Basic SKU column
+    const initialColumns = [
+      {
+        accessorKey: "sku",
+        header: () => <div>SKU</div>,
+        cell: ({ row }: { row: any }) => <div>{row.getValue("sku")}</div>,
+      },
+    ];
+
+    // Dynamic columns based on variantAttributes
+    const dynamicColumns =
+      variantAttributes?.map((attribute) => ({
+        accessorKey: attribute.name,
+        header: attribute.name,
+        cell: ({ row }: { row: any }) => {
+          // Find the value associated with the variant attribute
+          const variantAttribute = row.original.variantAttributes.find(
+            (attr: any) => attr.idVariantAttribute === attribute.id
+          );
+
+          // Display the appropriate value based on its type
+          const value =
+            variantAttribute?.valueString ||
+            variantAttribute?.valueNumber ||
+            "";
+          return <div>{value}</div>;
+        },
+      })) || [];
+
+    return [...initialColumns, ...dynamicColumns];
+  }, [variantAttributes]);
+
+  // Table state management
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [rowSelection, setRowSelection] = useState({});
+
+  // Setting up table with React Table
+  const table = useReactTable({
+    data: productVariants_data,
     columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -88,18 +81,19 @@ const ProductsTable = (data: any) => {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
-      sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
     },
   });
 
   const navigate = useNavigate();
-  const handleRowClick = (id: Product["id"]) => {
+
+  // Handle row click navigation
+  const handleRowClick = (id: string) => {
     navigate(`/producto/${id}`);
   };
 
+  // Render the table
   return (
     <div className="mt-6">
       <Card className="border">
@@ -156,24 +150,22 @@ const ProductsTable = (data: any) => {
         </Table>
       </Card>
       <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+        </Button>
       </div>
     </div>
   );

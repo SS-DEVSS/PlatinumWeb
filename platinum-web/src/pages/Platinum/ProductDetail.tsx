@@ -1,5 +1,5 @@
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { MoveLeft, Share2, Download } from "lucide-react";
 import {
   Accordion,
@@ -29,9 +29,23 @@ import {
   TabsTrigger,
 } from "../../components/ui/tabs";
 import ProductsTable from "../../components/ProductsTable";
+import { useEffect } from "react";
+import { useProducts } from "../../hooks/useProducts";
 
 const ProductDetail = () => {
+  const { getProductById } = useProducts();
   const navigate = useNavigate();
+  let { productId } = useParams();
+
+  console.log(productId);
+
+  useEffect(() => {
+    if (productId) {
+      getProductById(productId);
+    }
+  }, []);
+
+  // console.log(productId);
 
   const category = {
     id: "d406c4aa-9932-407d-aee6-b8eff8f26b45",
@@ -461,10 +475,10 @@ const ProductDetail = () => {
               )}
             </TabsContent>
             <TabsContent value="compatibilidades">
-              <ProductsTable />
+              <ProductsTable data={null} />
             </TabsContent>
             <TabsContent value="componentes">
-              {mappedKitProductsVariant.map((component, index) => (
+              {mappedKitProductsVariant.map((component) => (
                 <Accordion
                   type="single"
                   collapsible

@@ -9,7 +9,7 @@ export const useBrands = () => {
     client
       .get("/brands")
       .then((response) => {
-        setBrands(response.data[1]);
+        setBrands(response.data[0]);
       })
       .catch((error) => {
         console.error("Error fetching brands:", error);
