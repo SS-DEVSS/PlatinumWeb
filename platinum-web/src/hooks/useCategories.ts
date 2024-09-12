@@ -8,15 +8,14 @@ export const useCategories = () => {
   // const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
 
-  const getCategoryById = (id: Category["id"] | undefined) => {
-    client
-      .get(`/categories/${id}?attributes=true`)
-      .then((response) => {
-        setCategory(response.data);
-      })
-      .catch((error) => {
-        console.error("Failed to fetch category:", error);
-      });
+  const getCategoryById = async (id: Category["id"] | undefined) => {
+    try {
+      const response = await client.get(`/categories/${id}?attributes=true`);
+      setCategory(response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch category:", error);
+    }
   };
   return { category, getCategoryById, setCategory };
 };

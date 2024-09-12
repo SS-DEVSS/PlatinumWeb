@@ -31,19 +31,22 @@ import {
 import ProductsTable from "../../components/ProductsTable";
 import { useEffect, useState } from "react";
 import { useProducts } from "../../hooks/useProducts";
-import { Item, Variant } from "../../models/item";
-import { Reference } from "../../models/reference";
+import { Attribute, Item, Variant } from "../../models/item";
 import { useItemContext } from "../../context/Item-context";
+import { Category, CategoryAtribute } from "../../models/category";
+import { useCategories } from "../../hooks/useCategories";
 
 const ProductDetail = () => {
   const { type } = useItemContext();
   const { getProductById, getKitById } = useProducts();
+  const { getCategoryById } = useCategories();
 
   const navigate = useNavigate();
   let { itemId } = useParams();
 
   const [item, setItem] = useState<Item | null>(null);
   const [itemVariant, setItemVariant] = useState<Variant | null>(null);
+  const [category, setCategory] = useState<Category | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,55 +71,63 @@ const ProductDetail = () => {
     fetchData();
   }, []);
 
-  // const mappedKitProductsVariant = kit.kitVariants.flatMap((variant) =>
-  //   variant.productVariants
-  //     .map((productMatch) => {
-  //       const matchingProduct = product?.variants?.find(
-  //         (proMatch) => proMatch.id === productMatch.id
-  //       );
-  //       return matchingProduct ? { matchingProduct } : null;
-  //     })
-  //     .filter((item) => item !== null)
-  // );
+  useEffect(() => {
+    if (item) {
+      const fetchCategory = async () => {
+        const data = await getCategoryById(item?.category.id);
+        setCategory(data);
+      };
+      fetchCategory();
+    }
+  }, [item]);
 
-  // const mappedCategoryAttributes = category.categoryAttributes.map(
-  //   (catAttr: Attribute) => {
-  //     const matchingProductAttr = product?.attributes?.find(
-  //       (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
-  //     );
-  //     return {
-  //       name: catAttr.name,
-  //       value:
-  //         matchingProductAttr?.valueString ||
-  //         matchingProductAttr?.valueNumber ||
-  //         matchingProductAttr?.valueBoolean ||
-  //         matchingProductAttr?.valueDate ||
-  //         "N/A",
-  //     };
-  //   }
-  // );
+  const mappedCategoryAttributes = category?.categoryAttributes
+    ?.filter((catAttr) => {
+      return item?.productCategoryAttributes?.some(
+        (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
+      );
+    })
+    .map((catAttr) => {
+      const matchingProductAttr = item?.productCategoryAttributes?.find(
+        (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
+      );
 
-  // const mappedVariants = product.productVariants.map((variant) => {
-  //   const variantAttributes = category.variantAttributes.map((varAttr) => {
-  //     const matchingVarAttr = variant.variantAttributes.find(
-  //       (prodVarAttr) => prodVarAttr.idVariantAttribute === varAttr.id
-  //     );
-  //     return {
-  //       name: varAttr.name,
-  //       value:
-  //         matchingVarAttr?.valueString ||
-  //         matchingVarAttr?.valueNumber ||
-  //         matchingVarAttr?.valueBoolean ||
-  //         matchingVarAttr?.valueDate ||
-  //         "N/A",
-  //     };
-  //   });
+      return {
+        name: catAttr.name,
+        value:
+          matchingProductAttr?.valueString ||
+          matchingProductAttr?.valueNumber ||
+          matchingProductAttr?.valueBoolean ||
+          matchingProductAttr?.valueDate ||
+          "N/A",
+      };
+    });
 
-  //   return {
-  //     ...variant,
-  //     attributes: variantAttributes,
-  //   };
-  // });
+  const mappedProductVariantAttributes = category?.variantAttributes
+    ?.filter((proVarAttr) =>
+      item?.productVariants?.map((proVar) =>
+        proVar.variantAttributes.some((varAttr) => varAttr.id === proVarAttr.id)
+      )
+    )
+    .map((filteredAttr) => {
+      const productAttribute = itemVariant?.variantAttributes?.find(
+        (attr) => attr.idVariantAttribute === filteredAttr.id
+      );
+
+      return {
+        name: filteredAttr.name,
+        value:
+          productAttribute?.valueString ||
+          productAttribute?.valueNumber ||
+          productAttribute?.valueBoolean ||
+          productAttribute?.valueDate ||
+          "N/A",
+      };
+    });
+
+  if (type === "kit") {
+    const mappedKitVariantComponents = itemVariant?.productVariants;
+  }
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
@@ -201,12 +212,18 @@ const ProductDetail = () => {
 
         <section className="basis-1/2">
           <Tabs defaultValue="details">
-            <TabsList className="grid grid-cols-3 w-full 2xl:w-[60%]">
+            <TabsList
+              className={`${
+                type === "kit" ? "grid-cols-3" : "grid-cols-2"
+              } grid w-full 2xl:w-[60%]`}
+            >
               <TabsTrigger value="details">Detalles</TabsTrigger>
               <TabsTrigger value="compatibilidades">
                 Compatibilidades
               </TabsTrigger>
-              <TabsTrigger value="componentes">Componentes</TabsTrigger>
+              {type === "kit" && (
+                <TabsTrigger value="componentes">Componentes</TabsTrigger>
+              )}
             </TabsList>
             <TabsContent value="details">
               <Card className="border-none shadow-md">
@@ -214,7 +231,7 @@ const ProductDetail = () => {
                   <CardTitle className="text-lg">Características</CardTitle>
                 </CardHeader>
                 <section>
-                  {/* {mappedCategoryAttributes.map((attr, index) => (
+                  {mappedCategoryAttributes?.map((attr, index) => (
                     <>
                       <div
                         key={index}
@@ -229,45 +246,40 @@ const ProductDetail = () => {
                         <Separator />
                       )}
                     </>
-                  ))} */}
+                  ))}
                 </section>
               </Card>
 
-              {/* {mappedVariants.map((variant) => (
-                <Card key={variant.id} className="mt-4 border-none shadow-md">
+              {itemVariant?.variantAttributes.length! > 0 && (
+                <Card className="mt-4 border-none shadow-md">
                   <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
                     <CardTitle className="text-lg">Atributos</CardTitle>
                   </CardHeader>
                   <section>
-                    {variant.attributes.map(
-                      (attr: Attribute, index: number) => (
-                        <>
-                          <div
-                            key={index}
-                            className={`${
-                              index % 2 === 0 ? "bg-white" : "bg-[#d7d7d7]"
-                            } px-4 flex gap-3 py-3 last:rounded-b-lg`}
-                          >
-                            <p className="font-bold">{attr.name}:</p>
-                            <p>{attr.value}</p>
-                          </div>
-                          {index !== variant.attributes.length - 1 && (
-                            <Separator />
-                          )}
-                        </>
-                      )
-                    )}
+                    <>
+                      {mappedProductVariantAttributes?.map((variant, index) => (
+                        <div
+                          key={index}
+                          className={`${
+                            index % 2 === 0 ? "bg-white" : "bg-[#d7d7d7]"
+                          } px-4 flex gap-3 py-3 last:rounded-b-lg`}
+                        >
+                          <p className="font-bold">{variant.name}:</p>
+                          <p>{variant.value}</p>
+                        </div>
+                      ))}
+                    </>
                   </section>
                 </Card>
-              ))} */}
-              {/*
-              {item?.notes && (
+              )}
+
+              {/* {itemVariant?.notes && (
                 <Card className="mt-4 border-none shadow-md">
                   <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
                     <CardTitle className="text-lg">Notas</CardTitle>
                   </CardHeader>
                   <section>
-                    {item.notes.map((note, index) => (
+                    {itemVariant.notes.map((note, index) => (
                       <div key={index}>
                         <div
                           className={`${
@@ -276,7 +288,7 @@ const ProductDetail = () => {
                         >
                           <p>{note.value}</p>
                         </div>
-                        {index !== item.notes.length - 1 && <Separator />}
+                        {index !== itemVariant.notes.length - 1 && <Separator />}
                       </div>
                     ))}
                   </section>

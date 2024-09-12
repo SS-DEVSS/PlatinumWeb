@@ -6,7 +6,7 @@ export type Category = {
   imgUrl: string;
   description: string;
   brands?: Brand[];
-  categoryAttributes?: CategoryAtributes[];
+  categoryAttributes?: CategoryAtribute[];
   products?: [];
   variantAttributes?: VariantAtributes[];
   kits: [];
@@ -22,7 +22,7 @@ export const typesArray = Object.values(CategoryAttributesTypes);
 
 console.log(typesArray);
 
-export type CategoryAtributes = {
+export type CategoryAtribute = {
   id: string;
   id_category: string;
   name: string;

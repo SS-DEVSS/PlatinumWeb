@@ -1,4 +1,4 @@
-import { CategoryAtributes } from "./category";
+import { CategoryAtribute } from "./category";
 import { Document } from "./document";
 import { Note } from "./note";
 import { Reference } from "./reference";
@@ -16,8 +16,11 @@ export type Item = {
   };
   references: Reference[];
   variants?: Variant[];
+  kitVariants?: Variant[];
   productVariants?: Variant[];
-  attributes?: CategoryAtributes[];
+  productCategoryAttributes?: Attribute[];
+  kitCategoryAttributes?: Attribute[];
+  attributes?: CategoryAtribute[];
 };
 
 export type Variant = {
@@ -31,6 +34,7 @@ export type Variant = {
   stockQuantity: number;
   images: [];
   variantAttributes: Attribute[];
+  productVariants?: ComponentVariant[];
 };
 
 export type Attribute = {
@@ -40,4 +44,13 @@ export type Attribute = {
   valueBoolean: boolean | null;
   valueDate: Date | null;
   idVariantAttribute: string;
+  idCategoryAttribute: string;
+};
+
+export type ComponentVariant = {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+  stockQuantity: number;
 };

@@ -14,10 +14,10 @@ import {
 } from "../components/ui/popover";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-import { Category, CategoryAtributes } from "../models/category";
+import { Category, CategoryAtribute } from "../models/category";
 
 type FilterComponentProps = {
-  attribute: CategoryAtributes;
+  attribute: CategoryAtribute;
   category: Category;
   open: boolean;
   selectedValue: string;
