@@ -31,7 +31,7 @@ import {
 import ProductsTable from "../../components/ProductsTable";
 import { useEffect, useState } from "react";
 import { useProducts } from "../../hooks/useProducts";
-import { Item } from "../../models/item";
+import { Item, Variant } from "../../models/item";
 import { Reference } from "../../models/reference";
 import { useItemContext } from "../../context/Item-context";
 
@@ -43,6 +43,7 @@ const ProductDetail = () => {
   let { itemId } = useParams();
 
   const [item, setItem] = useState<Item | null>(null);
+  const [itemVariant, setItemVariant] = useState<Variant | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,11 +51,17 @@ const ProductDetail = () => {
         if (type === "kit") {
           const data = await getKitById(itemId);
           setItem(data);
-          console.log("kit", data);
+
+          if (data.kitVariants && data.kitVariants.length > 0) {
+            setItemVariant(data.kitVariants[0]);
+          }
         } else {
           const data = await getProductById(itemId);
           setItem(data);
-          console.log("product", data);
+
+          if (data.productVariants && data.productVariants.length > 0) {
+            setItemVariant(data.productVariants[0]);
+          }
         }
       }
     };
@@ -166,27 +173,30 @@ const ProductDetail = () => {
               </div>
             ))}
           </div>
-          <Card className="px-16">
-            <Carousel className="w-full">
-              <CarouselContent>
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <CarouselItem key={index}>
-                    <div className="p-1">
-                      <Card className="border-none">
-                        <CardContent className="flex aspect-square items-center justify-center p-6">
-                          <span className="text-4xl font-semibold">
-                            {index + 1}
-                          </span>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          </Card>
+          {itemVariant?.images.length! > 0 && (
+            <Card className="px-16">
+              <Carousel className="w-full">
+                <CarouselContent>
+                  {itemVariant?.images.map((_, index) => (
+                    <CarouselItem key={index}>
+                      <div className="p-1">
+                        <Card className="border-none">
+                          <CardContent className="flex aspect-square items-center justify-center p-6">
+                            {/* Cambiar esto, esperando estructura */}
+                            <span className="text-4xl font-semibold">
+                              {index + 1}
+                            </span>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            </Card>
+          )}
         </section>
 
         <section className="basis-1/2">

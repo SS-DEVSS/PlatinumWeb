@@ -16,6 +16,7 @@ export type Item = {
   };
   references: Reference[];
   variants?: Variant[];
+  productVariants?: Variant[];
   attributes?: CategoryAtributes[];
 };
 
