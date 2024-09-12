@@ -20,6 +20,7 @@ import { Card } from "./ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { Category } from "../models/category";
 import { Attribute, Variant } from "../models/item";
+import { useItemContext } from "../context/Item-context";
 
 const ProductsTable = ({ data }: { data: Category | null }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
@@ -32,6 +33,7 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
           type === "product" ? item.productVariants : item.kitVariants;
         return variants.map((variant: Variant) => ({
           id: variant.id,
+          idParent: type === "product" ? variant.idProduct : variant.idKit,
           sku: variant.sku,
           name: variant.name,
           type,
@@ -80,7 +82,6 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
           const value = row.original.attributes.find(
             (attr: Attribute) => attr.idVariantAttribute === attribute.id
           );
-          console.log(value);
           return (
             <div>
               {value?.valueString ||
@@ -116,8 +117,17 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
 
   const navigate = useNavigate();
 
-  const handleRowClick = (id: string) => {
-    navigate(`/producto/${id}`);
+  const { setType } = useItemContext();
+
+  const handleRowClick = (row: any) => {
+    const type = row.getValue("type");
+    if (type === "kit") {
+      setType("kit");
+      navigate(`/kit/${row.original.idParent}`);
+    } else {
+      setType("product");
+      navigate(`/producto/${row.original.idParent}`);
+    }
   };
 
   return (
@@ -149,7 +159,7 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  onClick={() => handleRowClick(row.original.id)}
+                  onClick={() => handleRowClick(row)}
                   className="cursor-pointer hover:bg-gray-100"
                 >
                   {row.getVisibleCells().map((cell) => (

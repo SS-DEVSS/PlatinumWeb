@@ -1,15 +1,19 @@
-import { Category, CategoryAtributes } from "./category";
+import { CategoryAtributes } from "./category";
 import { Document } from "./document";
 import { Note } from "./note";
 import { Reference } from "./reference";
 
 export type Item = {
   id: string;
+  name: string;
   sku: string;
   description: string;
   notes: Note[];
   documents: Document[];
-  idCategory: Category["id"];
+  category: {
+    id: string;
+    name: string;
+  };
   references: Reference[];
   variants?: Variant[];
   attributes?: CategoryAtributes[];
@@ -17,7 +21,9 @@ export type Item = {
 
 export type Variant = {
   id: string;
-  idProduct: string;
+  idProduct?: string;
+  idKit?: string;
+  idParent?: string;
   name: string;
   sku: string;
   price: number;

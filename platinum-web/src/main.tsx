@@ -15,6 +15,7 @@ import DelphiPage from "./pages/Delphi/DelphiPage";
 import PastillasPage from "./pages/Pastillas/PastillasPage";
 import Catalogo from "./pages/Platinum/Catalogo";
 import ProductDetail from "./pages/Platinum/ProductDetail";
+import { ItemContextProvider } from "./context/Item-context";
 
 const router = createBrowserRouter([
   {
@@ -26,7 +27,11 @@ const router = createBrowserRouter([
     element: <Catalogo />,
   },
   {
-    path: "/producto/:productId",
+    path: "/producto/:itemId",
+    element: <ProductDetail />,
+  },
+  {
+    path: "/kit/:itemId",
     element: <ProductDetail />,
   },
   {
@@ -73,6 +78,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <ItemContextProvider>
+      <RouterProvider router={router} />
+    </ItemContextProvider>
   </StrictMode>
 );

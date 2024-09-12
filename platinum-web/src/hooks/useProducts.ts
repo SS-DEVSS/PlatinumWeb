@@ -12,15 +12,22 @@ export const useProducts = () => {
     client.get("/products").then((response) => setProducts(response.data));
   }, []);
 
-  const getProductById = (id: string) => {
-    client.get(`/products/${id}`).then((response) => {
-      setProduct(response.data);
-    });
+  const getProductById = async (id: string) => {
+    const response = await client.get(`/products/${id}`);
+    setProduct(response.data);
+    return response.data;
+  };
+
+  const getKitById = async (id: string) => {
+    const response = await client.get(`/kits/${id}`);
+    setProduct(response.data);
+    return response.data;
   };
 
   return {
     product,
     getProductById,
+    getKitById,
     products,
   };
 };
