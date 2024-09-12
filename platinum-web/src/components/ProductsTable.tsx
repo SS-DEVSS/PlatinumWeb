@@ -18,22 +18,24 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useEffect, useMemo, useState } from "react";
+import { Category } from "../models/category";
+import { Attribute, Variant } from "../models/product";
 
-const ProductsTable = ({ data }) => {
-  const [mappedData, setMappedData] = useState([]);
+const ProductsTable = ({ data }: { data: Category | null }) => {
+  const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { variantAttributes, products, kits } = data || {};
 
   useEffect(() => {
-    const flattenVariants = (items, type) => {
-      return items.flatMap((item) => {
+    const flattenVariants = (items: any, type: string) => {
+      return items.flatMap((item: any) => {
         const variants =
           type === "product" ? item.productVariants : item.kitVariants;
-        return variants.map((variant) => ({
+        return variants.map((variant: Variant) => ({
           id: variant.id,
           sku: variant.sku,
           name: variant.name,
           type,
-          attributes: variant.variantAttributes.map((attribute) => ({
+          attributes: variant.variantAttributes.map((attribute: Attribute) => ({
             id: attribute.id,
             valueString: attribute.valueString,
             valueNumber: attribute.valueNumber,
@@ -48,7 +50,6 @@ const ProductsTable = ({ data }) => {
     const mappedProducts = products ? flattenVariants(products, "product") : [];
     const mappedKits = kits ? flattenVariants(kits, "kit") : [];
 
-    // Combine both arrays into a single mapped data array
     setMappedData([...mappedProducts, ...mappedKits]);
   }, [products, kits]);
 
@@ -57,17 +58,17 @@ const ProductsTable = ({ data }) => {
       {
         accessorKey: "sku",
         header: "Sku",
-        cell: ({ row }) => <div>{row.getValue("sku")}</div>,
+        cell: ({ row }: { row: any }) => <div>{row.getValue("sku")}</div>,
       },
       {
         accessorKey: "name",
         header: "Nombre",
-        cell: ({ row }) => <div>{row.getValue("name")}</div>,
+        cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
       },
       {
         accessorKey: "type",
         header: "Tipo",
-        cell: ({ row }) => <div>{row.getValue("type")}</div>,
+        cell: ({ row }: { row: any }) => <div>{row.getValue("type")}</div>,
       },
     ];
 
@@ -75,9 +76,9 @@ const ProductsTable = ({ data }) => {
       variantAttributes?.map((attribute) => ({
         accessorKey: attribute.id,
         header: attribute.name,
-        cell: ({ row }) => {
+        cell: ({ row }: { row: any }) => {
           const value = row.original.attributes.find(
-            (attr) => attr.idVariantAttribute === attribute.id
+            (attr: Attribute) => attr.idVariantAttribute === attribute.id
           );
           console.log(value);
           return (
@@ -98,7 +99,6 @@ const ProductsTable = ({ data }) => {
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
 
-  // Setting up table with React Table
   const table = useReactTable({
     data: mappedData,
     columns,
@@ -116,12 +116,10 @@ const ProductsTable = ({ data }) => {
 
   const navigate = useNavigate();
 
-  // Handle row click navigation
-  const handleRowClick = (id) => {
+  const handleRowClick = (id: string) => {
     navigate(`/producto/${id}`);
   };
 
-  // Render the table
   return (
     <div className="mt-6">
       <Card className="border">

@@ -11,26 +11,26 @@ export type Product = {
   documents: Document[];
   idCategory: Category["id"];
   references: Reference[];
-  variants?: ProductVariant[];
+  variants?: Variant[];
   attributes?: CategoryAtributes[];
 };
 
-export type ProductVariant = {
+export type Variant = {
   id: string;
-  img_url: string;
+  idProduct: string;
   name: string;
   sku: string;
-  price?: number;
-  quantity?: number;
+  price: number;
+  stockQuantity: number;
+  images: [];
+  variantAttributes: Attribute[];
 };
 
-export type ProductSkeleton = {
+export type Attribute = {
   id: string;
-  image: string;
-  sku: string;
-  brand: string;
-  model: string;
-  engine: string;
-  year: string;
-  diameter: number;
+  valueString: string | null;
+  valueNumber: number | null;
+  valueBoolean: boolean | null;
+  valueDate: Date | null;
+  idVariantAttribute: string;
 };
