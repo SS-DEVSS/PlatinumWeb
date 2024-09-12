@@ -33,24 +33,14 @@ const ProductsTable = ({ data }) => {
           sku: variant.sku,
           name: variant.name,
           type,
-          attributes:
-            type === "product"
-              ? variant.productVariantVariantAttributes.map((attribute) => ({
-                  id: attribute.id,
-                  valueString: attribute.valueS,
-                  valueNumber: attribute.valueN,
-                  valueBoolean: attribute.valueB,
-                  valueDate: attribute.valueD,
-                  id_var: attribute.id_var,
-                }))
-              : variant.kitVariantVariantAttributes.map((attribute) => ({
-                  id: attribute.id,
-                  valueString: attribute.valueString,
-                  valueNumber: attribute.valueNumber,
-                  valueBoolean: attribute.valueBoolean,
-                  valueDate: attribute.valueDate,
-                  id_var: attribute.id_variant_attribu,
-                })),
+          attributes: variant.variantAttributes.map((attribute) => ({
+            id: attribute.id,
+            valueString: attribute.valueString,
+            valueNumber: attribute.valueNumber,
+            valueBoolean: attribute.valueBoolean,
+            valueDate: attribute.valueDate,
+            idVariantAttribute: attribute.idVariantAttribute,
+          })),
         }));
       });
     };
@@ -87,7 +77,7 @@ const ProductsTable = ({ data }) => {
         header: attribute.name,
         cell: ({ row }) => {
           const value = row.original.attributes.find(
-            (attr) => attr.id_var === attribute.id
+            (attr) => attr.idVariantAttribute === attribute.id
           );
           console.log(value);
           return (
