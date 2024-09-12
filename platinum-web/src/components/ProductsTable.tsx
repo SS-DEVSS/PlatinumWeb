@@ -19,7 +19,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { Category } from "../models/category";
-import { Attribute, Variant } from "../models/product";
+import { Attribute, Variant } from "../models/item";
 
 const ProductsTable = ({ data }: { data: Category | null }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);

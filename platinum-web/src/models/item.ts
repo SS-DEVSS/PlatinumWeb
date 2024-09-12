@@ -3,7 +3,7 @@ import { Document } from "./document";
 import { Note } from "./note";
 import { Reference } from "./reference";
 
-export type Product = {
+export type Item = {
   id: string;
   sku: string;
   description: string;
