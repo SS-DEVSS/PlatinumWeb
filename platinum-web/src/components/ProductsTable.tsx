@@ -19,7 +19,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { Category } from "../models/category";
-import { Attribute, Item, Variant } from "../models/item";
+import { Attribute, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 
 const ProductsTable = ({
@@ -27,7 +27,7 @@ const ProductsTable = ({
   data,
 }: {
   category: Category | null;
-  data?: Item | null;
+  data?: Variant[] | null;
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { variantAttributes, products, kits } = category || {};
