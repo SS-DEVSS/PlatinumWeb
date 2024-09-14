@@ -174,7 +174,7 @@ const Catalogo = ({}: CatalogoProps) => {
             </Button>
           </div>
         )}
-        <ProductsTable data={category} />
+        <ProductsTable category={category} />
       </main>
     </PlatinumLayout>
   );

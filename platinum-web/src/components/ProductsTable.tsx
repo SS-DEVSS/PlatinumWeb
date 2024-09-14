@@ -14,17 +14,25 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { Category } from "../models/category";
-import { Attribute, Variant } from "../models/item";
+import { Attribute, Item, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 
-const ProductsTable = ({ data }: { data: Category | null }) => {
+const ProductsTable = ({
+  category,
+  data,
+}: {
+  category: Category | null;
+  data?: Item | null;
+}) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
-  const { variantAttributes, products, kits } = data || {};
+  const { variantAttributes, products, kits } = category || {};
+
+  const location = useLocation();
 
   useEffect(() => {
     const flattenVariants = (items: any, type: string) => {
@@ -49,14 +57,28 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
       });
     };
 
-    const mappedProducts = products ? flattenVariants(products, "product") : [];
-    const mappedKits = kits ? flattenVariants(kits, "kit") : [];
+    if (
+      location.pathname.includes("product") ||
+      location.pathname.includes("kit")
+    ) {
+      setMappedData(data || []);
+    } else {
+      const mappedProducts = products
+        ? flattenVariants(products, "product")
+        : [];
+      const mappedKits = kits ? flattenVariants(kits, "kit") : [];
 
-    setMappedData([...mappedProducts, ...mappedKits]);
-  }, [products, kits]);
+      setMappedData([...mappedProducts, ...mappedKits]);
+    }
+  }, [products, kits, data, location]);
 
   const columns = useMemo(() => {
     const initialColumns = [
+      {
+        accessorKey: "id",
+        header: "id",
+        cell: ({ row }: { row: any }) => <div>{row.getValue("id")}</div>,
+      },
       {
         accessorKey: "sku",
         header: "Sku",
@@ -79,7 +101,10 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
         accessorKey: attribute.id,
         header: attribute.name,
         cell: ({ row }: { row: any }) => {
-          const value = row.original.attributes.find(
+          const attributes = location.pathname.includes("producto" || "kit")
+            ? row.original.variantAttributes
+            : row.original.attributes || [];
+          const value = attributes.find(
             (attr: Attribute) => attr.idVariantAttribute === attribute.id
           );
           return (
@@ -93,7 +118,6 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
           );
         },
       })) || [];
-
     return [...initialColumns, ...dynamicColumns];
   }, [variantAttributes]);
 
@@ -120,6 +144,9 @@ const ProductsTable = ({ data }: { data: Category | null }) => {
   const { setType } = useItemContext();
 
   const handleRowClick = (row: any) => {
+    if (location.pathname.includes("product" || "kit")) {
+      return;
+    }
     const type = row.getValue("type");
     if (type === "kit") {
       setType("kit");
