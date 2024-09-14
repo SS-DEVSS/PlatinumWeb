@@ -25,14 +25,20 @@ import { useItemContext } from "../context/Item-context";
 const ProductsTable = ({
   category,
   data,
+  itemVariant,
+  setItemVariant,
 }: {
   category: Category | null;
   data?: Variant[] | null;
+  itemVariant?: Variant | null;
+  setItemVariant?: React.Dispatch<React.SetStateAction<Variant | null>>;
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { variantAttributes, products, kits } = category || {};
 
   const location = useLocation();
+  const navigate = useNavigate();
+  const { setType } = useItemContext();
 
   useEffect(() => {
     const flattenVariants = (items: any, type: string) => {
@@ -75,11 +81,6 @@ const ProductsTable = ({
   const columns = useMemo(() => {
     const initialColumns = [
       {
-        accessorKey: "id",
-        header: "id",
-        cell: ({ row }: { row: any }) => <div>{row.getValue("id")}</div>,
-      },
-      {
         accessorKey: "sku",
         header: "Sku",
         cell: ({ row }: { row: any }) => <div>{row.getValue("sku")}</div>,
@@ -88,11 +89,6 @@ const ProductsTable = ({
         accessorKey: "name",
         header: "Nombre",
         cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
-      },
-      {
-        accessorKey: "type",
-        header: "Tipo",
-        cell: ({ row }: { row: any }) => <div>{row.getValue("type")}</div>,
       },
     ];
 
@@ -139,12 +135,12 @@ const ProductsTable = ({
     },
   });
 
-  const navigate = useNavigate();
-
-  const { setType } = useItemContext();
-
-  const handleRowClick = (row: any) => {
-    if (location.pathname.includes("product" || "kit")) {
+  const handleClick = (row: any) => {
+    console.log("row item", row.original.id);
+    console.log("from props", itemVariant?.id);
+    if (location.pathname.includes("producto" || "kit")) {
+      console.log(row.original);
+      setItemVariant(row.original);
       return;
     }
     const type = row.getValue("type");
@@ -186,8 +182,12 @@ const ProductsTable = ({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  onClick={() => handleRowClick(row)}
-                  className="cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleClick(row)}
+                  className={`cursor-pointer hover:bg-gray-100 odd:bg-[#f5f5f5] even:bg-white`}
+                  style={{
+                    backgroundColor:
+                      row.original.id === itemVariant?.id ? "#d87e2e" : "",
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

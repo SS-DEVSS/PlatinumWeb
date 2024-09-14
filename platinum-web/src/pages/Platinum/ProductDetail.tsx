@@ -315,7 +315,12 @@ const ProductDetail = () => {
               )} */}
             </TabsContent>
             <TabsContent value="compatibilidades">
-              <ProductsTable category={category} data={item?.productVariants} />
+              <ProductsTable
+                category={category}
+                data={item?.productVariants}
+                itemVariant={itemVariant}
+                setItemVariant={setItemVariant}
+              />
             </TabsContent>
             {/* <TabsContent value="componentes">
               {mappedKitProductsVariant.map((component) => (
