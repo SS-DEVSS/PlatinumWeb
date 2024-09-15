@@ -236,7 +236,7 @@ const ProductDetail = () => {
                       <div
                         key={index}
                         className={`${
-                          index % 2 === 0 ? "bg-white" : "bg-[#d7d7d7]"
+                          index % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"
                         } px-4 flex gap-3 py-3 last:rounded-b-lg`}
                       >
                         <p className="font-bold">{attr.name}:</p>
@@ -261,7 +261,7 @@ const ProductDetail = () => {
                         <div
                           key={index}
                           className={`${
-                            index % 2 === 0 ? "bg-white" : "bg-[#d7d7d7]"
+                            index % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"
                           } px-4 flex gap-3 py-3 last:rounded-b-lg`}
                         >
                           <p className="font-bold">{variant.name}:</p>

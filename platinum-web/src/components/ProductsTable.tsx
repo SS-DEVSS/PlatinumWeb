@@ -139,7 +139,6 @@ const ProductsTable = ({
     console.log("row item", row.original.id);
     console.log("from props", itemVariant?.id);
     if (location.pathname.includes("producto" || "kit")) {
-      console.log(row.original);
       setItemVariant(row.original);
       return;
     }
@@ -155,14 +154,14 @@ const ProductsTable = ({
 
   return (
     <div className="mt-6">
-      <Card className="border">
+      <Card className="border overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    className="bg-[#333333] text-[#C4C4C4]"
+                    className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
                     key={header.id}
                   >
                     {header.isPlaceholder
@@ -178,27 +177,37 @@ const ProductsTable = ({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => handleClick(row)}
-                  className={`cursor-pointer hover:bg-gray-100 odd:bg-[#f5f5f5] even:bg-white`}
-                  style={{
-                    backgroundColor:
-                      row.original.id === itemVariant?.id ? "#d87e2e" : "",
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row, index) => {
+                const isLastRow = index - 1 === table.getRowModel().rows.length;
+                console.log;
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    onClick={() => handleClick(row)}
+                    className={`cursor-pointer hover:bg-gray-100 odd:bg-[#f5f5f5] even:bg-white`}
+                    style={{
+                      backgroundColor:
+                        row.original.id === itemVariant?.id ? "#d87e2e" : "",
+                      borderBottomLeftRadius: isLastRow
+                        ? "12px !important"
+                        : "0",
+                      borderBottomRightRadius: isLastRow
+                        ? "12px !important"
+                        : "0",
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell
