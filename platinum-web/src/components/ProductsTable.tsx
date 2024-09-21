@@ -27,11 +27,13 @@ const ProductsTable = ({
   data,
   itemVariant,
   setItemVariant,
+  reference,
 }: {
   category: Category | null;
   data?: Variant[] | null;
   itemVariant?: Variant | null;
   setItemVariant?: React.Dispatch<React.SetStateAction<Variant | null>>;
+  reference?: string;
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { variantAttributes, products, kits } = category || {};
@@ -90,6 +92,11 @@ const ProductsTable = ({
         header: "Nombre",
         cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
       },
+      {
+        accessorKey: "type",
+        // header: "Nombre",
+        // cell: ({ row }: { row: any }) => <div>{row.getValue("type")}</div>,
+      },
     ];
 
     const dynamicColumns =
@@ -136,8 +143,6 @@ const ProductsTable = ({
   });
 
   const handleClick = (row: any) => {
-    console.log("row item", row.original.id);
-    console.log("from props", itemVariant?.id);
     if (location.pathname.includes("producto" || "kit")) {
       setItemVariant(row.original);
       return;

@@ -81,16 +81,27 @@ const ProductDetail = () => {
     }
   }, [item]);
 
+  if (type === "product") {
+  }
   const mappedCategoryAttributes = category?.categoryAttributes
     ?.filter((catAttr) => {
-      return item?.productCategoryAttributes?.some(
-        (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
-      );
+      return type === "product"
+        ? item?.productCategoryAttributes?.some(
+            (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
+          )
+        : item?.kitCategoryAttributes?.some(
+            (kitAttr) => kitAttr.idCategoryAttribute === catAttr.id
+          );
     })
     .map((catAttr) => {
-      const matchingProductAttr = item?.productCategoryAttributes?.find(
-        (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
-      );
+      const matchingProductAttr =
+        type === "product"
+          ? item?.productCategoryAttributes?.find(
+              (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
+            )
+          : item?.kitCategoryAttributes?.find(
+              (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
+            );
 
       return {
         name: catAttr.name,
@@ -105,9 +116,17 @@ const ProductDetail = () => {
 
   const mappedProductVariantAttributes = category?.variantAttributes
     ?.filter((proVarAttr) =>
-      item?.productVariants?.map((proVar) =>
-        proVar.variantAttributes.some((varAttr) => varAttr.id === proVarAttr.id)
-      )
+      type === "product"
+        ? item?.productVariants?.map((proVar) =>
+            proVar.variantAttributes.some(
+              (varAttr) => varAttr.id === proVarAttr.id
+            )
+          )
+        : item?.kitVariants?.map((proVar) =>
+            proVar.variantAttributes.some(
+              (varAttr) => varAttr.id === proVarAttr.id
+            )
+          )
     )
     .map((filteredAttr) => {
       const productAttribute = itemVariant?.variantAttributes?.find(
@@ -317,7 +336,9 @@ const ProductDetail = () => {
             <TabsContent value="compatibilidades">
               <ProductsTable
                 category={category}
-                data={item?.productVariants}
+                data={
+                  type === "product" ? item?.productVariants : item?.kitVariants
+                }
                 itemVariant={itemVariant}
                 setItemVariant={setItemVariant}
               />

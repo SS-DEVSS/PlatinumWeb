@@ -64,8 +64,6 @@ const Catalogo = ({}: CatalogoProps) => {
     }
   };
 
-  // console.log(category);
-
   return (
     <PlatinumLayout>
       <section className="bg-hero-catalog bg-cover pl-20 pb-14">
@@ -174,7 +172,7 @@ const Catalogo = ({}: CatalogoProps) => {
             </Button>
           </div>
         )}
-        <ProductsTable category={category} />
+        <ProductsTable category={category} reference={form.referencia} />
       </main>
     </PlatinumLayout>
   );
