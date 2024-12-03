@@ -33,7 +33,7 @@ export type Variant = {
   price: number;
   stockQuantity: number;
   images: [];
-  variantAttributes: Attribute[];
+  attributeValues: Attribute[];
   productVariants?: ComponentVariant[];
 };
 

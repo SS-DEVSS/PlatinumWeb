@@ -21,6 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Category } from "../models/category";
 import { Attribute, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
+import { useProducts } from "../hooks/useProducts";
 
 const ProductsTable = ({
   category,
@@ -36,31 +37,31 @@ const ProductsTable = ({
   reference?: string;
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
-  const { variantAttributes, products, kits } = category || {};
+  const { variantAttributes } = category || {};
+  const { products } = useProducts();
 
   const location = useLocation();
   const navigate = useNavigate();
   const { setType } = useItemContext();
 
   useEffect(() => {
-    const flattenVariants = (items: any, type: string) => {
+    const flattenVariants = (items: any) => {
       return items.flatMap((item: any) => {
-        const variants =
-          type === "product" ? item.productVariants : item.kitVariants;
+        const variants = item.variants;
         return variants.map((variant: Variant) => ({
           id: variant.id,
-          idParent: type === "product" ? variant.idProduct : variant.idKit,
+          idParent: variant.idProduct,
           sku: variant.sku,
           name: variant.name,
-          type,
-          attributes: variant.variantAttributes.map((attribute: Attribute) => ({
-            id: attribute.id,
-            valueString: attribute.valueString,
-            valueNumber: attribute.valueNumber,
-            valueBoolean: attribute.valueBoolean,
-            valueDate: attribute.valueDate,
-            idVariantAttribute: attribute.idVariantAttribute,
-          })),
+          attributeValues: variant.attributeValues.map(
+            (attribute: Attribute) => ({
+              id: attribute.id,
+              valueString: attribute.valueString,
+              valueNumber: attribute.valueNumber,
+              valueBoolean: attribute.valueBoolean,
+              valueDate: attribute.valueDate,
+            })
+          ),
         }));
       });
     };
@@ -71,14 +72,10 @@ const ProductsTable = ({
     ) {
       setMappedData(data || []);
     } else {
-      const mappedProducts = products
-        ? flattenVariants(products, "product")
-        : [];
-      const mappedKits = kits ? flattenVariants(kits, "kit") : [];
-
-      setMappedData([...mappedProducts, ...mappedKits]);
+      const mappedProducts = flattenVariants(products);
+      setMappedData([...mappedProducts]);
     }
-  }, [products, kits, data, location]);
+  }, [products, data, location]);
 
   const columns = useMemo(() => {
     const initialColumns = [

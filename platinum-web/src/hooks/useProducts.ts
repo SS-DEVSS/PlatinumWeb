@@ -9,8 +9,14 @@ export const useProducts = () => {
   //   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    client.get("/products").then((response) => setProducts(response.data));
+    getProducts();
   }, []);
+
+  const getProducts = async () => {
+    const { data } = await client.get("/products?type=");
+    setProducts(data);
+    return data;
+  };
 
   const getProductById = async (id: string) => {
     const response = await client.get(`/products/${id}`);
