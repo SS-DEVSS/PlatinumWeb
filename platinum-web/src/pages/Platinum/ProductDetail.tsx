@@ -31,9 +31,9 @@ import {
 import ProductsTable from "../../components/ProductsTable";
 import { useEffect, useState } from "react";
 import { useProducts } from "../../hooks/useProducts";
-import { Attribute, Item, Variant } from "../../models/item";
+import { Item, Variant } from "../../models/item";
 import { useItemContext } from "../../context/Item-context";
-import { Category, CategoryAtribute } from "../../models/category";
+import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 
 const ProductDetail = () => {
@@ -60,8 +60,8 @@ const ProductDetail = () => {
           }
         } else {
           const data = await getProductById(itemId);
+          console.log(data);
           setItem(data);
-
           if (data.productVariants && data.productVariants.length > 0) {
             setItemVariant(data.productVariants[0]);
           }
@@ -81,9 +81,7 @@ const ProductDetail = () => {
     }
   }, [item]);
 
-  if (type === "product") {
-  }
-  const mappedCategoryAttributes = category?.categoryAttributes
+  const mappedCategoryAttributes = category?.attributes?.variant
     ?.filter((catAttr) => {
       return type === "product"
         ? item?.productCategoryAttributes?.some(
@@ -144,10 +142,6 @@ const ProductDetail = () => {
       };
     });
 
-  if (type === "kit") {
-    const mappedKitVariantComponents = itemVariant?.productVariants;
-  }
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
       () => {
@@ -207,15 +201,16 @@ const ProductDetail = () => {
             <Card className="px-16">
               <Carousel className="w-full">
                 <CarouselContent>
-                  {itemVariant?.images.map((_, index) => (
+                  {itemVariant?.images.map((image, index) => (
                     <CarouselItem key={index}>
                       <div className="p-1">
                         <Card className="border-none">
                           <CardContent className="flex aspect-square items-center justify-center p-6">
                             {/* Cambiar esto, esperando estructura */}
-                            <span className="text-4xl font-semibold">
+                            {/* <span className="text-4xl font-semibold">
                               {index + 1}
-                            </span>
+                            </span> */}
+                            <img src={image.url} />
                           </CardContent>
                         </Card>
                       </div>
@@ -337,7 +332,7 @@ const ProductDetail = () => {
               <ProductsTable
                 category={category}
                 data={
-                  type === "product" ? item?.productVariants : item?.kitVariants
+                  type === "single" ? item?.productVariants : item?.kitVariants
                 }
                 itemVariant={itemVariant}
                 setItemVariant={setItemVariant}

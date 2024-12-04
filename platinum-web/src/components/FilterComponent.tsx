@@ -14,10 +14,10 @@ import {
 } from "../components/ui/popover";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-import { Category, CategoryAtribute } from "../models/category";
+import { Attribute, Category } from "../models/category";
 
 type FilterComponentProps = {
-  attribute: CategoryAtribute;
+  attribute: Attribute;
   category: Category;
   open: boolean;
   selectedValue: string;
@@ -74,7 +74,7 @@ const FilterComponent = ({
               No se encontró {attribute.name.toLowerCase()}.
             </CommandEmpty>
             <CommandGroup>
-              {category.categoryAttributes?.map((attribute) => (
+              {category.attributes?.variant?.map((attribute: Attribute) => (
                 <CommandItem
                   key={attribute.id}
                   value={attribute.name}

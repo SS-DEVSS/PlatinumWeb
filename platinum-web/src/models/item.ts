@@ -1,56 +1,39 @@
-import { CategoryAtribute } from "./category";
-import { Document } from "./document";
+import { TechnicalSheet } from "./techincalSheet";
 import { Note } from "./note";
 import { Reference } from "./reference";
+import { Image } from "./image";
 
 export type Item = {
   id: string;
   name: string;
-  sku: string;
+  type: "SINGLE" | "KIT";
   description: string;
-  notes: Note[];
-  documents: Document[];
   category: {
     id: string;
     name: string;
   };
   references: Reference[];
   variants?: Variant[];
-  kitVariants?: Variant[];
-  productVariants?: Variant[];
-  productCategoryAttributes?: Attribute[];
-  kitCategoryAttributes?: Attribute[];
-  attributes?: CategoryAtribute[];
 };
 
 export type Variant = {
   id: string;
   idProduct?: string;
-  idKit?: string;
-  idParent?: string;
   name: string;
   sku: string;
   price: number;
   stockQuantity: number;
-  images: [];
-  attributeValues: Attribute[];
-  productVariants?: ComponentVariant[];
+  notes: Note[];
+  technicalSheets: TechnicalSheet[];
+  images: Image[];
+  kitItems?: Item[];
+  attributeValues: AttributeValue[];
 };
 
-export type Attribute = {
+export interface AttributeValue {
   id: string;
-  valueString: string | null;
-  valueNumber: number | null;
-  valueBoolean: boolean | null;
-  valueDate: Date | null;
-  idVariantAttribute: string;
-  idCategoryAttribute: string;
-};
-
-export type ComponentVariant = {
-  id: string;
-  name: string;
-  sku: string;
-  price: number;
-  stockQuantity: number;
-};
+  valueString?: string | null;
+  valueNumber?: number | null;
+  valueBoolean?: boolean | null;
+  valueDate?: Date | null;
+}

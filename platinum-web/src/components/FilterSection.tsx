@@ -12,8 +12,8 @@ const FilterSection = ({ category }: FilterSectionProps) => {
   }>({});
 
   useEffect(() => {
-    if (category?.categoryAttributes) {
-      const initialStates = category.categoryAttributes.reduce(
+    if (category?.attributes) {
+      const initialStates = category.attributes.variant?.reduce(
         (acc, attribute, index) => {
           acc[attribute.id] = {
             open: false,
@@ -30,7 +30,7 @@ const FilterSection = ({ category }: FilterSectionProps) => {
           };
         }
       );
-      setAttributeStates(initialStates);
+      setAttributeStates(initialStates!);
     }
   }, [category]);
 
@@ -85,8 +85,8 @@ const FilterSection = ({ category }: FilterSectionProps) => {
 
   return (
     <div className="flex gap-4">
-      {category?.categoryAttributes !== undefined &&
-        category?.categoryAttributes?.map((attribute) => (
+      {category?.attributes !== undefined &&
+        category?.attributes?.variant?.map((attribute) => (
           <FilterComponent
             key={attribute.id}
             attribute={attribute}

@@ -19,9 +19,9 @@ export const useProducts = () => {
   };
 
   const getProductById = async (id: string) => {
-    const response = await client.get(`/products/${id}`);
-    setProduct(response.data);
-    return response.data;
+    const { data } = await client.get(`/products/${id}`);
+    setProduct(data);
+    return data;
   };
 
   const getKitById = async (id: string) => {

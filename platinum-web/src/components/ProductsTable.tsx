@@ -19,7 +19,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useEffect, useMemo, useState } from "react";
 import { Category } from "../models/category";
-import { Attribute, Variant } from "../models/item";
+import { AttributeValue, Item, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 import { useProducts } from "../hooks/useProducts";
 
@@ -28,7 +28,6 @@ const ProductsTable = ({
   data,
   itemVariant,
   setItemVariant,
-  reference,
 }: {
   category: Category | null;
   data?: Variant[] | null;
@@ -37,7 +36,7 @@ const ProductsTable = ({
   reference?: string;
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
-  const { variantAttributes } = category || {};
+  const { attributes } = category || {};
   const { products } = useProducts();
 
   const location = useLocation();
@@ -45,16 +44,16 @@ const ProductsTable = ({
   const { setType } = useItemContext();
 
   useEffect(() => {
-    const flattenVariants = (items: any) => {
-      return items.flatMap((item: any) => {
+    const flattenVariants = (items: Item[]) => {
+      return items.flatMap((item: Item) => {
         const variants = item.variants;
-        return variants.map((variant: Variant) => ({
+        return variants?.map((variant: Variant) => ({
           id: variant.id,
           idParent: variant.idProduct,
           sku: variant.sku,
           name: variant.name,
           attributeValues: variant.attributeValues.map(
-            (attribute: Attribute) => ({
+            (attribute: AttributeValue) => ({
               id: attribute.id,
               valueString: attribute.valueString,
               valueNumber: attribute.valueNumber,
@@ -67,7 +66,7 @@ const ProductsTable = ({
     };
 
     if (
-      location.pathname.includes("product") ||
+      location.pathname.includes("producto") ||
       location.pathname.includes("kit")
     ) {
       setMappedData(data || []);
@@ -89,23 +88,18 @@ const ProductsTable = ({
         header: "Nombre",
         cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
       },
-      {
-        accessorKey: "type",
-        // header: "Nombre",
-        // cell: ({ row }: { row: any }) => <div>{row.getValue("type")}</div>,
-      },
     ];
 
     const dynamicColumns =
-      variantAttributes?.map((attribute) => ({
+      attributes?.variant?.map((attribute) => ({
         accessorKey: attribute.id,
         header: attribute.name,
         cell: ({ row }: { row: any }) => {
           const attributes = location.pathname.includes("producto" || "kit")
-            ? row.original.variantAttributes
+            ? row.original.attributes
             : row.original.attributes || [];
           const value = attributes.find(
-            (attr: Attribute) => attr.idVariantAttribute === attribute.id
+            (attr: AttributeValue) => attr.id === attribute.id
           );
           return (
             <div>
@@ -119,7 +113,7 @@ const ProductsTable = ({
         },
       })) || [];
     return [...initialColumns, ...dynamicColumns];
-  }, [variantAttributes]);
+  }, [attributes]);
 
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
@@ -142,6 +136,7 @@ const ProductsTable = ({
   const handleClick = (row: any) => {
     if (location.pathname.includes("producto" || "kit")) {
       setItemVariant(row.original);
+
       return;
     }
     const type = row.getValue("type");
@@ -149,7 +144,7 @@ const ProductsTable = ({
       setType("kit");
       navigate(`/kit/${row.original.idParent}`);
     } else {
-      setType("product");
+      setType("single");
       navigate(`/producto/${row.original.idParent}`);
     }
   };

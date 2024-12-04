@@ -154,7 +154,7 @@ const Catalogo = ({}: CatalogoProps) => {
           </div>
         </div>
       </section>
-      <main className="px-20 py-8 bg-[#E4E4E4]">
+      <section className="px-20 py-8 bg-[#E4E4E4]">
         {form.filtro === "Vehiculo" ? (
           <FilterSection category={category} />
         ) : (
@@ -173,7 +173,7 @@ const Catalogo = ({}: CatalogoProps) => {
           </div>
         )}
         <ProductsTable category={category} reference={form.referencia} />
-      </main>
+      </section>
     </PlatinumLayout>
   );
 };
