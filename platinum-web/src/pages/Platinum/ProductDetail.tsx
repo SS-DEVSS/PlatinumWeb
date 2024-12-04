@@ -1,12 +1,12 @@
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
 import { useNavigate, useParams } from "react-router-dom";
 import { MoveLeft, Share2, Download } from "lucide-react";
-// import {
-//   Accordion,
-//   AccordionContent,
-//   AccordionItem,
-//   AccordionTrigger,
-// } from "../../components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../../components/ui/accordion";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -31,14 +31,15 @@ import {
 import ProductsTable from "../../components/ProductsTable";
 import { useEffect, useState } from "react";
 import { useProducts } from "../../hooks/useProducts";
-import { Item, Variant } from "../../models/item";
+import { AttributeValue, Item, Variant } from "../../models/item";
 import { useItemContext } from "../../context/Item-context";
 import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
+import { TechnicalSheet } from "../../models/techincalSheet";
 
 const ProductDetail = () => {
   const { type } = useItemContext();
-  const { getProductById, getKitById } = useProducts();
+  const { getProductById } = useProducts();
   const { getCategoryById } = useCategories();
 
   const navigate = useNavigate();
@@ -51,20 +52,10 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (itemId) {
-        if (type === "kit") {
-          const data = await getKitById(itemId);
-          setItem(data);
-
-          if (data.kitVariants && data.kitVariants.length > 0) {
-            setItemVariant(data.kitVariants[0]);
-          }
-        } else {
-          const data = await getProductById(itemId);
-          console.log(data);
-          setItem(data);
-          if (data.productVariants && data.productVariants.length > 0) {
-            setItemVariant(data.productVariants[0]);
-          }
+        const data = await getProductById(itemId);
+        setItem(data);
+        if (data.variants && data.variants.length > 0) {
+          setItemVariant(data.variants[0]);
         }
       }
     };
@@ -81,66 +72,57 @@ const ProductDetail = () => {
     }
   }, [item]);
 
-  const mappedCategoryAttributes = category?.attributes?.variant
-    ?.filter((catAttr) => {
-      return type === "product"
-        ? item?.productCategoryAttributes?.some(
-            (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
-          )
-        : item?.kitCategoryAttributes?.some(
-            (kitAttr) => kitAttr.idCategoryAttribute === catAttr.id
-          );
-    })
-    .map((catAttr) => {
-      const matchingProductAttr =
-        type === "product"
-          ? item?.productCategoryAttributes?.find(
-              (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
-            )
-          : item?.kitCategoryAttributes?.find(
-              (prodAttr) => prodAttr.idCategoryAttribute === catAttr.id
-            );
+  // console.log(item);
+  // console.log(itemVariant);
 
-      return {
-        name: catAttr.name,
-        value:
-          matchingProductAttr?.valueString ||
-          matchingProductAttr?.valueNumber ||
-          matchingProductAttr?.valueBoolean ||
-          matchingProductAttr?.valueDate ||
-          "N/A",
-      };
-    });
+  // const mappedCategoryAttributes = category?.attributes?.variant?.filter();
 
-  const mappedProductVariantAttributes = category?.variantAttributes
-    ?.filter((proVarAttr) =>
-      type === "product"
-        ? item?.productVariants?.map((proVar) =>
-            proVar.variantAttributes.some(
-              (varAttr) => varAttr.id === proVarAttr.id
-            )
-          )
-        : item?.kitVariants?.map((proVar) =>
-            proVar.variantAttributes.some(
-              (varAttr) => varAttr.id === proVarAttr.id
-            )
-          )
+  // const mappedProductVariantAttributes = category?.variantAttributes
+  //   ?.filter((proVarAttr) =>
+  //     type === "product"
+  //       ? item?.productVariants?.map((proVar) =>
+  //           proVar.variantAttributes.some(
+  //             (varAttr) => varAttr.id === proVarAttr.id
+  //           )
+  //         )
+  //       : item?.kitVariants?.map((proVar) =>
+  //           proVar.variantAttributes.some(
+  //             (varAttr) => varAttr.id === proVarAttr.id
+  //           )
+  //         )
+  //   )
+  //   .map((filteredAttr) => {
+  //     const productAttribute = itemVariant?.variantAttributes?.find(
+  //       (attr) => attr.idVariantAttribute === filteredAttr.id
+  //     );
+
+  //     return {
+  //       name: filteredAttr.name,
+  //       value:
+  //         productAttribute?.valueString ||
+  //         productAttribute?.valueNumber ||
+  //         productAttribute?.valueBoolean ||
+  //         productAttribute?.valueDate ||
+  //         "N/A",
+  //     };
+  //   });
+
+  const mappedProductVariants = category?.products?.map((product: Item) =>
+    product.variants?.map((variant: Variant) =>
+      variant?.attributeValues?.map((attributeValue: AttributeValue) => {
+        return {
+          name: "Test",
+          value:
+            attributeValue.valueBoolean ||
+            attributeValue.valueDate ||
+            attributeValue.valueNumber ||
+            attributeValue.valueString,
+        };
+      })
     )
-    .map((filteredAttr) => {
-      const productAttribute = itemVariant?.variantAttributes?.find(
-        (attr) => attr.idVariantAttribute === filteredAttr.id
-      );
+  );
 
-      return {
-        name: filteredAttr.name,
-        value:
-          productAttribute?.valueString ||
-          productAttribute?.valueNumber ||
-          productAttribute?.valueBoolean ||
-          productAttribute?.valueDate ||
-          "N/A",
-      };
-    });
+  console.log(mappedProductVariants);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
@@ -204,12 +186,8 @@ const ProductDetail = () => {
                   {itemVariant?.images.map((image, index) => (
                     <CarouselItem key={index}>
                       <div className="p-1">
-                        <Card className="border-none">
+                        <Card className="border-none shadow-none">
                           <CardContent className="flex aspect-square items-center justify-center p-6">
-                            {/* Cambiar esto, esperando estructura */}
-                            {/* <span className="text-4xl font-semibold">
-                              {index + 1}
-                            </span> */}
                             <img src={image.url} />
                           </CardContent>
                         </Card>
@@ -228,14 +206,14 @@ const ProductDetail = () => {
           <Tabs defaultValue="details">
             <TabsList
               className={`${
-                type === "kit" ? "grid-cols-3" : "grid-cols-2"
+                type === "KIT" ? "grid-cols-3" : "grid-cols-2"
               } grid w-full 2xl:w-[60%]`}
             >
               <TabsTrigger value="details">Detalles</TabsTrigger>
               <TabsTrigger value="compatibilidades">
                 Compatibilidades
               </TabsTrigger>
-              {type === "kit" && (
+              {type === "KIT" && (
                 <TabsTrigger value="componentes">Componentes</TabsTrigger>
               )}
             </TabsList>
@@ -244,7 +222,7 @@ const ProductDetail = () => {
                 <CardHeader className="bg-[#333333] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
                   <CardTitle className="text-lg">Características</CardTitle>
                 </CardHeader>
-                <section>
+                {/* <section>
                   {mappedCategoryAttributes?.map((attr, index) => (
                     <>
                       <div
@@ -261,10 +239,10 @@ const ProductDetail = () => {
                       )}
                     </>
                   ))}
-                </section>
+                </section> */}
               </Card>
 
-              {itemVariant?.variantAttributes.length! > 0 && (
+              {/* {itemVariant?.variantAttributes.length! > 0 && (
                 <Card className="mt-4 border-none shadow-md">
                   <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
                     <CardTitle className="text-lg">Atributos</CardTitle>
@@ -285,9 +263,9 @@ const ProductDetail = () => {
                     </>
                   </section>
                 </Card>
-              )}
+              )} */}
 
-              {/* {itemVariant?.notes && (
+              {itemVariant?.notes && (
                 <Card className="mt-4 border-none shadow-md">
                   <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
                     <CardTitle className="text-lg">Notas</CardTitle>
@@ -300,46 +278,52 @@ const ProductDetail = () => {
                             index % 2 === 0 ? "bg-white" : "bg-[#d7d7d7]"
                           } px-4 flex gap-3 py-3 last:rounded-b-lg`}
                         >
-                          <p>{note.value}</p>
+                          <p>{note.note}</p>
                         </div>
-                        {index !== itemVariant.notes.length - 1 && <Separator />}
+                        {index !== itemVariant.notes.length - 1 && (
+                          <Separator />
+                        )}
                       </div>
                     ))}
                   </section>
                 </Card>
-              )} */}
+              )}
 
-              {/* {product?.tecnicalSheet && (
+              {itemVariant?.technicalSheets && (
                 <Card className="mt-4 border-none shadow-md">
                   <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
                     <CardTitle className="text-lg">Documentos</CardTitle>
                   </CardHeader>
                   <section className="flex flex-wrap gap-3 p-4">
-                    {product.tecnicalSheet.map((sheet:Document, index:number) => (
-                      <div
-                        key={index}
-                        className="rounded-lg text-white px-5 py-3 bg-black flex gap-3 hover:cursor-pointer"
-                      >
-                        <Download className="w-5" />
-                        {sheet.title}
-                      </div>
-                    ))}
+                    {itemVariant.technicalSheets.map(
+                      (sheet: TechnicalSheet) => (
+                        <a
+                          href={sheet.url}
+                          key={sheet.id}
+                          target="_blank"
+                          download
+                        >
+                          <div className="rounded-lg text-white px-5 py-3 bg-black flex gap-3 hover:cursor-pointer">
+                            <Download className="w-5" />
+                            {sheet.title}
+                          </div>
+                        </a>
+                      )
+                    )}
                   </section>
                 </Card>
-              )} */}
+              )}
             </TabsContent>
             <TabsContent value="compatibilidades">
               <ProductsTable
                 category={category}
-                data={
-                  type === "single" ? item?.productVariants : item?.kitVariants
-                }
+                data={item?.variants}
                 itemVariant={itemVariant}
                 setItemVariant={setItemVariant}
               />
             </TabsContent>
-            {/* <TabsContent value="componentes">
-              {mappedKitProductsVariant.map((component) => (
+            <TabsContent value="componentes">
+              {itemVariant?.kitItems?.map((component) => (
                 <Accordion
                   type="single"
                   collapsible
@@ -347,17 +331,17 @@ const ProductDetail = () => {
                 >
                   <AccordionItem value="item-1">
                     <AccordionTrigger>
-                      <p>{component?.matchingProduct.name}</p>
+                      <p>{component?.name}</p>
                     </AccordionTrigger>
                     <AccordionContent>
-                      {component?.matchingProduct.variantAttributes.map(
-                        (attribute:Attribute) => attribute.id
-                      )}
+                      {mappedProductVariants?.map((attribute) => (
+                        <p>a</p>
+                      ))}
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
               ))}
-            </TabsContent> */}
+            </TabsContent>
           </Tabs>
         </section>
       </div>

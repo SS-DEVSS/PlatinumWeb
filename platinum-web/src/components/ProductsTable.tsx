@@ -43,36 +43,46 @@ const ProductsTable = ({
   const navigate = useNavigate();
   const { setType } = useItemContext();
 
-  useEffect(() => {
-    const flattenVariants = (items: Item[]) => {
-      return items.flatMap((item: Item) => {
-        const variants = item.variants;
-        return variants?.map((variant: Variant) => ({
-          id: variant.id,
-          idParent: variant.idProduct,
-          sku: variant.sku,
-          name: variant.name,
-          attributeValues: variant.attributeValues.map(
-            (attribute: AttributeValue) => ({
-              id: attribute.id,
-              valueString: attribute.valueString,
-              valueNumber: attribute.valueNumber,
-              valueBoolean: attribute.valueBoolean,
-              valueDate: attribute.valueDate,
-            })
-          ),
-        }));
-      });
-    };
+  // console.log("products", products);
 
+  const flattenVariants = (items: Item[]) => {
+    return items.flatMap((item: Item) => {
+      const type = item.type;
+      const variants = item.variants;
+      return variants?.map((variant: Variant) => ({
+        id: variant.id,
+        idParent: variant.idProduct,
+        sku: variant.sku,
+        name: variant.name,
+        type: type,
+        attributeValues: variant.attributeValues.map(
+          (attribute: AttributeValue) => ({
+            id: attribute.id,
+            valueString: attribute.valueString,
+            valueNumber: attribute.valueNumber,
+            valueBoolean: attribute.valueBoolean,
+            valueDate: attribute.valueDate,
+          })
+        ),
+      }));
+    });
+  };
+
+  useEffect(() => {
     if (
       location.pathname.includes("producto") ||
       location.pathname.includes("kit")
     ) {
-      setMappedData(data || []);
+      if (data) {
+        console.log("Mapped data from props:", data);
+        setMappedData(data);
+        console.log("Updated mappedData:", mappedData);
+      }
     } else {
-      const mappedProducts = flattenVariants(products);
-      setMappedData([...mappedProducts]);
+      const flattenedData = flattenVariants(products);
+      // console.log("Flattened data from products:", flattenedData);
+      setMappedData(flattenedData);
+      console.log("Updated mappedData:", mappedData);
     }
   }, [products, data, location]);
 
@@ -88,32 +98,44 @@ const ProductsTable = ({
         header: "Nombre",
         cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
       },
+      {
+        accessorKey: "type",
+        header: "Tipo",
+        cell: ({ row }: { row: any }) => (
+          <div>{row.getValue("type") === "SINGLE" ? "Componente" : "Kit"}</div>
+        ),
+      },
     ];
 
-    const dynamicColumns =
-      attributes?.variant?.map((attribute) => ({
-        accessorKey: attribute.id,
-        header: attribute.name,
-        cell: ({ row }: { row: any }) => {
-          const attributes = location.pathname.includes("producto" || "kit")
-            ? row.original.attributes
-            : row.original.attributes || [];
-          const value = attributes.find(
-            (attr: AttributeValue) => attr.id === attribute.id
-          );
-          return (
-            <div>
-              {value?.valueString ||
-                value?.valueNumber ||
-                value?.valueBoolean?.toString() ||
-                value?.valueDate ||
-                ""}
-            </div>
-          );
-        },
-      })) || [];
-    return [...initialColumns, ...dynamicColumns];
-  }, [attributes]);
+    console.log("attributes", attributes);
+
+    // const dynamicColumns =
+    //   attributes?.variant?.map((attribute) => ({
+    //     accessorKey: attribute.id,
+    //     header: attribute.name,
+    //     cell: ({ row }: { row: any }) => {
+    //       const attributes =
+    //         location.pathname.includes("producto") ||
+    //         location.pathname.includes("kit")
+    //           ? row.original.attributes
+    //           : row.original.attributes || [];
+    //       const value = attributes.find(
+    //         (attr: AttributeValue) => attr.id === attribute.id
+    //       );
+    //       return (
+    //         <div>
+    //           {value?.valueString ||
+    //             value?.valueNumber ||
+    //             value?.valueBoolean?.toString() ||
+    //             value?.valueDate ||
+    //             ""}
+    //         </div>
+    //       );
+    //     },
+    //   })) || [];
+    // return [...initialColumns, ...dynamicColumns];
+    return [...initialColumns];
+  }, [attributes, location]);
 
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
@@ -134,17 +156,21 @@ const ProductsTable = ({
   });
 
   const handleClick = (row: any) => {
-    if (location.pathname.includes("producto" || "kit")) {
-      setItemVariant(row.original);
-
+    if (
+      location.pathname.includes("producto") ||
+      location.pathname.includes("kit")
+    ) {
+      if (setItemVariant) {
+        setItemVariant(row.original);
+      }
       return;
     }
     const type = row.getValue("type");
-    if (type === "kit") {
-      setType("kit");
+    if (type === "KIT") {
+      setType("KIT");
       navigate(`/kit/${row.original.idParent}`);
     } else {
-      setType("single");
+      setType("SINGLE");
       navigate(`/producto/${row.original.idParent}`);
     }
   };
@@ -176,7 +202,6 @@ const ProductsTable = ({
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row, index) => {
                 const isLastRow = index - 1 === table.getRowModel().rows.length;
-                console.log;
                 return (
                   <TableRow
                     key={row.id}

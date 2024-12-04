@@ -1,8 +1,8 @@
 import { createContext, useContext, useState } from "react";
 
 type ItemContextType = {
-  type: "kit" | "single" | "";
-  setType: React.Dispatch<React.SetStateAction<"kit" | "single" | "">>;
+  type: "KIT" | "SINGLE" | "";
+  setType: React.Dispatch<React.SetStateAction<"KIT" | "SINGLE" | "">>;
 };
 
 const ItemContext = createContext<ItemContextType>({} as ItemContextType);
@@ -22,7 +22,7 @@ export const ItemContextProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [type, setType] = useState<"kit" | "single" | "">("");
+  const [type, setType] = useState<"KIT" | "SINGLE" | "">("");
   return (
     <ItemContext.Provider value={{ type, setType }}>
       {children}
