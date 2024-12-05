@@ -107,6 +107,27 @@ const ProductDetail = () => {
   //     };
   //   });
 
+  const mappedProductVariantAttributes = category?.attributes?.variant
+    ?.filter((proVarAttr) =>
+      item?.variants?.map((proVar) =>
+        proVar.attributeValues.some((varAttr) => varAttr.id === proVarAttr.id)
+      )
+    )
+    .map((filteredAttr) => {
+      const productAttribute = itemVariant?.attributeValues?.find(
+        (attr) => attr.id === filteredAttr.id
+      );
+      return {
+        name: filteredAttr.name,
+        value:
+          productAttribute?.valueString ||
+          productAttribute?.valueNumber ||
+          productAttribute?.valueBoolean ||
+          productAttribute?.valueDate ||
+          "N/A",
+      };
+    });
+
   const mappedProductVariants = category?.products?.map((product: Item) =>
     product.variants?.map((variant: Variant) =>
       variant?.attributeValues?.map((attributeValue: AttributeValue) => {
@@ -242,7 +263,7 @@ const ProductDetail = () => {
                 </section> */}
               </Card>
 
-              {/* {itemVariant?.variantAttributes.length! > 0 && (
+              {itemVariant?.attributeValues.length! > 0 && (
                 <Card className="mt-4 border-none shadow-md">
                   <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
                     <CardTitle className="text-lg">Atributos</CardTitle>
@@ -263,7 +284,7 @@ const ProductDetail = () => {
                     </>
                   </section>
                 </Card>
-              )} */}
+              )}
 
               {itemVariant?.notes && (
                 <Card className="mt-4 border-none shadow-md">
