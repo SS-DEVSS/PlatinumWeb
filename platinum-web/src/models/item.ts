@@ -14,6 +14,7 @@ export type Item = {
   };
   references: Reference[];
   variants?: Variant[];
+  attributeValues: AttributeValue[];
 };
 
 export type Variant = {

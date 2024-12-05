@@ -36,6 +36,7 @@ import { useItemContext } from "../../context/Item-context";
 import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 import { TechnicalSheet } from "../../models/techincalSheet";
+import { ProductAttributes } from "../../components/ProductAttributes";
 
 const ProductDetail = () => {
   const { type } = useItemContext();
@@ -73,60 +74,6 @@ const ProductDetail = () => {
   }, [item]);
 
   // console.log(item);
-  // console.log(itemVariant);
-
-  // const mappedCategoryAttributes = category?.attributes?.variant?.filter();
-
-  // const mappedProductVariantAttributes = category?.variantAttributes
-  //   ?.filter((proVarAttr) =>
-  //     type === "product"
-  //       ? item?.productVariants?.map((proVar) =>
-  //           proVar.variantAttributes.some(
-  //             (varAttr) => varAttr.id === proVarAttr.id
-  //           )
-  //         )
-  //       : item?.kitVariants?.map((proVar) =>
-  //           proVar.variantAttributes.some(
-  //             (varAttr) => varAttr.id === proVarAttr.id
-  //           )
-  //         )
-  //   )
-  //   .map((filteredAttr) => {
-  //     const productAttribute = itemVariant?.variantAttributes?.find(
-  //       (attr) => attr.idVariantAttribute === filteredAttr.id
-  //     );
-
-  //     return {
-  //       name: filteredAttr.name,
-  //       value:
-  //         productAttribute?.valueString ||
-  //         productAttribute?.valueNumber ||
-  //         productAttribute?.valueBoolean ||
-  //         productAttribute?.valueDate ||
-  //         "N/A",
-  //     };
-  //   });
-
-  const mappedProductVariantAttributes = category?.attributes?.variant
-    ?.filter((proVarAttr) =>
-      item?.variants?.map((proVar) =>
-        proVar.attributeValues.some((varAttr) => varAttr.id === proVarAttr.id)
-      )
-    )
-    .map((filteredAttr) => {
-      const productAttribute = itemVariant?.attributeValues?.find(
-        (attr) => attr.id === filteredAttr.id
-      );
-      return {
-        name: filteredAttr.name,
-        value:
-          productAttribute?.valueString ||
-          productAttribute?.valueNumber ||
-          productAttribute?.valueBoolean ||
-          productAttribute?.valueDate ||
-          "N/A",
-      };
-    });
 
   const mappedProductVariants = category?.products?.map((product: Item) =>
     product.variants?.map((variant: Variant) =>
@@ -143,7 +90,7 @@ const ProductDetail = () => {
     )
   );
 
-  console.log(mappedProductVariants);
+  // console.log(mappedProductVariants);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
@@ -239,51 +186,12 @@ const ProductDetail = () => {
               )}
             </TabsList>
             <TabsContent value="details">
-              <Card className="border-none shadow-md">
-                <CardHeader className="bg-[#333333] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
-                  <CardTitle className="text-lg">Características</CardTitle>
-                </CardHeader>
-                {/* <section>
-                  {mappedCategoryAttributes?.map((attr, index) => (
-                    <>
-                      <div
-                        key={index}
-                        className={`${
-                          index % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"
-                        } px-4 flex gap-3 py-3 last:rounded-b-lg`}
-                      >
-                        <p className="font-bold">{attr.name}:</p>
-                        <p>{attr.value}</p>
-                      </div>
-                      {index !== mappedCategoryAttributes.length - 1 && (
-                        <Separator />
-                      )}
-                    </>
-                  ))}
-                </section> */}
-              </Card>
-
-              {itemVariant?.attributeValues.length! > 0 && (
-                <Card className="mt-4 border-none shadow-md">
-                  <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
-                    <CardTitle className="text-lg">Atributos</CardTitle>
-                  </CardHeader>
-                  <section>
-                    <>
-                      {mappedProductVariantAttributes?.map((variant, index) => (
-                        <div
-                          key={index}
-                          className={`${
-                            index % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"
-                          } px-4 flex gap-3 py-3 last:rounded-b-lg`}
-                        >
-                          <p className="font-bold">{variant.name}:</p>
-                          <p>{variant.value}</p>
-                        </div>
-                      ))}
-                    </>
-                  </section>
-                </Card>
+              {category && item && itemVariant && (
+                <ProductAttributes
+                  selectedProduct={item}
+                  selectedVariant={itemVariant}
+                  category={category}
+                />
               )}
 
               {itemVariant?.notes && (
