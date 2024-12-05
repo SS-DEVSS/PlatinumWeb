@@ -37,4 +37,14 @@ export interface AttributeValue {
   valueNumber?: number | null;
   valueBoolean?: boolean | null;
   valueDate?: Date | null;
+  idAttribute: string;
+}
+
+export interface KitItem {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+  stockQuantity: number;
+  idProduct: string;
 }

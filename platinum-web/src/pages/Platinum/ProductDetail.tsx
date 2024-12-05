@@ -21,7 +21,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "../../components/ui/carousel";
-import { Separator } from "../../components/ui/separator";
 import {
   Tabs,
   TabsContent,
@@ -31,24 +30,27 @@ import {
 import ProductsTable from "../../components/ProductsTable";
 import { useEffect, useState } from "react";
 import { useProducts } from "../../hooks/useProducts";
-import { AttributeValue, Item, Variant } from "../../models/item";
+import { AttributeValue, Item, KitItem, Variant } from "../../models/item";
 import { useItemContext } from "../../context/Item-context";
-import { Category } from "../../models/category";
+import { Attribute, Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 import { TechnicalSheet } from "../../models/techincalSheet";
 import { ProductAttributes } from "../../components/ProductAttributes";
 
 const ProductDetail = () => {
+  const navigate = useNavigate();
+  let { itemId } = useParams();
+
   const { type } = useItemContext();
   const { getProductById } = useProducts();
   const { getCategoryById } = useCategories();
 
-  const navigate = useNavigate();
-  let { itemId } = useParams();
-
+  const [category, setCategory] = useState<Category | null>(null);
   const [item, setItem] = useState<Item | null>(null);
   const [itemVariant, setItemVariant] = useState<Variant | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
+  const [mappedProductComponents, setMappedProductComponents] = useState<
+    Array<any>
+  >([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,22 +77,77 @@ const ProductDetail = () => {
 
   // console.log(item);
 
-  const mappedProductVariants = category?.products?.map((product: Item) =>
-    product.variants?.map((variant: Variant) =>
-      variant?.attributeValues?.map((attributeValue: AttributeValue) => {
-        return {
-          name: "Test",
-          value:
-            attributeValue.valueBoolean ||
-            attributeValue.valueDate ||
-            attributeValue.valueNumber ||
-            attributeValue.valueString,
-        };
-      })
-    )
-  );
+  useEffect(() => {
+    if (!itemVariant?.kitItems) return;
 
-  // console.log(mappedProductVariants);
+    const fetchMappedKitItems = async () => {
+      try {
+        const mappedComponents = await Promise.all(
+          itemVariant.kitItems!.map(async (kitItem: KitItem) => {
+            const parentProduct = await getProductById(kitItem.idProduct);
+            if (!parentProduct) {
+              console.log(
+                `Parent product not found for kit item ${kitItem.id}`
+              );
+              return null;
+            }
+
+            const categoryParentProduct: Category | undefined =
+              await getCategoryById(parentProduct.category.id);
+
+            if (
+              !categoryParentProduct ||
+              !categoryParentProduct.attributes?.variant
+            ) {
+              console.log(
+                `Category or attributes missing for product ${parentProduct.id}`
+              );
+              return null;
+            }
+
+            console.log(parentProduct);
+            console.log(categoryParentProduct);
+
+            const mappedAttributes =
+              categoryParentProduct.attributes.variant.map(
+                (attribute: Attribute) => {
+                  const matchingAttributeValue =
+                    parentProduct.attributeValues.find(
+                      (attrValue: AttributeValue) =>
+                        attrValue.idAttribute === attribute.id
+                    );
+
+                  return {
+                    attributeName: attribute.name,
+                    attributeValue:
+                      matchingAttributeValue?.valueString ??
+                      matchingAttributeValue?.valueNumber ??
+                      matchingAttributeValue?.valueBoolean ??
+                      matchingAttributeValue?.valueDate ??
+                      "N/A",
+                  };
+                }
+              );
+
+            return {
+              kitItemName: kitItem.name,
+              kitItemSku: kitItem.sku,
+              kitItemPrice: kitItem.price,
+              attributes: mappedAttributes,
+            };
+          })
+        );
+
+        setMappedProductComponents(mappedComponents.filter(Boolean));
+      } catch (error) {
+        console.error("Error fetching kit items", error);
+      }
+    };
+
+    fetchMappedKitItems();
+  }, [itemVariant]);
+
+  console.log(mappedProductComponents);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
@@ -204,14 +261,11 @@ const ProductDetail = () => {
                       <div key={index}>
                         <div
                           className={`${
-                            index % 2 === 0 ? "bg-white" : "bg-[#d7d7d7]"
+                            index % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"
                           } px-4 flex gap-3 py-3 last:rounded-b-lg`}
                         >
                           <p>{note.note}</p>
                         </div>
-                        {index !== itemVariant.notes.length - 1 && (
-                          <Separator />
-                        )}
                       </div>
                     ))}
                   </section>
@@ -262,10 +316,27 @@ const ProductDetail = () => {
                     <AccordionTrigger>
                       <p>{component?.name}</p>
                     </AccordionTrigger>
-                    <AccordionContent>
-                      {mappedProductVariants?.map((attribute) => (
-                        <p>a</p>
-                      ))}
+                    <AccordionContent className="pb-0">
+                      {mappedProductComponents?.map((component) =>
+                        component.attributes.map(
+                          (attribute: any, index: number) => (
+                            <div
+                              key={index}
+                              className={`flex gap-3 py-3 ${
+                                component.attributes.indexOf(attribute) % 2 ===
+                                0
+                                  ? "bg-white"
+                                  : "bg-[#f5f5f5]"
+                              } px-4 last:rounded-b-lg`}
+                            >
+                              <p className="font-bold">
+                                {attribute.attributeName}:
+                              </p>
+                              <p>{attribute.attributeValue}</p>
+                            </div>
+                          )
+                        )
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>

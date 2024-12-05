@@ -14,7 +14,6 @@ export const ProductAttributes = ({
   category,
 }: ProductAttributesProps) => {
   const renderAttributes = (attributes: Attribute[], values: any[]) => {
-    console.log("attributes", attributes);
     return attributes.map((attribute) => {
       const valueObj = values.find((val) => val.idAttribute === attribute.id);
       const displayValue =
