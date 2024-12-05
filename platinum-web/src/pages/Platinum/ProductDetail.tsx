@@ -75,8 +75,6 @@ const ProductDetail = () => {
     }
   }, [item]);
 
-  // console.log(item);
-
   useEffect(() => {
     if (!itemVariant?.kitItems) return;
 
@@ -84,7 +82,7 @@ const ProductDetail = () => {
       try {
         const mappedComponents = await Promise.all(
           itemVariant.kitItems!.map(async (kitItem: KitItem) => {
-            const parentProduct = await getProductById(kitItem.idProduct);
+            const parentProduct: Item = await getProductById(kitItem.idProduct);
             if (!parentProduct) {
               console.log(
                 `Parent product not found for kit item ${kitItem.id}`
@@ -105,11 +103,8 @@ const ProductDetail = () => {
               return null;
             }
 
-            console.log(parentProduct);
-            console.log(categoryParentProduct);
-
             const mappedAttributes =
-              categoryParentProduct.attributes.variant.map(
+              categoryParentProduct.attributes.product?.map(
                 (attribute: Attribute) => {
                   const matchingAttributeValue =
                     parentProduct.attributeValues.find(
@@ -129,16 +124,40 @@ const ProductDetail = () => {
                 }
               );
 
+            const matchingProduct = parentProduct.variants?.find(
+              (variant: Variant) => variant.id === kitItem.id
+            );
+
+            const mappedAttributesVariant =
+              categoryParentProduct.attributes.variant.map(
+                (attribute: Attribute) => {
+                  const matchingAttributeVariantValue =
+                    matchingProduct?.attributeValues.find(
+                      (attributeValue: AttributeValue) =>
+                        attributeValue.idAttribute === attribute.id
+                    );
+                  return {
+                    attributeName: attribute.name,
+                    attributeValue:
+                      matchingAttributeVariantValue?.valueString ||
+                      matchingAttributeVariantValue?.valueNumber ||
+                      matchingAttributeVariantValue?.valueBoolean ||
+                      matchingAttributeVariantValue?.valueDate,
+                  };
+                }
+              );
+
             return {
               kitItemName: kitItem.name,
               kitItemSku: kitItem.sku,
               kitItemPrice: kitItem.price,
-              attributes: mappedAttributes,
+              attributes: [mappedAttributes, mappedAttributesVariant],
             };
           })
         );
 
         setMappedProductComponents(mappedComponents.filter(Boolean));
+        console.log(mappedComponents);
       } catch (error) {
         console.error("Error fetching kit items", error);
       }
@@ -147,7 +166,8 @@ const ProductDetail = () => {
     fetchMappedKitItems();
   }, [itemVariant]);
 
-  console.log(mappedProductComponents);
+  // console.log(itemVariant?.id);
+  // console.log(mappedProductComponents);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
@@ -317,26 +337,29 @@ const ProductDetail = () => {
                       <p>{component?.name}</p>
                     </AccordionTrigger>
                     <AccordionContent className="pb-0">
-                      {mappedProductComponents?.map((component) =>
-                        component.attributes.map(
-                          (attribute: any, index: number) => (
-                            <div
-                              key={index}
-                              className={`flex gap-3 py-3 ${
-                                component.attributes.indexOf(attribute) % 2 ===
-                                0
-                                  ? "bg-white"
-                                  : "bg-[#f5f5f5]"
-                              } px-4 last:rounded-b-lg`}
-                            >
-                              <p className="font-bold">
-                                {attribute.attributeName}:
-                              </p>
-                              <p>{attribute.attributeValue}</p>
-                            </div>
+                      {mappedProductComponents?.map((component) => {
+                        return component.attributes.map((attributeArray: any) =>
+                          attributeArray.map(
+                            (attribute: any, index: number) => (
+                              <div
+                                key={index}
+                                className={`flex gap-3 py-3 ${
+                                  component.attributes.indexOf(attribute) %
+                                    2 ===
+                                  0
+                                    ? "bg-white"
+                                    : "bg-[#f5f5f5]"
+                                } px-4 last:rounded-b-lg`}
+                              >
+                                <p className="font-bold">
+                                  {attribute.attributeName}:
+                                </p>
+                                <p>{attribute.attributeValue}</p>
+                              </div>
+                            )
                           )
-                        )
-                      )}
+                        );
+                      })}
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
