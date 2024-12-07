@@ -331,6 +331,7 @@ const ProductDetail = () => {
                   type="single"
                   collapsible
                   className="w-full rounded-lg bg-white mb-2"
+                  defaultValue="item-1"
                 >
                   <AccordionItem value="item-1">
                     <AccordionTrigger>
@@ -343,13 +344,9 @@ const ProductDetail = () => {
                             (attribute: any, index: number) => (
                               <div
                                 key={index}
-                                className={`flex gap-3 py-3 ${
-                                  component.attributes.indexOf(attribute) %
-                                    2 ===
-                                  0
-                                    ? "bg-white"
-                                    : "bg-[#f5f5f5]"
-                                } px-4 last:rounded-b-lg`}
+                                className={`flex gap-3 py-3 bg-white
+                                even:bg-[#f5f5f5]
+                                 px-4 last:rounded-b-lg`}
                               >
                                 <p className="font-bold">
                                   {attribute.attributeName}:

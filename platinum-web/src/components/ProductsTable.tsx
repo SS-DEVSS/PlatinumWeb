@@ -74,15 +74,15 @@ const ProductsTable = ({
       location.pathname.includes("kit")
     ) {
       if (data) {
-        console.log("Mapped data from props:", data);
+        // console.log("Mapped data from props:", data);
         setMappedData(data);
-        console.log("Updated mappedData:", mappedData);
+        // console.log("Updated mappedData:", mappedData);
       }
     } else {
       const flattenedData = flattenVariants(products);
       // console.log("Flattened data from products:", flattenedData);
       setMappedData(flattenedData);
-      console.log("Updated mappedData:", mappedData);
+      // console.log("Updated mappedData:", mappedData);
     }
   }, [products, data, location]);
 
@@ -107,7 +107,7 @@ const ProductsTable = ({
       },
     ];
 
-    console.log("attributes", attributes);
+    // console.log("attributes", attributes);
 
     // const dynamicColumns =
     //   attributes?.variant?.map((attribute) => ({

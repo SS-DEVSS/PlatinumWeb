@@ -47,6 +47,16 @@ export const ProductAttributes = ({
             <CardTitle className="text-lg">Características</CardTitle>
           </CardHeader>
           <section>
+            <div className={`flex gap-3 py-3 px-4 last:rounded-b-lg`}>
+              <p className="font-bold">Nombre:</p>
+              <p>{selectedVariant.name}</p>
+            </div>
+            <div
+              className={`flex gap-3 py-3 px-4 bg-[#f5f5f5] last:rounded-b-lg`}
+            >
+              <p className="font-bold">SKU:</p>
+              <p>{selectedVariant.sku}</p>
+            </div>
             {renderAttributes(
               category.attributes!.product!,
               selectedProduct.attributeValues
