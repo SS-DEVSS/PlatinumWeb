@@ -1,3 +1,3 @@
 export type Reference = {
-  value: number;
+  value: string;
 };

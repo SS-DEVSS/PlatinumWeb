@@ -28,6 +28,7 @@ const ProductsTable = ({
   data,
   itemVariant,
   setItemVariant,
+  reference,
 }: {
   category: Category | null;
   data?: Variant[] | null;
@@ -55,6 +56,7 @@ const ProductsTable = ({
         sku: variant.sku,
         name: variant.name,
         type: type,
+        // references: variant.references,
         attributeValues: variant.attributeValues.map(
           (attribute: AttributeValue) => ({
             id: attribute.id,
@@ -68,23 +70,43 @@ const ProductsTable = ({
     });
   };
 
-  useEffect(() => {
-    if (
-      location.pathname.includes("producto") ||
-      location.pathname.includes("kit")
-    ) {
-      if (data) {
-        // console.log("Mapped data from props:", data);
-        setMappedData(data);
-        // console.log("Updated mappedData:", mappedData);
-      }
-    } else {
-      const flattenedData = flattenVariants(products);
-      // console.log("Flattened data from products:", flattenedData);
+  // useEffect(() => {
+  //   if (
+  //     location.pathname.includes("producto") ||
+  //     location.pathname.includes("kit")
+  //   ) {
+  //     if (data) {
+  //       // console.log("Mapped data from props:", data);
+  //       setMappedData(data);
+  //       // console.log("Updated mappedData:", mappedData);
+  //     }
+  //   } else {
+  //     const flattenedData = flattenVariants(products);
+  //     // console.log("Flattened data from products:", flattenedData);
+  //     setMappedData(flattenedData);
+  //     // console.log("Updated mappedData:", mappedData);
+  //   }
+  // }, [products, data, location]);
+
+  // console.log(products);
+
+  const hasReference = useMemo(() => {
+    if (reference !== "") {
+      const matchingWithReference = products.filter((product: Item) =>
+        product.references.some((code) => code.includes(reference))
+      );
+      const flattenedData = flattenVariants(matchingWithReference);
       setMappedData(flattenedData);
-      // console.log("Updated mappedData:", mappedData);
+      console.log("flattenedData", flattenedData);
     }
-  }, [products, data, location]);
+    return [];
+  }, [reference, products]);
+
+  useEffect(() => {
+    if (hasReference.length > 0) {
+      console.log("Filtered and Flattened Data:", hasReference);
+    }
+  }, [hasReference]);
 
   const columns = useMemo(() => {
     const initialColumns = [
@@ -102,6 +124,7 @@ const ProductsTable = ({
         accessorKey: "type",
         header: "Tipo",
         cell: ({ row }: { row: any }) => (
+          // Algo aqui esta raro
           <div>{row.getValue("type") === "SINGLE" ? "Componente" : "Kit"}</div>
         ),
       },
@@ -120,7 +143,7 @@ const ProductsTable = ({
     //           ? row.original.attributes
     //           : row.original.attributes || [];
     //       const value = attributes.find(
-    //         (attr: AttributeValue) => attr.id === attribute.id
+    //         (attr: AttributeValue) => attr.idAttribute === attribute.id
     //       );
     //       return (
     //         <div>

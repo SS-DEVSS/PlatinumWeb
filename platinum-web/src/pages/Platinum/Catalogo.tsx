@@ -1,4 +1,12 @@
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "../../components/ui/command";
 import { Label } from "../../components/ui/label";
 import {
   Select,
@@ -16,6 +24,7 @@ import FilterSection from "../../components/FilterSection";
 import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
 import { useBrands } from "../../hooks/useBrands";
+import { Check } from "lucide-react";
 
 type CatalogoProps = {};
 
@@ -153,25 +162,48 @@ const Catalogo = ({}: CatalogoProps) => {
             </Select>
           </div>
         </div>
+        <section className="pt-8">
+          {form.filtro === "Vehiculo" ? (
+            <div className="flex gap-3 w-[40%]">
+              <Command>
+                <CommandInput placeholder={`Buscar...`} />
+                <CommandList>
+                  <CommandEmpty>No se encontró.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem>
+                      <Check className={"mr-2 h-4 w-4"} />
+                      Hola
+                    </CommandItem>
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+              <Button
+                disabled={form.referencia === ""}
+                className="py-6 bg-naranja hover:bg-orange-600"
+              >
+                Mostrar Resultados
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-3 w-[40%]">
+              <Input
+                value={form.referencia}
+                onChange={handleReference}
+                placeholder="Ingresa un número de referencia"
+                className="py-6"
+              />
+              <Button
+                disabled={form.referencia === ""}
+                className="py-6 bg-naranja hover:bg-orange-600"
+              >
+                Mostrar Resultados
+              </Button>
+            </div>
+          )}
+        </section>
       </section>
       <section className="px-20 py-8 bg-[#E4E4E4]">
-        {form.filtro === "Vehiculo" ? (
-          <FilterSection category={category} />
-        ) : (
-          <div className="flex gap-3 w-[40%]">
-            <Input
-              value={form.referencia}
-              onChange={handleReference}
-              placeholder="Ingresa un número de referencia"
-            />
-            <Button
-              disabled={form.referencia === ""}
-              className="bg-gris_oscuro"
-            >
-              Mostrar Resultados
-            </Button>
-          </div>
-        )}
+        <FilterSection category={category} />
         <ProductsTable category={category} reference={form.referencia} />
       </section>
     </PlatinumLayout>
