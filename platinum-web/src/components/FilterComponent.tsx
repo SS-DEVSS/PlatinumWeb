@@ -74,6 +74,7 @@ const FilterComponent = ({
               No se encontró {attribute.name.toLowerCase()}.
             </CommandEmpty>
             <CommandGroup>
+              {/* Cambiar esto de abajo */}
               {category.attributes?.variant?.map((attribute: Attribute) => (
                 <CommandItem
                   key={attribute.id}

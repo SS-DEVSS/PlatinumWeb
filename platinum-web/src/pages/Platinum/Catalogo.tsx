@@ -39,6 +39,7 @@ const Catalogo = ({}: CatalogoProps) => {
     categoria: categories.length > 0 ? categories[0] : null,
     vehiculo: {},
     referencia: "",
+    numParte: "",
   });
 
   useEffect(() => {
@@ -54,10 +55,19 @@ const Catalogo = ({}: CatalogoProps) => {
     }
   }, [categories, form.categoria]);
 
-  const handleReference = (e: any) => {
+  const handleReference = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
     setForm((prevform) => ({
       ...prevform,
-      referencia: e.target.value,
+      referencia: value,
+    }));
+  };
+
+  const handleNumParte = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setForm((prevform) => ({
+      ...prevform,
+      numParte: value,
     }));
   };
 
@@ -84,50 +94,9 @@ const Catalogo = ({}: CatalogoProps) => {
             <Label className="font-semibold text-base mb-4 text-white">
               Marca:
             </Label>
-            <div className="flex gap-5 bg-white text-black rounded-lg h-full items-center px-6">
+            <div className="flex gap-5 bg-white text-black rounded-lg h-full items-center py-4 px-6">
               <img className="w-20" src="/LOGOPlatinum.png" />
               <p>{brands?.name}</p>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <Label className="font-semibold text-base mb-4 text-white">
-              Filtrar Por:
-            </Label>
-            <div className="flex gap-2 rounded-lg bg-white p-2 h-full items-center">
-              <Button
-                size={"lg"}
-                variant={"ghost"}
-                onClick={() =>
-                  setForm((prevForm) => ({
-                    ...prevForm,
-                    filtro: "Vehiculo",
-                  }))
-                }
-                className={
-                  form.filtro === "Vehiculo"
-                    ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
-                    : "text-black"
-                }
-              >
-                Vehículo
-              </Button>
-              <Button
-                size={"lg"}
-                variant={"ghost"}
-                onClick={() =>
-                  setForm((prevForm) => ({
-                    ...prevForm,
-                    filtro: "Referencia",
-                  }))
-                }
-                className={
-                  form.filtro === "Referencia"
-                    ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
-                    : "text-black"
-                }
-              >
-                Referencia
-              </Button>
             </div>
           </div>
           <div className="flex flex-col">
@@ -162,10 +131,55 @@ const Catalogo = ({}: CatalogoProps) => {
             </Select>
           </div>
         </div>
-        <section className="pt-8">
+        <section className="pt-8 flex gap-10 items-end">
+          <div className="flex flex-col">
+            <Label className="font-semibold text-base mb-4 text-white">
+              Filtrar Por:
+            </Label>
+            <div className="flex gap-2 rounded-lg bg-white p-2 h-full items-center">
+              <Button
+                size={"lg"}
+                variant={"ghost"}
+                onClick={() =>
+                  setForm((prevForm) => ({
+                    ...prevForm,
+                    numParte: "",
+                    referencia: "",
+                    filtro: "Vehiculo",
+                  }))
+                }
+                className={
+                  form.filtro === "Vehiculo"
+                    ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
+                    : "text-black"
+                }
+              >
+                Vehículo
+              </Button>
+              <Button
+                size={"lg"}
+                variant={"ghost"}
+                onClick={() =>
+                  setForm((prevForm) => ({
+                    ...prevForm,
+                    numParte: "",
+                    referencia: "",
+                    filtro: "Referencia",
+                  }))
+                }
+                className={
+                  form.filtro === "Referencia"
+                    ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
+                    : "text-black"
+                }
+              >
+                Referencia
+              </Button>
+            </div>
+          </div>
           {form.filtro === "Vehiculo" ? (
-            <div className="flex gap-3 w-[40%]">
-              <Command>
+            <div className="flex gap-3 w-[30%]">
+              {/* <Command>
                 <CommandInput placeholder={`Buscar...`} />
                 <CommandList>
                   <CommandEmpty>No se encontró.</CommandEmpty>
@@ -176,35 +190,33 @@ const Catalogo = ({}: CatalogoProps) => {
                     </CommandItem>
                   </CommandGroup>
                 </CommandList>
-              </Command>
-              <Button
-                disabled={form.referencia === ""}
-                className="py-6 bg-naranja hover:bg-orange-600"
-              >
-                Mostrar Resultados
-              </Button>
+              </Command> */}
+              <Input
+                value={form.numParte}
+                onChange={handleNumParte}
+                placeholder="Ingresa un número de parte"
+                className="py-7"
+              />
             </div>
           ) : (
-            <div className="flex gap-3 w-[40%]">
+            <div className="flex gap-3 w-[30%]">
               <Input
                 value={form.referencia}
                 onChange={handleReference}
                 placeholder="Ingresa un número de referencia"
-                className="py-6"
+                className="py-7"
               />
-              <Button
-                disabled={form.referencia === ""}
-                className="py-6 bg-naranja hover:bg-orange-600"
-              >
-                Mostrar Resultados
-              </Button>
             </div>
           )}
         </section>
       </section>
       <section className="px-20 py-8 bg-[#E4E4E4]">
         <FilterSection category={category} />
-        <ProductsTable category={category} reference={form.referencia} />
+        <ProductsTable
+          category={category}
+          numParte={form.numParte}
+          reference={form.referencia}
+        />
       </section>
     </PlatinumLayout>
   );

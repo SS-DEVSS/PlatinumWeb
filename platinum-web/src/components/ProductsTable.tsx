@@ -29,12 +29,14 @@ const ProductsTable = ({
   itemVariant,
   setItemVariant,
   reference,
+  numParte,
 }: {
   category: Category | null;
   data?: Variant[] | null;
   itemVariant?: Variant | null;
   setItemVariant?: React.Dispatch<React.SetStateAction<Variant | null>>;
   reference?: string;
+  numParte?: string;
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { attributes } = category || {};
@@ -56,7 +58,6 @@ const ProductsTable = ({
         sku: variant.sku,
         name: variant.name,
         type: type,
-        // references: variant.references,
         attributeValues: variant.attributeValues.map(
           (attribute: AttributeValue) => ({
             id: attribute.id,
@@ -70,43 +71,36 @@ const ProductsTable = ({
     });
   };
 
-  // useEffect(() => {
-  //   if (
-  //     location.pathname.includes("producto") ||
-  //     location.pathname.includes("kit")
-  //   ) {
-  //     if (data) {
-  //       // console.log("Mapped data from props:", data);
-  //       setMappedData(data);
-  //       // console.log("Updated mappedData:", mappedData);
-  //     }
-  //   } else {
-  //     const flattenedData = flattenVariants(products);
-  //     // console.log("Flattened data from products:", flattenedData);
-  //     setMappedData(flattenedData);
-  //     // console.log("Updated mappedData:", mappedData);
-  //   }
-  // }, [products, data, location]);
-
-  // console.log(products);
-
-  const hasReference = useMemo(() => {
-    if (reference !== "") {
-      const matchingWithReference = products.filter((product: Item) =>
-        product.references.some((code) => code.includes(reference))
-      );
-      const flattenedData = flattenVariants(matchingWithReference);
-      setMappedData(flattenedData);
-      console.log("flattenedData", flattenedData);
-    }
-    return [];
-  }, [reference, products]);
-
   useEffect(() => {
-    if (hasReference.length > 0) {
-      console.log("Filtered and Flattened Data:", hasReference);
+    const shouldMapDataFromProps =
+      location.pathname.includes("producto") ||
+      location.pathname.includes("kit");
+
+    if (shouldMapDataFromProps && data) {
+      setMappedData(data);
+    } else {
+      let filteredProducts = products;
+
+      if (reference) {
+        // Filter products by reference
+        filteredProducts = products.filter((product: Item) =>
+          product.references.some((code) => code.includes(reference))
+        );
+      } else if (numParte) {
+        // Filter variants by SKU
+        const flattenedVariants = flattenVariants(products);
+        const filteredVariants = flattenedVariants.filter((variant: Variant) =>
+          variant.sku.includes(numParte)
+        );
+        setMappedData(filteredVariants);
+        return; // Exit early since mappedData is already updated
+      }
+
+      // Flatten the filtered products if no specific filter is applied
+      const flattenedData = flattenVariants(filteredProducts);
+      setMappedData(flattenedData);
     }
-  }, [hasReference]);
+  }, [products, data, location, reference, numParte]);
 
   const columns = useMemo(() => {
     const initialColumns = [
