@@ -4,9 +4,13 @@ import FilterComponent from "./FilterComponent";
 
 type FilterSectionProps = {
   category: Category | null;
+  filtroInfo: {
+    numParte: string;
+    referencia: string;
+  };
 };
 
-const FilterSection = ({ category }: FilterSectionProps) => {
+const FilterSection = ({ category, filtroInfo }: FilterSectionProps) => {
   const [attributeStates, setAttributeStates] = useState<{
     [key: string]: { open: boolean; selectedValue: string; disabled: boolean };
   }>({});
@@ -91,6 +95,7 @@ const FilterSection = ({ category }: FilterSectionProps) => {
             key={attribute.id}
             attribute={attribute}
             category={category}
+            filtroInfo={filtroInfo}
             open={attributeStates![attribute.id]?.open}
             selectedValue={attributeStates![attribute.id]?.selectedValue}
             enabled={!attributeStates![attribute.id]?.disabled}

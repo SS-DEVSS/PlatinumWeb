@@ -28,15 +28,16 @@ const ProductsTable = ({
   data,
   itemVariant,
   setItemVariant,
-  reference,
-  numParte,
+  filtroInfo,
 }: {
   category: Category | null;
   data?: Variant[] | null;
   itemVariant?: Variant | null;
   setItemVariant?: React.Dispatch<React.SetStateAction<Variant | null>>;
-  reference?: string;
-  numParte?: string;
+  filtroInfo?: {
+    numParte: string;
+    referencia: string;
+  };
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { attributes } = category || {};
@@ -45,8 +46,6 @@ const ProductsTable = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { setType } = useItemContext();
-
-  // console.log("products", products);
 
   const flattenVariants = (items: Item[]) => {
     return items.flatMap((item: Item) => {
@@ -81,26 +80,25 @@ const ProductsTable = ({
     } else {
       let filteredProducts = products;
 
-      if (reference) {
-        // Filter products by reference
+      if (filtroInfo?.referencia) {
         filteredProducts = products.filter((product: Item) =>
-          product.references.some((code) => code.includes(reference))
+          product.references.some((code: any) =>
+            code.includes(filtroInfo?.referencia)
+          )
         );
-      } else if (numParte) {
-        // Filter variants by SKU
+      } else if (filtroInfo?.numParte) {
         const flattenedVariants = flattenVariants(products);
-        const filteredVariants = flattenedVariants.filter((variant: Variant) =>
-          variant.sku.includes(numParte)
+        const filteredVariants = flattenedVariants.filter((variant: any) =>
+          variant.sku.includes(filtroInfo?.numParte)
         );
         setMappedData(filteredVariants);
-        return; // Exit early since mappedData is already updated
+        return;
       }
 
-      // Flatten the filtered products if no specific filter is applied
       const flattenedData = flattenVariants(filteredProducts);
       setMappedData(flattenedData);
     }
-  }, [products, data, location, reference, numParte]);
+  }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
 
   const columns = useMemo(() => {
     const initialColumns = [

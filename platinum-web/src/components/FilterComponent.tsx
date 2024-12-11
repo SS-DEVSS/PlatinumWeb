@@ -19,6 +19,10 @@ import { Attribute, Category } from "../models/category";
 type FilterComponentProps = {
   attribute: Attribute;
   category: Category;
+  filtroInfo: {
+    numParte: string;
+    referencia: string;
+  };
   open: boolean;
   selectedValue: string;
   enabled: boolean;
@@ -30,6 +34,7 @@ type FilterComponentProps = {
 const FilterComponent = ({
   attribute,
   category,
+  filtroInfo,
   open,
   selectedValue,
   enabled,
