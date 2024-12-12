@@ -157,7 +157,6 @@ const ProductDetail = () => {
         );
 
         setMappedProductComponents(mappedComponents.filter(Boolean));
-        console.log(mappedComponents);
       } catch (error) {
         console.error("Error fetching kit items", error);
       }
@@ -167,7 +166,6 @@ const ProductDetail = () => {
   }, [itemVariant]);
 
   // console.log(itemVariant?.id);
-  // console.log(mappedProductComponents);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(

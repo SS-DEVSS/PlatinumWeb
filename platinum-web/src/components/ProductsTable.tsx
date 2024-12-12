@@ -70,12 +70,15 @@ const ProductsTable = ({
     });
   };
 
-  useEffect(() => {
-    const shouldMapDataFromProps =
+  const isInDetailsPage = useMemo(
+    () =>
       location.pathname.includes("producto") ||
-      location.pathname.includes("kit");
+      location.pathname.includes("kit"),
+    [location]
+  );
 
-    if (shouldMapDataFromProps && data) {
+  useEffect(() => {
+    if (isInDetailsPage && data) {
       setMappedData(data);
     } else {
       let filteredProducts = products;
@@ -122,34 +125,33 @@ const ProductsTable = ({
       },
     ];
 
-    // console.log("attributes", attributes);
+    const dynamicColumns =
+      attributes?.variant?.map((attribute) => ({
+        accessorKey: attribute.id,
+        header: attribute.name,
+        cell: ({ row }: { row: any }) => {
+          const attributeValues = isInDetailsPage
+            ? row.original.attributeValues
+            : row.original.attributeValues || [];
 
-    // const dynamicColumns =
-    //   attributes?.variant?.map((attribute) => ({
-    //     accessorKey: attribute.id,
-    //     header: attribute.name,
-    //     cell: ({ row }: { row: any }) => {
-    //       const attributes =
-    //         location.pathname.includes("producto") ||
-    //         location.pathname.includes("kit")
-    //           ? row.original.attributes
-    //           : row.original.attributes || [];
-    //       const value = attributes.find(
-    //         (attr: AttributeValue) => attr.idAttribute === attribute.id
-    //       );
-    //       return (
-    //         <div>
-    //           {value?.valueString ||
-    //             value?.valueNumber ||
-    //             value?.valueBoolean?.toString() ||
-    //             value?.valueDate ||
-    //             ""}
-    //         </div>
-    //       );
-    //     },
-    //   })) || [];
-    // return [...initialColumns, ...dynamicColumns];
-    return [...initialColumns];
+          const value = attributeValues.find(
+            (attrValue: AttributeValue) =>
+              attrValue.idAttribute === attribute.id
+          );
+          return (
+            <div>
+              {value?.valueString ||
+                value?.valueNumber ||
+                value?.valueBoolean?.toString() ||
+                value?.valueDate ||
+                "N/A"}
+            </div>
+          );
+        },
+      })) || [];
+
+    return [...initialColumns, ...dynamicColumns];
+    // return [...initialColumns];
   }, [attributes, location]);
 
   const [columnVisibility, setColumnVisibility] = useState({});
