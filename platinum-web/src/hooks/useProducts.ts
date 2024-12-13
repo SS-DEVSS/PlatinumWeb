@@ -5,7 +5,7 @@ export const useProducts = () => {
   const client = axiosClient();
   const [product, setProduct] = useState(null);
   const [products, setProducts] = useState([]);
-  //   const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   //   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -13,9 +13,16 @@ export const useProducts = () => {
   }, []);
 
   const getProducts = async () => {
-    const { data } = await client.get("/products?type=");
-    setProducts(data);
-    return data;
+    try {
+      setLoading(true);
+      const { data } = await client.get("/products?type=");
+      setProducts(data.products);
+      return data.products;
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getProductById = async (id: string) => {
@@ -28,5 +35,6 @@ export const useProducts = () => {
     product,
     getProductById,
     products,
+    loading,
   };
 };

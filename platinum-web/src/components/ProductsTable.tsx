@@ -48,26 +48,28 @@ const ProductsTable = ({
   const { setType } = useItemContext();
 
   const flattenVariants = (items: Item[]) => {
-    return items.flatMap((item: Item) => {
-      const type = item.type;
-      const variants = item.variants;
-      return variants?.map((variant: Variant) => ({
-        id: variant.id,
-        idParent: variant.idProduct,
-        sku: variant.sku,
-        name: variant.name,
-        type: type,
-        attributeValues: variant.attributeValues.map(
-          (attribute: AttributeValue) => ({
-            id: attribute.id,
-            valueString: attribute.valueString,
-            valueNumber: attribute.valueNumber,
-            valueBoolean: attribute.valueBoolean,
-            valueDate: attribute.valueDate,
-          })
-        ),
-      }));
-    });
+    if (items.length) {
+      return items.flatMap((item: Item) => {
+        const type = item.type;
+        const variants = item.variants;
+        return variants?.map((variant: Variant) => ({
+          id: variant.id,
+          idParent: variant.idProduct,
+          sku: variant.sku,
+          name: variant.name,
+          type: type,
+          attributeValues: variant.attributeValues.map(
+            (attribute: AttributeValue) => ({
+              id: attribute.id,
+              valueString: attribute.valueString,
+              valueNumber: attribute.valueNumber,
+              valueBoolean: attribute.valueBoolean,
+              valueDate: attribute.valueDate,
+            })
+          ),
+        }));
+      });
+    }
   };
 
   const isInDetailsPage = useMemo(
@@ -79,27 +81,27 @@ const ProductsTable = ({
 
   useEffect(() => {
     if (isInDetailsPage && data) {
-      setMappedData(data);
+      setMappedData(data ?? []);
     } else {
       let filteredProducts = products;
 
       if (filtroInfo?.referencia) {
         filteredProducts = products.filter((product: Item) =>
           product.references.some((code: any) =>
-            code.includes(filtroInfo?.referencia)
+            code?.includes(filtroInfo?.referencia)
           )
         );
       } else if (filtroInfo?.numParte) {
         const flattenedVariants = flattenVariants(products);
         const filteredVariants = flattenedVariants.filter((variant: any) =>
-          variant.sku.includes(filtroInfo?.numParte)
+          variant.sku?.includes(filtroInfo?.numParte)
         );
-        setMappedData(filteredVariants);
+        setMappedData(filteredVariants ?? []);
         return;
       }
 
       const flattenedData = flattenVariants(filteredProducts);
-      setMappedData(flattenedData);
+      setMappedData(flattenedData ?? []);
     }
   }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
 
@@ -130,13 +132,10 @@ const ProductsTable = ({
         accessorKey: attribute.id,
         header: attribute.name,
         cell: ({ row }: { row: any }) => {
-          const attributeValues = isInDetailsPage
-            ? row.original.attributeValues
-            : row.original.attributeValues || [];
+          const attributeValues = row.original?.attributeValues || [];
 
           const value = attributeValues.find(
-            (attrValue: AttributeValue) =>
-              attrValue.idAttribute === attribute.id
+            (attrValue: AttributeValue) => attrValue.id === attribute.id
           );
           return (
             <div>
