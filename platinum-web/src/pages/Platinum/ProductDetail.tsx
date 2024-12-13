@@ -165,7 +165,7 @@ const ProductDetail = () => {
     fetchMappedKitItems();
   }, [itemVariant]);
 
-  // console.log(itemVariant?.id);
+  console.log(item);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(

@@ -103,7 +103,11 @@ const Catalogo = ({}: CatalogoProps) => {
               Marca:
             </Label>
             <div className="flex gap-5 bg-white text-black rounded-lg h-full items-center py-4 px-6">
-              <img className="w-20" src="/LOGOPlatinum.png" />
+              <img
+                className="w-20"
+                src={brands?.logoImgUrl}
+                alt={`${brands?.name} image`}
+              />
               <p>{brands?.name}</p>
             </div>
           </div>

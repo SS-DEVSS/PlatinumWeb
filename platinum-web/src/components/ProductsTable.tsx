@@ -48,6 +48,7 @@ const ProductsTable = ({
   const { setType } = useItemContext();
 
   const flattenVariants = (items: Item[]) => {
+    console.log(items);
     if (items.length) {
       return items.flatMap((item: Item) => {
         const type = item.type;
@@ -65,6 +66,7 @@ const ProductsTable = ({
               valueNumber: attribute.valueNumber,
               valueBoolean: attribute.valueBoolean,
               valueDate: attribute.valueDate,
+              idAttribute: attribute.idAttribute,
             })
           ),
         }));
@@ -135,7 +137,8 @@ const ProductsTable = ({
           const attributeValues = row.original?.attributeValues || [];
 
           const value = attributeValues.find(
-            (attrValue: AttributeValue) => attrValue.id === attribute.id
+            (attrValue: AttributeValue) =>
+              attrValue.idAttribute === attribute.id
           );
           return (
             <div>
@@ -223,7 +226,7 @@ const ProductsTable = ({
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
                     onClick={() => handleClick(row)}
-                    className={`cursor-pointer hover:bg-gray-100 odd:bg-[#f5f5f5] even:bg-white`}
+                    className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
                     style={{
                       backgroundColor:
                         row.original.id === itemVariant?.id ? "#d87e2e" : "",
