@@ -29,7 +29,6 @@ export type Variant = {
   images: Image[];
   kitItems?: Item[];
   attributeValues: AttributeValue[];
-  // references?: Reference[];
 };
 
 export interface AttributeValue {

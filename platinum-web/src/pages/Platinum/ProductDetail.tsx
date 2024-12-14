@@ -85,7 +85,7 @@ const ProductDetail = () => {
             const parentProduct: Item = await getProductById(kitItem.idProduct);
             if (!parentProduct) {
               console.log(
-                `Parent product not found for kit item ${kitItem.id}`
+                `No se encontró el producto padre del kit ${kitItem.id}`
               );
               return null;
             }
@@ -98,7 +98,7 @@ const ProductDetail = () => {
               !categoryParentProduct.attributes?.variant
             ) {
               console.log(
-                `Category or attributes missing for product ${parentProduct.id}`
+                `Categoría o atributos faltantes para el producto ${parentProduct.id}`
               );
               return null;
             }
@@ -158,7 +158,7 @@ const ProductDetail = () => {
 
         setMappedProductComponents(mappedComponents.filter(Boolean));
       } catch (error) {
-        console.error("Error fetching kit items", error);
+        console.error("Error al encontrar los kits", error);
       }
     };
 
@@ -170,10 +170,10 @@ const ProductDetail = () => {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
       () => {
-        alert("Page link copied to clipboard!");
+        alert("El link ha sido copiado!");
       },
       (err) => {
-        console.error("Failed to copy the link: ", err);
+        console.error("No se pudo copiar el link: ", err);
       }
     );
   };

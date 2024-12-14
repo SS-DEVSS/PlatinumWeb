@@ -59,6 +59,7 @@ const ProductsTable = ({
           sku: variant.sku,
           name: variant.name,
           type: type,
+          productAttributeValues: item.attributeValues,
           attributeValues: variant.attributeValues.map(
             (attribute: AttributeValue) => ({
               id: attribute.id,
@@ -129,31 +130,45 @@ const ProductsTable = ({
       },
     ];
 
-    const dynamicColumns =
-      attributes?.variant?.map((attribute) => ({
-        accessorKey: attribute.id,
-        header: attribute.name,
-        cell: ({ row }: { row: any }) => {
-          const attributeValues = row.original?.attributeValues || [];
+    const getColumns = (attributeType: string) => {
+      const getAttributeValues = (row: any, attribute: any) => {
+        const attributeValues =
+          attributeType === "product"
+            ? row.original?.productAttributeValues
+            : row.original?.attributeValues || [];
 
-          const value = attributeValues.find(
-            (attrValue: AttributeValue) =>
-              attrValue.idAttribute === attribute.id
-          );
-          return (
-            <div>
-              {value?.valueString ||
-                value?.valueNumber ||
-                value?.valueBoolean?.toString() ||
-                value?.valueDate ||
-                "N/A"}
-            </div>
-          );
-        },
-      })) || [];
+        return attributeValues.find(
+          (attrValue: AttributeValue) => attrValue.idAttribute === attribute.id
+        );
+      };
 
-    return [...initialColumns, ...dynamicColumns];
-    // return [...initialColumns];
+      const getDisplayValue = (value: AttributeValue | undefined) =>
+        value?.valueString ||
+        value?.valueNumber ||
+        value?.valueBoolean?.toString() ||
+        value?.valueDate?.toDateString() ||
+        "N/A";
+
+      return (
+        attributes?.[attributeType]?.map((attribute: any) => ({
+          accessorKey: attribute.id,
+          header: attribute.name,
+          cell: ({ row }: { row: any }) => {
+            const value = getAttributeValues(row, attribute);
+            return <div>{getDisplayValue(value)}</div>;
+          },
+        })) || []
+      );
+    };
+
+    const dynamicColumnsProduct = !isInDetailsPage ? getColumns("product") : [];
+    const dynamicColumnsVariant = getColumns("variant");
+
+    return [
+      ...initialColumns,
+      ...dynamicColumnsProduct,
+      ...dynamicColumnsVariant,
+    ];
   }, [attributes, location]);
 
   const [columnVisibility, setColumnVisibility] = useState({});
