@@ -41,14 +41,21 @@ const ProductsTable = ({
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { attributes } = category || {};
-  const { products } = useProducts();
+  const { products, getProductById } = useProducts();
 
   const location = useLocation();
   const navigate = useNavigate();
   const { setType } = useItemContext();
+  const [product, setProduct] = useState<Item | null>({} as Item);
+
+  const isInDetailsPage = useMemo(
+    () =>
+      location.pathname.includes("producto") ||
+      location.pathname.includes("kit"),
+    [location]
+  );
 
   const flattenVariants = (items: Item[]) => {
-    console.log(items);
     if (items.length) {
       return items.flatMap((item: Item) => {
         const type = item.type;
@@ -75,38 +82,36 @@ const ProductsTable = ({
     }
   };
 
-  const isInDetailsPage = useMemo(
-    () =>
-      location.pathname.includes("producto") ||
-      location.pathname.includes("kit"),
-    [location]
-  );
-
-  useEffect(() => {
-    if (isInDetailsPage && data) {
-      setMappedData(data ?? []);
-    } else {
-      let filteredProducts = products;
-
-      if (filtroInfo?.referencia) {
-        filteredProducts = products.filter((product: Item) =>
-          product.references.some((code: any) =>
-            code?.includes(filtroInfo?.referencia)
-          )
-        );
-      } else if (filtroInfo?.numParte) {
-        const flattenedVariants = flattenVariants(products);
-        const filteredVariants = flattenedVariants.filter((variant: any) =>
-          variant.sku?.includes(filtroInfo?.numParte)
-        );
-        setMappedData(filteredVariants ?? []);
-        return;
-      }
-
-      const flattenedData = flattenVariants(filteredProducts);
-      setMappedData(flattenedData ?? []);
+  const fetchDataProduct = async (item: string) => {
+    try {
+      const data = await getProductById(item);
+      setProduct(data);
+      return data;
+    } catch (error) {
+      console.log(error);
     }
-  }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
+  };
+
+  const handleClick = (row: any) => {
+    if (
+      location.pathname.includes("producto") ||
+      location.pathname.includes("kit")
+    ) {
+      if (setItemVariant) {
+        setItemVariant(row.original);
+      }
+      return;
+    }
+    const type = row.getValue("type");
+    if (type === "KIT") {
+      setType("KIT");
+      navigate(`/kit/${row.original.idParent}`);
+    } else {
+      setType("SINGLE");
+      navigate(`/producto/${row.original.idParent}`);
+    }
+    localStorage.setItem("type", type);
+  };
 
   const columns = useMemo(() => {
     const initialColumns = [
@@ -123,10 +128,29 @@ const ProductsTable = ({
       {
         accessorKey: "type",
         header: "Tipo",
-        cell: ({ row }: { row: any }) => (
-          // Algo aqui esta raro
-          <div>{row.getValue("type") === "SINGLE" ? "Componente" : "Kit"}</div>
-        ),
+        cell: ({ row }: { row: any }) => {
+          useEffect(() => {
+            if (isInDetailsPage && row.original?.idProduct) {
+              fetchDataProduct(row.original.idProduct);
+            }
+          }, [isInDetailsPage, row.original?.idProduct]);
+
+          const newRow = (row: any) => {
+            return {
+              ...row,
+              type: product?.type,
+            };
+          };
+          newRow(row);
+          const test = newRow(row.original);
+          // console.log(test);
+          const getProductType = test.type || row.getValue("type");
+          console.log(getProductType);
+
+          return (
+            <div>{getProductType === "SINGLE" ? "Componente" : "Kit"}</div>
+          );
+        },
       },
     ];
 
@@ -189,25 +213,31 @@ const ProductsTable = ({
     },
   });
 
-  const handleClick = (row: any) => {
-    if (
-      location.pathname.includes("producto") ||
-      location.pathname.includes("kit")
-    ) {
-      if (setItemVariant) {
-        setItemVariant(row.original);
-      }
-      return;
-    }
-    const type = row.getValue("type");
-    if (type === "KIT") {
-      setType("KIT");
-      navigate(`/kit/${row.original.idParent}`);
+  useEffect(() => {
+    if (isInDetailsPage && data) {
+      setMappedData(data ?? []);
     } else {
-      setType("SINGLE");
-      navigate(`/producto/${row.original.idParent}`);
+      let filteredProducts = products;
+
+      if (filtroInfo?.referencia) {
+        filteredProducts = products.filter((product: Item) =>
+          product.references.some((code: any) =>
+            code?.includes(filtroInfo?.referencia)
+          )
+        );
+      } else if (filtroInfo?.numParte) {
+        const flattenedVariants = flattenVariants(products);
+        const filteredVariants = flattenedVariants.filter((variant: any) =>
+          variant.sku?.includes(filtroInfo?.numParte)
+        );
+        setMappedData(filteredVariants ?? []);
+        return;
+      }
+
+      const flattenedData = flattenVariants(filteredProducts);
+      setMappedData(flattenedData ?? []);
     }
-  };
+  }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
 
   return (
     <div className="mt-6">
@@ -277,24 +307,26 @@ const ProductsTable = ({
           </TableBody>
         </Table>
       </Card>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Next
-        </Button>
-      </div>
+      {mappedData?.length > 10 && (
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

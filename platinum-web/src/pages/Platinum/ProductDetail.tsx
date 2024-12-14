@@ -41,7 +41,7 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   let { itemId } = useParams();
 
-  const { type } = useItemContext();
+  const { type, setType } = useItemContext();
   const { getProductById } = useProducts();
   const { getCategoryById } = useCategories();
 
@@ -63,6 +63,9 @@ const ProductDetail = () => {
       }
     };
     fetchData();
+    const typeLocalStorage = localStorage.getItem("type");
+    console.log(typeLocalStorage);
+    typeLocalStorage === "KIT" ? setType("KIT") : setType("SINGLE");
   }, []);
 
   useEffect(() => {
@@ -164,8 +167,6 @@ const ProductDetail = () => {
 
     fetchMappedKitItems();
   }, [itemVariant]);
-
-  console.log(item);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(
@@ -324,14 +325,14 @@ const ProductDetail = () => {
               />
             </TabsContent>
             <TabsContent value="componentes">
-              {itemVariant?.kitItems?.map((component) => (
-                <Accordion
-                  type="single"
-                  collapsible
-                  className="w-full rounded-lg bg-white mb-2"
-                  defaultValue="item-1"
-                >
-                  <AccordionItem value="item-1">
+              <Accordion
+                type="single"
+                collapsible
+                className="w-full rounded-lg white mb-2"
+                defaultValue="item-0"
+              >
+                {itemVariant?.kitItems?.map((component, index) => (
+                  <AccordionItem className="mb-2" value={`item-${index}`}>
                     <AccordionTrigger>
                       <p>{component?.name}</p>
                     </AccordionTrigger>
@@ -357,8 +358,8 @@ const ProductDetail = () => {
                       })}
                     </AccordionContent>
                   </AccordionItem>
-                </Accordion>
-              ))}
+                ))}
+              </Accordion>
             </TabsContent>
           </Tabs>
         </section>
