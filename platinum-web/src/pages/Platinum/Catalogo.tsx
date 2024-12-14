@@ -123,7 +123,7 @@ const Catalogo = () => {
               value={form.filtro.numParte}
               onChange={handleNumParte}
               placeholder="Ingresa un número de parte"
-              className="py-7"
+              className="pl-5 py-7"
             />
           </div>
         );
@@ -134,7 +134,7 @@ const Catalogo = () => {
               value={form.filtro.referencia}
               onChange={handleReference}
               placeholder="Ingresa un número de referencia"
-              className="py-7"
+              className="pl-5 py-7"
             />
           </div>
         );

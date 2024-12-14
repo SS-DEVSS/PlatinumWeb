@@ -36,6 +36,8 @@ import { Attribute, Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 import { TechnicalSheet } from "../../models/techincalSheet";
 import { ProductAttributes } from "../../components/ProductAttributes";
+import { useToast } from "../../hooks/use-toast";
+import { ToastAction } from "../../components/ui/toast";
 
 const ProductDetail = () => {
   const navigate = useNavigate();
@@ -44,6 +46,7 @@ const ProductDetail = () => {
   const { type, setType } = useItemContext();
   const { getProductById } = useProducts();
   const { getCategoryById } = useCategories();
+  const { toast } = useToast();
 
   const [category, setCategory] = useState<Category | null>(null);
   const [item, setItem] = useState<Item | null>(null);
@@ -169,14 +172,11 @@ const ProductDetail = () => {
   }, [itemVariant]);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href).then(
-      () => {
-        alert("El link ha sido copiado!");
-      },
-      (err) => {
-        console.error("No se pudo copiar el link: ", err);
-      }
-    );
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      variant: "success",
+      description: "El enlace ha sido copiado exitosamente.",
+    });
   };
 
   return (

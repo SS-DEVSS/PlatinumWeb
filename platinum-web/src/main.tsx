@@ -16,6 +16,7 @@ import PastillasPage from "./pages/Pastillas/PastillasPage";
 import Catalogo from "./pages/Platinum/Catalogo";
 import ProductDetail from "./pages/Platinum/ProductDetail";
 import { ItemContextProvider } from "./context/Item-context";
+import { Toaster } from "./components/ui/toaster";
 
 const router = createBrowserRouter([
   {
@@ -80,6 +81,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ItemContextProvider>
       <RouterProvider router={router} />
+      <Toaster />
     </ItemContextProvider>
   </StrictMode>
 );
