@@ -25,23 +25,32 @@ import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
 import { useBrands } from "../../hooks/useBrands";
 import { Check } from "lucide-react";
+import { Category } from "../../models/category";
 
-type CatalogoProps = {};
+type formState = {
+  filtroTipo: "NumParte" | "Vehiculo" | "Referencia";
+  filtro: {
+    referencia: string;
+    numParte: string;
+    vehiculo: {};
+  };
+  categoria: Category | null;
+};
 
-const Catalogo = ({}: CatalogoProps) => {
+const Catalogo = () => {
   const { getCategoryById, category } = useCategories();
   const { brands } = useBrands();
 
   const categories = brands?.categories || [];
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<formState>({
     filtroTipo: "NumParte",
     filtro: {
       referencia: "",
       numParte: "",
+      vehiculo: {},
     },
     categoria: categories.length > 0 ? categories[0] : null,
-    vehiculo: {},
   });
 
   useEffect(() => {
@@ -64,6 +73,7 @@ const Catalogo = ({}: CatalogoProps) => {
       filtro: {
         numParte: "",
         referencia: value,
+        vehiculo: {},
       },
     }));
   };
@@ -75,6 +85,7 @@ const Catalogo = ({}: CatalogoProps) => {
       filtro: {
         numParte: value,
         referencia: "",
+        vehiculo: {},
       },
     }));
   };
@@ -91,6 +102,47 @@ const Catalogo = ({}: CatalogoProps) => {
     }
   };
 
+  const getFilterComponent = () => {
+    switch (form.filtroTipo) {
+      case "NumParte":
+        return (
+          <div className="flex gap-3 w-[30%]">
+            {/* <Command>
+                <CommandInput placeholder={`Buscar...`} />
+                <CommandList>
+                  <CommandEmpty>No se encontró.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem>
+                      <Check className={"mr-2 h-4 w-4"} />
+                      Hola
+                    </CommandItem>
+                  </CommandGroup>
+                </CommandList>
+              </Command> */}
+            <Input
+              value={form.filtro.numParte}
+              onChange={handleNumParte}
+              placeholder="Ingresa un número de parte"
+              className="py-7"
+            />
+          </div>
+        );
+      case "Referencia":
+        return (
+          <div className="flex gap-3 w-[30%]">
+            <Input
+              value={form.filtro.referencia}
+              onChange={handleReference}
+              placeholder="Ingresa un número de referencia"
+              className="py-7"
+            />
+          </div>
+        );
+      case "Vehiculo":
+        return <FilterSection category={category} filtroInfo={form.filtro} />;
+    }
+  };
+
   return (
     <PlatinumLayout>
       <section className="bg-hero-catalog bg-cover pl-20 pb-14">
@@ -103,11 +155,7 @@ const Catalogo = ({}: CatalogoProps) => {
               Marca:
             </Label>
             <div className="flex gap-5 bg-white text-black rounded-lg h-full items-center py-4 px-6">
-              <img
-                className="w-20"
-                src={brands?.logoImgUrl}
-                alt={`${brands?.name} image`}
-              />
+              <img className="w-20" src={brands?.logoImgUrl} alt={`image`} />
               <p>{brands?.name}</p>
             </div>
           </div>
@@ -142,8 +190,6 @@ const Catalogo = ({}: CatalogoProps) => {
               </SelectContent>
             </Select>
           </div>
-        </div>
-        <section className="pt-8 flex gap-10 items-end">
           <div className="flex flex-col">
             <Label className="font-semibold text-base mb-4 text-white">
               Filtrar Por:
@@ -157,8 +203,9 @@ const Catalogo = ({}: CatalogoProps) => {
                     ...prevForm,
                     filtroTipo: "NumParte",
                     filtro: {
-                      numParte: "",
                       referencia: "",
+                      numParte: "",
+                      vehiculo: {},
                     },
                   }))
                 }
@@ -178,8 +225,9 @@ const Catalogo = ({}: CatalogoProps) => {
                     ...prevForm,
                     filtroTipo: "Referencia",
                     filtro: {
-                      numParte: "",
                       referencia: "",
+                      numParte: "",
+                      vehiculo: {},
                     },
                   }))
                 }
@@ -191,43 +239,35 @@ const Catalogo = ({}: CatalogoProps) => {
               >
                 Referencia
               </Button>
+              <Button
+                size={"lg"}
+                variant={"ghost"}
+                onClick={() =>
+                  setForm((prevForm) => ({
+                    ...prevForm,
+                    filtroTipo: "Vehiculo",
+                    filtro: {
+                      referencia: "",
+                      numParte: "",
+                      vehiculo: {},
+                    },
+                  }))
+                }
+                className={
+                  form.filtroTipo === "Vehiculo"
+                    ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
+                    : "text-black"
+                }
+              >
+                Vehículo
+              </Button>
             </div>
           </div>
-          {form.filtroTipo === "NumParte" ? (
-            <div className="flex gap-3 w-[30%]">
-              {/* <Command>
-                <CommandInput placeholder={`Buscar...`} />
-                <CommandList>
-                  <CommandEmpty>No se encontró.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem>
-                      <Check className={"mr-2 h-4 w-4"} />
-                      Hola
-                    </CommandItem>
-                  </CommandGroup>
-                </CommandList>
-              </Command> */}
-              <Input
-                value={form.filtro.numParte}
-                onChange={handleNumParte}
-                placeholder="Ingresa un número de parte"
-                className="py-7"
-              />
-            </div>
-          ) : (
-            <div className="flex gap-3 w-[30%]">
-              <Input
-                value={form.filtro.referencia}
-                onChange={handleReference}
-                placeholder="Ingresa un número de referencia"
-                className="py-7"
-              />
-            </div>
-          )}
-        </section>
+        </div>
+        <section className="pt-8 flex gap-10 items-end"></section>
       </section>
       <section className="px-20 py-8 bg-[#E4E4E4]">
-        <FilterSection category={category} filtroInfo={form.filtro} />
+        {getFilterComponent()}
         <ProductsTable category={category} filtroInfo={form.filtro} />
       </section>
     </PlatinumLayout>
