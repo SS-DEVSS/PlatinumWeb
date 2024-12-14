@@ -26,9 +26,16 @@ export const useProducts = () => {
   };
 
   const getProductById = async (id: string) => {
-    const { data } = await client.get(`/products/${id}`);
-    setProduct(data);
-    return data;
+    try {
+      setLoading(true);
+      const { data } = await client.get(`/products/${id}`);
+      setProduct(data);
+      return data;
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return {

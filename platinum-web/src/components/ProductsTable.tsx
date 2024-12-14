@@ -227,7 +227,7 @@ const ProductsTable = ({
         );
       } else if (filtroInfo?.numParte) {
         const flattenedVariants = flattenVariants(products);
-        const filteredVariants = flattenedVariants.filter((variant: any) =>
+        const filteredVariants = flattenedVariants?.filter((variant: any) =>
           variant.sku?.includes(filtroInfo?.numParte)
         );
         setMappedData(filteredVariants ?? []);
