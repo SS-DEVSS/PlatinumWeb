@@ -3,23 +3,26 @@ import { Skeleton } from "../components/ui/skeleton";
 const SkeletonCatalog = () => {
   return (
     <>
-      <section className="bg-hero-catalog bg-cover pl-20 pb-14">
-        <Skeleton className="pt-36 pb-20" />
+      <section className="bg-[#d3cfcf] pb-14 pl-[160px]">
+        <div className="py-28">
+          <Skeleton className="w-80 h-[40px]" />
+        </div>
         <div className="flex gap-10">
-          <div className="flex flex-col">
-            <Skeleton className="mb-4 h-4 w-10" />
-            <div className="flex gap-5 bg-white rounded-lg h-full py-4 px-6"></div>
+          <div className="flex flex-col gap-3">
+            <Skeleton className="max-w-[140px] h-[60px]" />
+            <Skeleton className="rounded-lg h-full py-4 px-6 w-80" />
           </div>
-          <div className="flex flex-col">
-            <Skeleton className="mb-4" />
-            <Skeleton className="w-20 max-h-10" />
+          <div className="flex flex-col gap-3">
+            <Skeleton className="max-w-[140px] h-[60px]" />
+            <Skeleton className="rounded-lg h-full py-4 px-6 w-80" />
           </div>
-          <div className="flex flex-col">
-            <Skeleton className="mb-4" />
+          <div className="flex flex-col gap-3">
+            <Skeleton className="max-w-[140px] h-[60px]" />
+            <Skeleton className="rounded-lg h-full py-4 px-6 w-80" />
           </div>
         </div>
       </section>
-      <Skeleton className="w-40 h-10" />
+      <Skeleton className="w-40 h-10 my-8 ml-[160px]" />
     </>
   );
 };
