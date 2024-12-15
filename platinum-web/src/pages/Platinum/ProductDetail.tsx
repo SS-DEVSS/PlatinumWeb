@@ -254,7 +254,7 @@ const ProductDetail = () => {
               <TabsList
                 className={`${
                   type === "KIT" ? "grid-cols-3" : "grid-cols-2"
-                } grid w-full 2xl:w-[60%]`}
+                } grid w-full 2xl:w-[70%]`}
               >
                 <TabsTrigger value="details">Detalles</TabsTrigger>
                 <TabsTrigger value="compatibilidades">

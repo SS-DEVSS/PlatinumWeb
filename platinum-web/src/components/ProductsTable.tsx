@@ -22,6 +22,7 @@ import { Category } from "../models/category";
 import { AttributeValue, Item, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 import { useProducts } from "../hooks/useProducts";
+import { Skeleton } from "./ui/skeleton";
 
 const ProductsTable = ({
   category,
@@ -41,12 +42,11 @@ const ProductsTable = ({
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const { attributes } = category || {};
-  const { products, getProductById } = useProducts();
+  const { products, getProductById, loading } = useProducts();
 
   const location = useLocation();
   const navigate = useNavigate();
   const { setType } = useItemContext();
-  const [product, setProduct] = useState<Item | null>({} as Item);
 
   const isInDetailsPage = useMemo(
     () =>
@@ -85,7 +85,6 @@ const ProductsTable = ({
   const fetchDataProduct = async (item: string) => {
     try {
       const data = await getProductById(item);
-      setProduct(data);
       return data;
     } catch (error) {
       console.log(error);
@@ -129,26 +128,10 @@ const ProductsTable = ({
         accessorKey: "type",
         header: "Tipo",
         cell: ({ row }: { row: any }) => {
-          useEffect(() => {
-            if (isInDetailsPage && row.original?.idProduct) {
-              fetchDataProduct(row.original.idProduct);
-            }
-          }, [isInDetailsPage, row.original?.idProduct]);
-
-          const newRow = (row: any) => {
-            return {
-              ...row,
-              type: product?.type,
-            };
-          };
-          newRow(row);
-          const test = newRow(row.original);
-          // console.log(test);
-          const getProductType = test.type || row.getValue("type");
-          console.log(getProductType);
-
           return (
-            <div>{getProductType === "SINGLE" ? "Componente" : "Kit"}</div>
+            <div>
+              {row.getValue("type") === "SINGLE" ? "Componente" : "Kit"}
+            </div>
           );
         },
       },
@@ -215,7 +198,23 @@ const ProductsTable = ({
 
   useEffect(() => {
     if (isInDetailsPage && data) {
-      setMappedData(data ?? []);
+      const updateData = async () => {
+        try {
+          const resolvedData = await Promise.all(
+            data.map(async (variant: Variant) => {
+              const product = await fetchDataProduct(variant.idProduct!);
+              return {
+                ...variant,
+                type: product.type,
+              };
+            })
+          );
+          setMappedData(resolvedData);
+        } catch (error) {
+          console.error("Error updating data:", error);
+        }
+      };
+      updateData();
     } else {
       let filteredProducts = products;
 
@@ -241,92 +240,99 @@ const ProductsTable = ({
 
   return (
     <div className="mt-6">
-      <Card className="border overflow-hidden">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
-                    key={header.id}
+      {/* {loading ? (
+        <Skeleton className="w-full h-80" />
+      ) : ( */}
+      <>
+        <Card className="border overflow-hidden">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
+                      key={header.id}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row, index) => {
+                  const isLastRow =
+                    index - 1 === table.getRowModel().rows.length;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                      onClick={() => handleClick(row)}
+                      className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
+                      style={{
+                        backgroundColor:
+                          row.original.id === itemVariant?.id ? "#d87e2e" : "",
+                        borderBottomLeftRadius: isLastRow
+                          ? "12px !important"
+                          : "0",
+                        borderBottomRightRadius: isLastRow
+                          ? "12px !important"
+                          : "0",
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, index) => {
-                const isLastRow = index - 1 === table.getRowModel().rows.length;
-                return (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    onClick={() => handleClick(row)}
-                    className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
-                    style={{
-                      backgroundColor:
-                        row.original.id === itemVariant?.id ? "#d87e2e" : "",
-                      borderBottomLeftRadius: isLastRow
-                        ? "12px !important"
-                        : "0",
-                      borderBottomRightRadius: isLastRow
-                        ? "12px !important"
-                        : "0",
-                    }}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No existen resultados.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-      {mappedData?.length > 10 && (
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
-      )}
+                    No existen resultados.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+        {mappedData?.length > 10 && (
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </>
+      {/* )} */}
     </div>
   );
 };

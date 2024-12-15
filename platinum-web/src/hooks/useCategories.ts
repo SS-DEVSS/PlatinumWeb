@@ -4,18 +4,20 @@ import axiosClient from "../services/axiosInstance";
 
 export const useCategories = () => {
   const client = axiosClient();
-
-  // const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const getCategoryById = async (id: Category["id"] | undefined) => {
     try {
+      setLoading(true);
       const response = await client.get(`/categories/${id}?attributes=true`);
       setCategory(response.data);
       return response.data;
     } catch (error) {
       console.error("Failed to fetch category:", error);
+    } finally {
+      setLoading(false);
     }
   };
-  return { category, getCategoryById, setCategory };
+  return { category, loading, getCategoryById, setCategory };
 };
