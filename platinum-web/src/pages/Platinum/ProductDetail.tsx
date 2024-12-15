@@ -43,7 +43,7 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   let { itemId } = useParams();
 
-  const { type, setType } = useItemContext();
+  const { type, setType, variant } = useItemContext();
   const { getProductById, loading } = useProducts();
   const { getCategoryById } = useCategories();
   const { toast } = useToast();
@@ -60,7 +60,13 @@ const ProductDetail = () => {
       if (itemId) {
         const data = await getProductById(itemId);
         setItem(data);
-        if (data.variants && data.variants.length > 0) {
+        if (variant) {
+          const selectedVariant = data.variants.find(
+            (variantItem: Variant) => variantItem.id === variant
+          );
+          console.log("selectedVariant", selectedVariant);
+          setItemVariant(selectedVariant);
+        } else if (data.variants && data.variants.length > 0) {
           setItemVariant(data.variants[0]);
         }
       }

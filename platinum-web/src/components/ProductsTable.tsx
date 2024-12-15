@@ -46,7 +46,7 @@ const ProductsTable = ({
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { setType } = useItemContext();
+  const { setType, setVariant } = useItemContext();
 
   const isInDetailsPage = useMemo(
     () =>
@@ -100,6 +100,9 @@ const ProductsTable = ({
         setItemVariant(row.original);
       }
       return;
+    } else {
+      console.log(row.original.id);
+      setVariant(row.original.id);
     }
     const type = row.getValue("type");
     if (type === "KIT") {
