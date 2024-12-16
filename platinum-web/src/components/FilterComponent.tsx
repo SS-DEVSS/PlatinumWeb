@@ -15,6 +15,9 @@ import {
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { Attribute, Category } from "../models/category";
+import { useItemContext } from "../context/Item-context";
+import { AttributeValue } from "../models/item";
+import { useEffect, useState } from "react";
 
 type FilterComponentProps = {
   attribute: Attribute;
@@ -33,8 +36,8 @@ type FilterComponentProps = {
 
 const FilterComponent = ({
   attribute,
-  category,
-  filtroInfo,
+  // category,
+  // filtroInfo,
   open,
   selectedValue,
   enabled,
@@ -42,6 +45,40 @@ const FilterComponent = ({
   onSelect,
   onReset,
 }: FilterComponentProps) => {
+  const { valuesAttributes } = useItemContext();
+
+  const [itemsToDisplay, setitemsToDisplay] = useState<any[]>([]);
+  const getValues = valuesAttributes.filter(
+    (attributeObject) => attributeObject.attributeId === attribute.id
+  );
+
+  const finalValues = getValues[0].values
+    .flat()
+    .map((attributeValue: AttributeValue) => {
+      const value =
+        attributeValue.valueNumber ||
+        attributeValue.valueString ||
+        attributeValue.valueBoolean ||
+        attributeValue.valueDate;
+
+      return { value };
+    });
+
+  useEffect(() => {
+    const cleanedFinalValues = (data: any) => {
+      let unique: any[] = [];
+      data.forEach((element: any) => {
+        if (!unique.includes(element.value)) {
+          unique.push(element.value);
+        }
+      });
+      unique.sort();
+      setitemsToDisplay(unique);
+    };
+
+    cleanedFinalValues(finalValues);
+  }, []);
+
   return (
     <Popover open={open} onOpenChange={onToggleOpen}>
       <PopoverTrigger asChild>
@@ -79,8 +116,23 @@ const FilterComponent = ({
               No se encontró {attribute.name.toLowerCase()}.
             </CommandEmpty>
             <CommandGroup>
-              {/* Cambiar esto de abajo */}
-              {category.attributes?.variant?.map((attribute: Attribute) => (
+              {itemsToDisplay.map((value: any, index: number) => (
+                <CommandItem
+                  key={index}
+                  value={value}
+                  onSelect={() => onSelect(value)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedValue === value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {value}
+                </CommandItem>
+              ))}
+
+              {/* {valuesAttributes.map((attribute: Attribute) => (
                 <CommandItem
                   key={attribute.id}
                   value={attribute.name}
@@ -96,7 +148,7 @@ const FilterComponent = ({
                   />
                   {attribute.name}
                 </CommandItem>
-              ))}
+              ))} */}
             </CommandGroup>
           </CommandList>
         </Command>

@@ -5,6 +5,9 @@ type ItemContextType = {
   setType: React.Dispatch<React.SetStateAction<"KIT" | "SINGLE" | "">>;
   variant: string;
   setVariant: React.Dispatch<React.SetStateAction<string>>;
+
+  valuesAttributes: [];
+  setValuesAttributes: React.Dispatch<React.SetStateAction<[]>>;
 };
 
 const ItemContext = createContext<ItemContextType>({} as ItemContextType);
@@ -26,8 +29,18 @@ export const ItemContextProvider = ({
 }) => {
   const [type, setType] = useState<"KIT" | "SINGLE" | "">("");
   const [variant, setVariant] = useState<string>("");
+  const [valuesAttributes, setValuesAttributes] = useState<[]>([]);
   return (
-    <ItemContext.Provider value={{ type, setType, variant, setVariant }}>
+    <ItemContext.Provider
+      value={{
+        type,
+        setType,
+        variant,
+        setVariant,
+        valuesAttributes,
+        setValuesAttributes,
+      }}
+    >
       {children}
     </ItemContext.Provider>
   );

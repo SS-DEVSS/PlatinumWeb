@@ -47,7 +47,8 @@ const ProductsTable = ({
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { setType, setVariant } = useItemContext();
+  const { setType, setVariant, valuesAttributes, setValuesAttributes } =
+    useItemContext();
 
   const isInDetailsPage = useMemo(
     () =>
@@ -241,39 +242,37 @@ const ProductsTable = ({
     }
   }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
 
-  console.log(mappedData);
-
-  const getVariantValues = (id: string) => {
-    return mappedData
-      .filter((variant: Variant) =>
-        variant.attributeValues.some((attribute: AttributeValue) => {
-          console.log(attribute);
-          console.log(id);
-          return attribute.idAttribute.includes(id);
-        })
-      )
-      .map((variant: Variant) =>
-        variant.attributeValues.filter((attribute) =>
-          attribute.idAttribute.includes(id)
+  useEffect(() => {
+    const getVariantValues = (id: string) => {
+      return mappedData
+        .filter((variant: Variant) =>
+          variant.attributeValues.some((attribute: AttributeValue) => {
+            return attribute.idAttribute.includes(id);
+          })
         )
-      );
-  };
-
-  const attributeIdList = category?.attributes?.variant?.map(
-    (attribute: Attribute) => attribute.id
-  );
-
-  console.log(attributeIdList);
-
-  const valuesMapped = attributeIdList?.map((attributeId: string) => {
-    const values = getVariantValues(attributeId);
-    return {
-      attributeId,
-      values,
+        .map((variant: Variant) =>
+          variant.attributeValues.filter((attribute) =>
+            attribute.idAttribute.includes(id)
+          )
+        );
     };
-  });
 
-  console.log(valuesMapped);
+    const attributeIdList = category?.attributes?.variant?.map(
+      (attribute: Attribute) => attribute.id
+    );
+
+    const valuesMapped = attributeIdList?.map((attributeId: string) => {
+      const values = getVariantValues(attributeId);
+      return {
+        attributeId,
+        values,
+      };
+    });
+
+    setValuesAttributes(valuesMapped);
+
+    console.log(valuesAttributes);
+  }, [mappedData]);
 
   return (
     <div className="mt-6">
