@@ -64,7 +64,6 @@ const ProductDetail = () => {
           const selectedVariant = data.variants.find(
             (variantItem: Variant) => variantItem.id === variant
           );
-          console.log("selectedVariant", selectedVariant);
           setItemVariant(selectedVariant);
         } else if (data.variants && data.variants.length > 0) {
           setItemVariant(data.variants[0]);
@@ -73,7 +72,6 @@ const ProductDetail = () => {
     };
     fetchData();
     const typeLocalStorage = localStorage.getItem("type");
-    console.log(typeLocalStorage);
     typeLocalStorage === "KIT" ? setType("KIT") : setType("SINGLE");
   }, []);
 

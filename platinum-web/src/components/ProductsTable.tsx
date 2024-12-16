@@ -18,7 +18,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useEffect, useMemo, useState } from "react";
-import { Category } from "../models/category";
+import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 import { useProducts } from "../hooks/useProducts";
@@ -41,6 +41,7 @@ const ProductsTable = ({
   };
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
+
   const { attributes } = category || {};
   const { products, getProductById, loading } = useProducts();
 
@@ -101,7 +102,6 @@ const ProductsTable = ({
       }
       return;
     } else {
-      console.log(row.original.id);
       setVariant(row.original.id);
     }
     const type = row.getValue("type");
@@ -240,6 +240,40 @@ const ProductsTable = ({
       setMappedData(flattenedData ?? []);
     }
   }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
+
+  console.log(mappedData);
+
+  const getVariantValues = (id: string) => {
+    return mappedData
+      .filter((variant: Variant) =>
+        variant.attributeValues.some((attribute: AttributeValue) => {
+          console.log(attribute);
+          console.log(id);
+          return attribute.idAttribute.includes(id);
+        })
+      )
+      .map((variant: Variant) =>
+        variant.attributeValues.filter((attribute) =>
+          attribute.idAttribute.includes(id)
+        )
+      );
+  };
+
+  const attributeIdList = category?.attributes?.variant?.map(
+    (attribute: Attribute) => attribute.id
+  );
+
+  console.log(attributeIdList);
+
+  const valuesMapped = attributeIdList?.map((attributeId: string) => {
+    const values = getVariantValues(attributeId);
+    return {
+      attributeId,
+      values,
+    };
+  });
+
+  console.log(valuesMapped);
 
   return (
     <div className="mt-6">
