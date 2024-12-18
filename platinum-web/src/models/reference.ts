@@ -1,4 +1,3 @@
 export type Reference = {
-  id: string;
-  value: number;
+  value: string;
 };

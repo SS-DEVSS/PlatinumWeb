@@ -3,12 +3,24 @@ import { Brand } from "./brand";
 export type Category = {
   id: string;
   name: string;
-  image: string;
   description: string;
+  imgUrl: string;
   brands?: Brand[];
-  attributes?: CategoryAtributes[];
-  variants?: string[];
+  attributes?: {
+    product?: Attribute[];
+    variant?: Attribute[];
+  };
+  products?: [];
 };
+
+export interface Attribute {
+  id: string;
+  name: string;
+  required: boolean;
+  type: CategoryAttributesTypes;
+  order: number;
+  scope: string;
+}
 
 export enum CategoryAttributesTypes {
   STRING = "string",
@@ -16,14 +28,11 @@ export enum CategoryAttributesTypes {
   DATE = "date",
 }
 
-export const typesArray = Object.values(CategoryAttributesTypes);
-
-console.log(typesArray);
-
-export type CategoryAtributes = {
+export interface ProductCategory {
   id: string;
-  id_category: string;
   name: string;
   type: CategoryAttributesTypes;
-  required: boolean;
-};
+  description: string;
+}
+
+export const typesArray = Object.values(CategoryAttributesTypes);

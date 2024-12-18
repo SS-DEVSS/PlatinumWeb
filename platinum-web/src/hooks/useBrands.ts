@@ -1,34 +1,26 @@
 import { useEffect, useState } from "react";
 import { Brand } from "../models/brand";
-
-const brandsSample: Brand[] = [
-  {
-    id: "1",
-    logo_img_url: "LOGOPlatinum",
-    name: "Platinum Driveline",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: "2",
-    logo_img_url: "",
-    name: "Delphi",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-  {
-    id: "3",
-    logo_img_url: "",
-    name: "FTE",
-    description:
-      "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Repellendus rem minus, soluta officia ipsam repudiandae quia rerum voluptatibus ipsum minima",
-  },
-];
+import axiosClient from "../services/axiosInstance";
 
 export const useBrands = () => {
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const client = axiosClient();
+  const [brands, setBrands] = useState<Brand | null>(null);
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
-    setBrands(brandsSample);
+    getBrands();
   }, []);
-  return { brands };
+
+  const getBrands = async () => {
+    try {
+      setLoading(true);
+      const data = await client.get("/brands");
+      setBrands(data.data[0]);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { loading, brands };
 };
