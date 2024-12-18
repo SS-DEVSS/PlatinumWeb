@@ -53,29 +53,26 @@ const FilterSection = ({ category, filtroInfo }: FilterSectionProps) => {
       const currentIndex = attributeKeys.indexOf(attributeId);
       const updatedState = { ...prevState };
 
-      // Update selected attribute value
       updatedState[attributeId] = {
         ...updatedState[attributeId],
         selectedValue: name,
         open: false,
       };
 
-      // If unselect (empty value), reset all subsequent attributes
       if (!name) {
         for (let i = currentIndex; i < attributeKeys.length; i++) {
           updatedState[attributeKeys[i]] = {
             ...updatedState[attributeKeys[i]],
             selectedValue: "",
-            disabled: i !== currentIndex, // Only keep the current one enabled
+            disabled: i !== currentIndex,
           };
         }
       } else {
-        // Enable next attribute and reset subsequent ones
         for (let i = currentIndex + 1; i < attributeKeys.length; i++) {
           updatedState[attributeKeys[i]] = {
             ...updatedState[attributeKeys[i]],
             selectedValue: "",
-            disabled: i !== currentIndex + 1, // Only enable next
+            disabled: i !== currentIndex + 1,
           };
         }
       }
@@ -83,16 +80,13 @@ const FilterSection = ({ category, filtroInfo }: FilterSectionProps) => {
       return updatedState;
     });
 
-    // Update the selectedFilters state
     setSelectedFilters((prevFilters) => {
-      // If unselecting, remove the specific attribute filter
       if (!name) {
         return prevFilters.filter(
           (filter) => filter.attributeId !== attributeId
         );
       }
 
-      // Replace or add a new filter
       const updatedFilters = prevFilters.filter(
         (filter) => filter.attributeId !== attributeId
       );

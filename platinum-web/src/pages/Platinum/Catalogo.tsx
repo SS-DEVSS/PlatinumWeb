@@ -1,12 +1,4 @@
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "../../components/ui/command";
 import { Label } from "../../components/ui/label";
 import {
   Select,
@@ -24,9 +16,8 @@ import FilterSection from "../../components/FilterSection";
 import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
 import { useBrands } from "../../hooks/useBrands";
-import { Check } from "lucide-react";
-import { Category } from "../../models/category";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
+import { Category } from "../../models/category";
 
 type formState = {
   filtroTipo: "NumParte" | "Vehiculo" | "Referencia";
@@ -44,7 +35,6 @@ const Catalogo = () => {
     category,
   } = useCategories();
   const { loading: loadingBrands, brands } = useBrands();
-  // const {selectedFilters, setSelectedFilters} = useItemContext()
 
   const categories = brands?.categories || [];
 
@@ -111,18 +101,6 @@ const Catalogo = () => {
       case "NumParte":
         return (
           <div className="flex gap-3 w-[30%]">
-            {/* <Command>
-                <CommandInput placeholder={`Buscar...`} />
-                <CommandList>
-                  <CommandEmpty>No se encontró.</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem>
-                      <Check className={"mr-2 h-4 w-4"} />
-                      Hola
-                    </CommandItem>
-                  </CommandGroup>
-                </CommandList>
-              </Command> */}
             <Input
               value={form.filtro.numParte}
               onChange={handleNumParte}

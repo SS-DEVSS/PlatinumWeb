@@ -22,7 +22,6 @@ import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 import { useProducts } from "../hooks/useProducts";
-import { Skeleton } from "./ui/skeleton";
 
 const ProductsTable = ({
   category,
@@ -43,7 +42,7 @@ const ProductsTable = ({
   const [mappedData, setMappedData] = useState<Variant[]>([]);
 
   const { attributes } = category || {};
-  const { products, getProductById, loading } = useProducts();
+  const { products, getProductById } = useProducts();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -273,9 +272,6 @@ const ProductsTable = ({
 
   return (
     <div className="mt-6">
-      {/* {loading ? (
-        <Skeleton className="w-full h-80" />
-      ) : ( */}
       <>
         <Card className="border overflow-hidden">
           <Table>
@@ -365,7 +361,6 @@ const ProductsTable = ({
           </div>
         )}
       </>
-      {/* )} */}
     </div>
   );
 };
