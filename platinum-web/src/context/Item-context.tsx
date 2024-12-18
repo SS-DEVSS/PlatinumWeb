@@ -8,6 +8,11 @@ type ItemContextType = {
 
   valuesAttributes: [];
   setValuesAttributes: React.Dispatch<React.SetStateAction<[]>>;
+
+  selectedFilters: { attributeId: string; value: string }[];
+  setSelectedFilters: React.Dispatch<
+    React.SetStateAction<{ attributeId: string; value: string }[]>
+  >;
 };
 
 const ItemContext = createContext<ItemContextType>({} as ItemContextType);
@@ -30,6 +35,9 @@ export const ItemContextProvider = ({
   const [type, setType] = useState<"KIT" | "SINGLE" | "">("");
   const [variant, setVariant] = useState<string>("");
   const [valuesAttributes, setValuesAttributes] = useState<[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<
+    { attributeId: string; value: string }[]
+  >([]);
   return (
     <ItemContext.Provider
       value={{
@@ -39,6 +47,8 @@ export const ItemContextProvider = ({
         setVariant,
         valuesAttributes,
         setValuesAttributes,
+        selectedFilters,
+        setSelectedFilters,
       }}
     >
       {children}

@@ -47,8 +47,7 @@ const ProductsTable = ({
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { setType, setVariant, valuesAttributes, setValuesAttributes } =
-    useItemContext();
+  const { setType, setVariant, setValuesAttributes } = useItemContext();
 
   const isInDetailsPage = useMemo(
     () =>
@@ -270,8 +269,6 @@ const ProductsTable = ({
     });
 
     setValuesAttributes(valuesMapped);
-
-    console.log(valuesAttributes);
   }, [mappedData]);
 
   return (

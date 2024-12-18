@@ -33,7 +33,6 @@ type formState = {
   filtro: {
     referencia: string;
     numParte: string;
-    vehiculo: {};
   };
   categoria: Category | null;
 };
@@ -45,6 +44,7 @@ const Catalogo = () => {
     category,
   } = useCategories();
   const { loading: loadingBrands, brands } = useBrands();
+  // const {selectedFilters, setSelectedFilters} = useItemContext()
 
   const categories = brands?.categories || [];
 
@@ -53,7 +53,6 @@ const Catalogo = () => {
     filtro: {
       referencia: "",
       numParte: "",
-      vehiculo: {},
     },
     categoria: categories.length > 0 ? categories[0] : null,
   });
@@ -218,7 +217,6 @@ const Catalogo = () => {
                         filtro: {
                           referencia: "",
                           numParte: "",
-                          vehiculo: {},
                         },
                       }))
                     }
@@ -240,7 +238,6 @@ const Catalogo = () => {
                         filtro: {
                           referencia: "",
                           numParte: "",
-                          vehiculo: {},
                         },
                       }))
                     }
@@ -262,7 +259,6 @@ const Catalogo = () => {
                         filtro: {
                           referencia: "",
                           numParte: "",
-                          vehiculo: {},
                         },
                       }))
                     }

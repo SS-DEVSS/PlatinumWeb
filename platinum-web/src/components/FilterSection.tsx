@@ -1,6 +1,7 @@
 import { Category } from "../models/category";
 import { useEffect, useState } from "react";
 import FilterComponent from "./FilterComponent";
+import { useItemContext } from "../context/Item-context";
 
 type FilterSectionProps = {
   category: Category | null;
@@ -11,6 +12,8 @@ type FilterSectionProps = {
 };
 
 const FilterSection = ({ category, filtroInfo }: FilterSectionProps) => {
+  const { setSelectedFilters } = useItemContext();
+
   const [attributeStates, setAttributeStates] = useState<{
     [key: string]: { open: boolean; selectedValue: string; disabled: boolean };
   }>({});
@@ -34,49 +37,66 @@ const FilterSection = ({ category, filtroInfo }: FilterSectionProps) => {
           };
         }
       );
-      setAttributeStates(initialStates!);
+      setAttributeStates(initialStates || {});
+    } else {
+      setAttributeStates({});
     }
   }, [category]);
 
+  useEffect(() => {
+    setSelectedFilters([]);
+  }, []);
+
   const handleSelect = (attributeId: string, name: string) => {
-    setAttributeStates((prevState: any) => {
+    setAttributeStates((prevState) => {
       const attributeKeys = Object.keys(prevState);
       const currentIndex = attributeKeys.indexOf(attributeId);
+      const updatedState = { ...prevState };
 
-      const updatedState = {
-        ...prevState,
-        [attributeId]: {
-          ...prevState![attributeId],
-          selectedValue: name,
-          open: false,
-        },
+      // Update selected attribute value
+      updatedState[attributeId] = {
+        ...updatedState[attributeId],
+        selectedValue: name,
+        open: false,
       };
 
-      if (currentIndex + 1 < attributeKeys.length) {
-        const nextId = attributeKeys[currentIndex + 1];
-        updatedState[nextId].disabled = false;
+      // If unselect (empty value), reset all subsequent attributes
+      if (!name) {
+        for (let i = currentIndex; i < attributeKeys.length; i++) {
+          updatedState[attributeKeys[i]] = {
+            ...updatedState[attributeKeys[i]],
+            selectedValue: "",
+            disabled: i !== currentIndex, // Only keep the current one enabled
+          };
+        }
+      } else {
+        // Enable next attribute and reset subsequent ones
+        for (let i = currentIndex + 1; i < attributeKeys.length; i++) {
+          updatedState[attributeKeys[i]] = {
+            ...updatedState[attributeKeys[i]],
+            selectedValue: "",
+            disabled: i !== currentIndex + 1, // Only enable next
+          };
+        }
       }
 
       return updatedState;
     });
-  };
 
-  const handleResetFrom = (attributeId: string) => {
-    setAttributeStates((prevState: any) => {
-      const attributeKeys = Object.keys(prevState);
-      const currentIndex = attributeKeys.indexOf(attributeId);
-
-      const updatedState = { ...prevState };
-      for (let i = currentIndex + 1; i < attributeKeys.length; i++) {
-        const id = attributeKeys[i];
-        updatedState[id] = {
-          ...updatedState[id],
-          selectedValue: "",
-          disabled: true,
-        };
+    // Update the selectedFilters state
+    setSelectedFilters((prevFilters) => {
+      // If unselecting, remove the specific attribute filter
+      if (!name) {
+        return prevFilters.filter(
+          (filter) => filter.attributeId !== attributeId
+        );
       }
 
-      return updatedState;
+      // Replace or add a new filter
+      const updatedFilters = prevFilters.filter(
+        (filter) => filter.attributeId !== attributeId
+      );
+      return [...updatedFilters, { attributeId, value: name }];
     });
   };
 
@@ -101,7 +121,6 @@ const FilterSection = ({ category, filtroInfo }: FilterSectionProps) => {
             enabled={!attributeStates![attribute.id]?.disabled}
             onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
             onSelect={(name: string) => handleSelect(attribute.id, name)}
-            onReset={() => handleResetFrom(attribute.id)}
           />
         ))}
     </div>
