@@ -25,60 +25,57 @@ type FilterComponentProps = {
   filtroInfo: {
     numParte: string;
     referencia: string;
+    vehiculo?: any;
   };
   open: boolean;
   selectedValue: string;
   enabled: boolean;
+  availableOptions: string[];
   onToggleOpen: (open: boolean) => void;
   onSelect: (name: string) => void;
 };
 
 const FilterComponent = ({
   attribute,
-  // category,
-  // filtroInfo,
+  category,
   open,
   selectedValue,
   enabled,
+  availableOptions,
   onToggleOpen,
   onSelect,
 }: FilterComponentProps) => {
-  const { valuesAttributes, selectedFilters, setSelectedFilters } =
-    useItemContext();
-
-  console.log(selectedFilters);
-
-  const [itemsToDisplay, setitemsToDisplay] = useState<any[]>([]);
-  const getValues = valuesAttributes.filter(
-    (attributeObject) => attributeObject.attributeId === attribute.id
-  );
-
-  const finalValues = getValues[0].values
-    .flat()
-    .map((attributeValue: AttributeValue) => {
-      const value =
-        attributeValue.valueNumber ||
-        attributeValue.valueString ||
-        attributeValue.valueBoolean ||
-        attributeValue.valueDate;
-
-      return { value };
-    });
+  const { valuesAttributes } = useItemContext();
+  const [itemsToDisplay, setItemsToDisplay] = useState<string[]>([]);
 
   useEffect(() => {
-    const cleanedFinalValues = (data: any) => {
-      let unique: any[] = [];
-      data.forEach((element: any) => {
-        if (!unique.includes(element.value)) {
-          unique.push(element.value);
-        }
-      });
-      unique.sort();
-      setitemsToDisplay(unique);
-    };
+    // If we have specific available options for this filter, use those
+    if (availableOptions && availableOptions.length > 0) {
+      setItemsToDisplay(availableOptions);
+    } else if (!enabled && selectedValue === "") {
+      // If filter is disabled and no value selected, show empty list
+      setItemsToDisplay([]);
+    } else {
+      // Otherwise get all possible values for this attribute
+      const getValues = valuesAttributes.filter(
+        (attributeObject: any) => attributeObject.attributeId === attribute.id
+      );
 
-    cleanedFinalValues(finalValues);
-  }, []);
+      const allValues = getValues[0]?.values
+        .flat()
+        .map((attributeValue: AttributeValue) => {
+          return attributeValue.valueString ||
+            attributeValue.valueNumber?.toString() ||
+            attributeValue.valueBoolean?.toString() ||
+            attributeValue.valueDate?.toString();
+        })
+        .filter(Boolean) || [];
+
+      // Remove duplicates and sort
+      const uniqueValues = Array.from(new Set(allValues)).sort();
+      setItemsToDisplay(uniqueValues);
+    }
+  }, [attribute.id, valuesAttributes, enabled, selectedValue, availableOptions]);
 
   return (
     <Popover open={open} onOpenChange={onToggleOpen}>
@@ -131,21 +128,12 @@ const FilterComponent = ({
                 <span>Sin Selección</span>
               </CommandItem>
 
-              {itemsToDisplay.map((value: any, index: number) => (
+              {itemsToDisplay.map((value: string, index: number) => (
                 <CommandItem
                   className="hover:cursor-pointer"
                   key={index}
                   value={value}
                   onSelect={(name: string) => {
-                    setSelectedFilters((prev) => {
-                      const updatedFilters = prev.filter(
-                        (filter) => filter.value !== name
-                      );
-                      return [
-                        ...updatedFilters,
-                        { attributeId: attribute.id, value: name },
-                      ];
-                    });
                     onSelect(name);
                   }}
                 >

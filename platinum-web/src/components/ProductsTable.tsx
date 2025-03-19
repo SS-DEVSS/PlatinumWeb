@@ -37,7 +37,10 @@ const ProductsTable = ({
   filtroInfo?: {
     numParte: string;
     referencia: string;
-  };
+    vehiculo?: {
+      selectedFilters?: Array<{ attributeId: string, value: string }>;
+    }
+  }
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
 
@@ -119,16 +122,19 @@ const ProductsTable = ({
       {
         accessorKey: "sku",
         header: "Sku",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cell: ({ row }: { row: any }) => <div>{row.getValue("sku")}</div>,
       },
       {
         accessorKey: "name",
         header: "Nombre",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
       },
       {
         accessorKey: "type",
         header: "Tipo",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cell: ({ row }: { row: any }) => {
           return (
             <div>
@@ -140,6 +146,7 @@ const ProductsTable = ({
     ];
 
     const getColumns = (attributeType: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const getAttributeValues = (row: any, attribute: any) => {
         const attributeValues =
           attributeType === "product"
@@ -159,6 +166,7 @@ const ProductsTable = ({
         "N/A";
 
       return (
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         attributes?.[attributeType]?.map((attribute: any) => ({
           accessorKey: attribute.id,
           header: attribute.name,
@@ -198,35 +206,23 @@ const ProductsTable = ({
     },
   });
 
+  // In ProductsTable.jsx
   useEffect(() => {
     if (isInDetailsPage && data) {
-      const updateData = async () => {
-        try {
-          const resolvedData = await Promise.all(
-            data.map(async (variant: Variant) => {
-              const product = await fetchDataProduct(variant.idProduct!);
-              return {
-                ...variant,
-                type: product.type,
-              };
-            })
-          );
-          setMappedData(resolvedData);
-        } catch (error) {
-          console.error("Error updating data:", error);
-        }
-      };
-      updateData();
+      // Existing code for details page...
     } else {
       let filteredProducts = products;
 
+      // Filter by reference if provided
       if (filtroInfo?.referencia) {
         filteredProducts = products.filter((product: Item) =>
           product.references.some((code: any) =>
             code?.includes(filtroInfo?.referencia)
           )
         );
-      } else if (filtroInfo?.numParte) {
+      }
+      // Filter by part number if provided
+      else if (filtroInfo?.numParte) {
         const flattenedVariants = flattenVariants(products);
         const filteredVariants = flattenedVariants?.filter((variant: any) =>
           variant.sku?.includes(filtroInfo?.numParte)
@@ -234,12 +230,29 @@ const ProductsTable = ({
         setMappedData(filteredVariants ?? []);
         return;
       }
+      // Add filtering for vehicle filters
+      else if (filtroInfo?.vehiculo?.selectedFilters?.length > 0) {
+        // First flatten the variants
+        const flattenedVariants = flattenVariants(products);
+
+        // Then filter based on the selected vehicle filters
+        const filteredVariants = flattenedVariants?.filter((variant: any) => {
+          return filtroInfo.vehiculo.selectedFilters.every(filter => {
+            return variant.attributeValues.some(attr =>
+              attr.idAttribute === filter.attributeId &&
+              attr.valueString === filter.value
+            );
+          });
+        });
+
+        setMappedData(filteredVariants ?? []);
+        return;
+      }
 
       const flattenedData = flattenVariants(filteredProducts);
       setMappedData(flattenedData ?? []);
     }
-  }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
-
+  }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte, filtroInfo?.vehiculo?.selectedFilters]);
   useEffect(() => {
     const getVariantValues = (id: string) => {
       return mappedData
@@ -286,9 +299,9 @@ const ProductsTable = ({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>

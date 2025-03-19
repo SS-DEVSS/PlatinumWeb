@@ -17,6 +17,7 @@ import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
 import { useBrands } from "../../hooks/useBrands";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
+import SkeletonProductsTable from "../../skeletons/SkeletonProductsTable";
 import { Category } from "../../models/category";
 
 type formState = {
@@ -24,6 +25,9 @@ type formState = {
   filtro: {
     referencia: string;
     numParte: string;
+    vehiculo: {
+      selectedFilters?: Array<{ attributeId: string, value: string }>;
+    };
   };
   categoria: Category | null;
 };
@@ -36,6 +40,9 @@ const Catalogo = () => {
   } = useCategories();
   const { loading: loadingBrands, brands } = useBrands();
 
+  // Adding loading state for products table
+  const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
+
   const categories = brands?.categories || [];
 
   const [form, setForm] = useState<formState>({
@@ -43,6 +50,9 @@ const Catalogo = () => {
     filtro: {
       referencia: "",
       numParte: "",
+      vehiculo: {
+        selectedFilters: []
+      },
     },
     categoria: categories.length > 0 ? categories[0] : null,
   });
@@ -56,18 +66,35 @@ const Catalogo = () => {
     }
 
     if (form.categoria) {
-      getCategoryById(form.categoria?.id);
+      setLoadingProducts(true);
+      getCategoryById(form.categoria?.id)
+        .finally(() => {
+          setTimeout(() => {
+            setLoadingProducts(false);
+          }, 800); // Add a small delay for a smoother transition
+        });
     }
   }, [categories, form.categoria]);
+
+  // Trigger loading when filters change
+  useEffect(() => {
+    if (form.filtro.numParte || form.filtro.referencia ||
+      (form.filtroTipo === "Vehiculo" && form.filtro.vehiculo.selectedFilters?.length > 0)) {
+      setLoadingProducts(true);
+      setTimeout(() => {
+        setLoadingProducts(false);
+      }, 800); // Simulate loading time
+    }
+  }, [form.filtro, form.filtroTipo]);
 
   const handleReference = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
     setForm((prevform) => ({
       ...prevform,
       filtro: {
+        ...prevform.filtro,
         numParte: "",
         referencia: value,
-        vehiculo: {},
       },
     }));
   };
@@ -77,9 +104,22 @@ const Catalogo = () => {
     setForm((prevform) => ({
       ...prevform,
       filtro: {
+        ...prevform.filtro,
         numParte: value,
         referencia: "",
-        vehiculo: {},
+      },
+    }));
+  };
+
+  const handleVehicleFilterChange = (filters: Array<{ attributeId: string, value: string }>) => {
+    setForm((prevform) => ({
+      ...prevform,
+      filtro: {
+        ...prevform.filtro,
+        vehiculo: {
+          ...prevform.filtro.vehiculo,
+          selectedFilters: filters
+        }
       },
     }));
   };
@@ -92,6 +132,12 @@ const Catalogo = () => {
       setForm((prevForm) => ({
         ...prevForm,
         categoria: selectedCategory,
+        filtro: {
+          ...prevForm.filtro,
+          vehiculo: {
+            selectedFilters: []
+          }
+        }
       }));
     }
   };
@@ -121,7 +167,13 @@ const Catalogo = () => {
           </div>
         );
       case "Vehiculo":
-        return <FilterSection category={category} filtroInfo={form.filtro} />;
+        return (
+          <FilterSection
+            category={category}
+            filtroInfo={form.filtro}
+            onFilterChange={handleVehicleFilterChange}
+          />
+        );
     }
   };
 
@@ -140,7 +192,7 @@ const Catalogo = () => {
                 <Label className="font-semibold text-base mb-4 text-white">
                   Marca:
                 </Label>
-                <div className="flex gap-5 bg-white text-black rounded-lg h-full items-center py-4 px-6">
+                <div className="flex gap-5 bg-white text-black rounded-lg items-center py-4 px-6 h-[52px]">
                   <img
                     className="w-20"
                     src={brands?.logoImgUrl}
@@ -154,7 +206,7 @@ const Catalogo = () => {
                   Categoría:
                 </Label>
                 <Select onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="h-full">
+                  <SelectTrigger className="h-[52px]">
                     {form.categoria ? (
                       <div className="flex items-center">
                         <img
@@ -184,7 +236,7 @@ const Catalogo = () => {
                 <Label className="font-semibold text-base mb-4 text-white">
                   Filtrar Por:
                 </Label>
-                <div className="flex gap-2 rounded-lg bg-white p-2 h-full items-center">
+                <div className="flex gap-2 rounded-lg bg-white p-2 items-center h-[52px]">
                   <Button
                     size={"lg"}
                     variant={"ghost"}
@@ -193,6 +245,7 @@ const Catalogo = () => {
                         ...prevForm,
                         filtroTipo: "NumParte",
                         filtro: {
+                          ...prevForm.filtro,
                           referencia: "",
                           numParte: "",
                         },
@@ -214,6 +267,7 @@ const Catalogo = () => {
                         ...prevForm,
                         filtroTipo: "Referencia",
                         filtro: {
+                          ...prevForm.filtro,
                           referencia: "",
                           numParte: "",
                         },
@@ -235,6 +289,7 @@ const Catalogo = () => {
                         ...prevForm,
                         filtroTipo: "Vehiculo",
                         filtro: {
+                          ...prevForm.filtro,
                           referencia: "",
                           numParte: "",
                         },
@@ -255,7 +310,14 @@ const Catalogo = () => {
           </section>
           <section className="px-20 py-8 bg-[#E4E4E4]">
             {getFilterComponent()}
-            <ProductsTable category={category} filtroInfo={form.filtro} />
+            {loadingProducts ? (
+              <SkeletonProductsTable />
+            ) : (
+              <ProductsTable
+                category={category}
+                filtroInfo={form.filtro}
+              />
+            )}
           </section>
         </>
       )}
