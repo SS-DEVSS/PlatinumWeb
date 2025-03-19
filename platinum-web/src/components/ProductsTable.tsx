@@ -29,6 +29,7 @@ const ProductsTable = ({
   itemVariant,
   setItemVariant,
   filtroInfo,
+  filtroTipo,
 }: {
   category: Category | null;
   data?: Variant[] | null;
@@ -40,9 +41,13 @@ const ProductsTable = ({
     vehiculo?: {
       selectedFilters?: Array<{ attributeId: string, value: string }>;
     }
-  }
+  };
+  filtroTipo?: "NumParte" | "Vehiculo" | "Referencia";
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
+  // Add a new state to track when data processing is complete
+  const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
 
   const { attributes } = category || {};
   const { products, getProductById } = useProducts();
@@ -59,7 +64,7 @@ const ProductsTable = ({
   );
 
   const flattenVariants = (items: Item[]) => {
-    if (items.length) {
+    if (items?.length) {
       return items.flatMap((item: Item) => {
         const type = item.type;
         const variants = item.variants;
@@ -83,6 +88,7 @@ const ProductsTable = ({
         }));
       });
     }
+    return [];
   };
 
   const fetchDataProduct = async (item: string) => {
@@ -206,37 +212,48 @@ const ProductsTable = ({
     },
   });
 
-  // In ProductsTable.jsx
+  // Process and set data
   useEffect(() => {
-    if (isInDetailsPage && data) {
-      // Existing code for details page...
-    } else {
-      let filteredProducts = products;
+    setIsDataLoaded(false);
+    setIsProcessingComplete(false); // Reset processing state
 
-      // Filter by reference if provided
-      if (filtroInfo?.referencia) {
-        filteredProducts = products.filter((product: Item) =>
-          product.references.some((code: any) =>
-            code?.includes(filtroInfo?.referencia)
-          )
-        );
-      }
-      // Filter by part number if provided
-      else if (filtroInfo?.numParte) {
-        const flattenedVariants = flattenVariants(products);
-        const filteredVariants = flattenedVariants?.filter((variant: any) =>
-          variant.sku?.includes(filtroInfo?.numParte)
-        );
-        setMappedData(filteredVariants ?? []);
+    if (isInDetailsPage && data) {
+      setMappedData(data);
+      setIsDataLoaded(true);
+      setIsProcessingComplete(true); // Mark processing as complete
+    } else {
+      // Make sure products is not undefined or empty before proceeding
+      if (!products || products.length === 0) {
+        setMappedData([]);
+        setIsDataLoaded(true);
+        setIsProcessingComplete(true); // Mark processing as complete
         return;
       }
-      // Add filtering for vehicle filters
-      else if (filtroInfo?.vehiculo?.selectedFilters?.length > 0) {
-        // First flatten the variants
-        const flattenedVariants = flattenVariants(products);
 
-        // Then filter based on the selected vehicle filters
-        const filteredVariants = flattenedVariants?.filter((variant: any) => {
+      let filteredProducts = products;
+      let filteredVariants = [];
+
+      // Handle filtering based on filter type
+      if (filtroTipo === "Referencia" && filtroInfo?.referencia) {
+        // Filter by reference if provided
+        filteredProducts = products.filter((product: Item) =>
+          product.references?.some((code: any) =>
+            code?.includes(filtroInfo.referencia)
+          )
+        );
+        filteredVariants = flattenVariants(filteredProducts);
+      }
+      else if (filtroTipo === "NumParte" && filtroInfo?.numParte) {
+        // Filter by part number if provided
+        const allVariants = flattenVariants(products);
+        filteredVariants = allVariants.filter((variant: any) =>
+          variant.sku?.includes(filtroInfo.numParte)
+        );
+      }
+      else if (filtroTipo === "Vehiculo" && filtroInfo?.vehiculo?.selectedFilters?.length > 0) {
+        // Filter based on the selected vehicle filters
+        const allVariants = flattenVariants(products);
+        filteredVariants = allVariants.filter((variant: any) => {
           return filtroInfo.vehiculo.selectedFilters.every(filter => {
             return variant.attributeValues.some(attr =>
               attr.idAttribute === filter.attributeId &&
@@ -244,16 +261,29 @@ const ProductsTable = ({
             );
           });
         });
-
-        setMappedData(filteredVariants ?? []);
-        return;
+      }
+      else {
+        // No filter applied, show all products
+        filteredVariants = flattenVariants(filteredProducts);
       }
 
-      const flattenedData = flattenVariants(filteredProducts);
-      setMappedData(flattenedData ?? []);
+      setMappedData(filteredVariants ?? []);
+      setIsDataLoaded(true);
+      setIsProcessingComplete(true); // Mark processing as complete
     }
-  }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte, filtroInfo?.vehiculo?.selectedFilters]);
+  }, [
+    products,
+    data,
+    location,
+    filtroTipo,
+    filtroInfo?.referencia,
+    filtroInfo?.numParte,
+    filtroInfo?.vehiculo?.selectedFilters
+  ]);
+
   useEffect(() => {
+    if (!isDataLoaded) return;
+
     const getVariantValues = (id: string) => {
       return mappedData
         .filter((variant: Variant) =>
@@ -281,7 +311,7 @@ const ProductsTable = ({
     });
 
     setValuesAttributes(valuesMapped);
-  }, [mappedData]);
+  }, [mappedData, isDataLoaded]);
 
   return (
     <div className="mt-6">
@@ -308,7 +338,16 @@ const ProductsTable = ({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {!isProcessingComplete ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    Cargando resultados...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row, index) => {
                   const isLastRow =
                     index - 1 === table.getRowModel().rows.length;
@@ -346,14 +385,14 @@ const ProductsTable = ({
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No existen resultados.
+                    No existen resultados
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </Card>
-        {mappedData?.length > 10 && (
+        {isProcessingComplete && mappedData?.length > 10 && (
           <div className="flex items-center justify-end space-x-2 py-4">
             <Button
               variant="outline"

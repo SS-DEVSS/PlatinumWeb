@@ -12,13 +12,15 @@ import {
 import { Button } from "../../components/ui/button";
 import { useState, useEffect } from "react";
 import { useCategories } from "../../hooks/useCategories";
+import { useBrands } from "../../hooks/useBrands";
 import FilterSection from "../../components/FilterSection";
 import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
-import { useBrands } from "../../hooks/useBrands";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import SkeletonProductsTable from "../../skeletons/SkeletonProductsTable";
 import { Category } from "../../models/category";
+import { Alert, AlertDescription } from "../../components/ui/Alert";
+import { AlertCircle } from "lucide-react";
 
 type formState = {
   filtroTipo: "NumParte" | "Vehiculo" | "Referencia";
@@ -30,20 +32,30 @@ type formState = {
     };
   };
   categoria: Category | null;
+  marca: string | null;
 };
 
 const Catalogo = () => {
+  const { loading: loadingBrands, brands: brandsMap, error: brandsError } = useBrands();
   const {
     loading: loadingCategories,
-    getCategoryById,
     category,
+    getCategoryById,
+    error: categoriesError
   } = useCategories();
-  const { loading: loadingBrands, brands } = useBrands();
+
+  // Convert brandsMap to array for rendering
+  const brands = Object.values(brandsMap || {});
 
   // Adding loading state for products table
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
+  // Track if initial load has happened
+  const [initialLoad, setInitialLoad] = useState<boolean>(false);
+  // Add state to track product loading errors
+  const [productsError, setProductsError] = useState<string | null>(null);
 
-  const categories = brands?.categories || [];
+  // State to track available categories based on selected brand
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
 
   const [form, setForm] = useState<formState>({
     filtroTipo: "NumParte",
@@ -54,38 +66,150 @@ const Catalogo = () => {
         selectedFilters: []
       },
     },
-    categoria: categories.length > 0 ? categories[0] : null,
+    categoria: null,
+    marca: null,
   });
 
+  // Handle initial brand selection
   useEffect(() => {
-    if (categories!.length > 0 && !form.categoria) {
-      setForm((prevForm) => ({
+    if (brands && brands.length > 0 && !form.marca) {
+      // Select first brand by default
+      const firstBrand = brands[0];
+      setForm(prevForm => ({
         ...prevForm,
-        categoria: categories![0],
+        marca: firstBrand.id
       }));
-    }
 
-    if (form.categoria) {
-      setLoadingProducts(true);
-      getCategoryById(form.categoria?.id)
-        .finally(() => {
-          setTimeout(() => {
-            setLoadingProducts(false);
-          }, 800); // Add a small delay for a smoother transition
-        });
-    }
-  }, [categories, form.categoria]);
+      // Set available categories for the first brand
+      setAvailableCategories(firstBrand.categories || []);
 
-  // Trigger loading when filters change
+      // If brand has categories, select the first one
+      if (firstBrand.categories && firstBrand.categories.length > 0) {
+        setForm(prevForm => ({
+          ...prevForm,
+          categoria: firstBrand.categories[0],
+        }));
+      }
+    }
+  }, [brands]);
+
+  // Update available categories when brand changes
   useEffect(() => {
-    if (form.filtro.numParte || form.filtro.referencia ||
-      (form.filtroTipo === "Vehiculo" && form.filtro.vehiculo.selectedFilters?.length > 0)) {
+    if (!brands || brands.length === 0 || !form.marca) return;
+
+    const selectedBrand = brandsMap[form.marca];
+    if (selectedBrand) {
+      setAvailableCategories(selectedBrand.categories || []);
+
+      // If brand has categories, select the first one
+      if (selectedBrand.categories && selectedBrand.categories.length > 0) {
+        setForm(prevForm => ({
+          ...prevForm,
+          categoria: selectedBrand.categories[0],
+          // Reset vehicle filters when changing brand
+          filtro: {
+            ...prevForm.filtro,
+            vehiculo: {
+              selectedFilters: []
+            }
+          }
+        }));
+      } else {
+        // If brand has no categories, clear category selection
+        setForm(prevForm => ({
+          ...prevForm,
+          categoria: null
+        }));
+      }
+    }
+  }, [form.marca, brandsMap]);
+
+  // Fetch category data when selected category changes
+  useEffect(() => {
+    if (!form.categoria) return;
+
+    setProductsError(null);
+    setLoadingProducts(true);
+
+    getCategoryById(form.categoria.id)
+      .then(() => {
+        setInitialLoad(true);
+      })
+      .catch((err) => {
+        setProductsError(`Error al cargar productos: ${err.message || 'Ocurrió un error inesperado'}`);
+      })
+      .finally(() => {
+        setTimeout(() => {
+          setLoadingProducts(false);
+        }, 800);
+      });
+  }, [form.categoria]);
+
+  // MODIFIED: Only trigger loading for vehicle filters that require server-side processing
+  useEffect(() => {
+    if (initialLoad && form.filtroTipo === "Vehiculo" &&
+      form.filtro.vehiculo.selectedFilters?.length > 0) {
+      setProductsError(null);
       setLoadingProducts(true);
+
+      // Your API call or data processing here
+
       setTimeout(() => {
         setLoadingProducts(false);
       }, 800); // Simulate loading time
     }
-  }, [form.filtro, form.filtroTipo]);
+  }, [form.filtroTipo, form.filtro.vehiculo.selectedFilters, initialLoad]);
+
+  const handleBrandChange = (brandId: string) => {
+    if (form.marca === brandId) return;
+
+    setForm(prevForm => ({
+      ...prevForm,
+      marca: brandId,
+      // Reset filters when changing brand
+      filtro: {
+        numParte: "",
+        referencia: "",
+        vehiculo: {
+          selectedFilters: []
+        }
+      }
+    }));
+  };
+
+  const handleCategoryChange = (categoryId: string) => {
+    const selectedCategory = availableCategories.find(
+      (category) => category.id === categoryId
+    );
+
+    if (selectedCategory && (!form.categoria || form.categoria.id !== categoryId)) {
+      setForm((prevForm) => ({
+        ...prevForm,
+        categoria: selectedCategory,
+        filtro: {
+          ...prevForm.filtro,
+          // Clear vehicle filters when category changes
+          vehiculo: {
+            selectedFilters: []
+          }
+        }
+      }));
+
+      // Explicitly trigger loading and fetch for category change
+      setProductsError(null);
+      setLoadingProducts(true);
+
+      getCategoryById(categoryId)
+        .catch((err) => {
+          setProductsError(`Error al cargar categoría: ${err.message || 'Ocurrió un error inesperado'}`);
+        })
+        .finally(() => {
+          setTimeout(() => {
+            setLoadingProducts(false);
+          }, 800);
+        });
+    }
+  };
 
   const handleReference = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -124,24 +248,6 @@ const Catalogo = () => {
     }));
   };
 
-  const handleCategoryChange = (value: string) => {
-    const selectedCategory = categories!.find(
-      (category) => category.id === value
-    );
-    if (selectedCategory) {
-      setForm((prevForm) => ({
-        ...prevForm,
-        categoria: selectedCategory,
-        filtro: {
-          ...prevForm.filtro,
-          vehiculo: {
-            selectedFilters: []
-          }
-        }
-      }));
-    }
-  };
-
   const getFilterComponent = () => {
     switch (form.filtroTipo) {
       case "NumParte":
@@ -177,8 +283,25 @@ const Catalogo = () => {
     }
   };
 
+  // Find the current selected brand object
+  const selectedBrand = form.marca ? brandsMap[form.marca] : null;
+
+  // Determine if we have any errors to display
+  const hasError = brandsError || categoriesError || productsError;
+  const errorMessage = brandsError || categoriesError || productsError;
+
   return (
     <PlatinumLayout>
+      {/* Error Alert */}
+      {hasError && (
+        <Alert variant="destructive" className="mx-20 mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {errorMessage}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {loadingCategories || loadingBrands ? (
         <SkeletonCatalog />
       ) : (
@@ -192,25 +315,54 @@ const Catalogo = () => {
                 <Label className="font-semibold text-base mb-4 text-white">
                   Marca:
                 </Label>
-                <div className="flex gap-5 bg-white text-black rounded-lg items-center py-4 px-6 h-[52px]">
-                  <img
-                    className="w-20"
-                    src={brands?.logoImgUrl}
-                    alt={`image`}
-                  />
-                  <p>{brands?.name}</p>
-                </div>
+                <Select onValueChange={handleBrandChange} value={form.marca || ''}>
+                  <SelectTrigger className="h-[52px] w-[250px]">
+                    {selectedBrand ? (
+                      <div className="flex items-center">
+                        <img
+                          className="w-16"
+                          src={selectedBrand.logoImgUrl}
+                          alt={selectedBrand.name}
+                        />
+                        <span className="ml-2 mx-4">{selectedBrand.name}</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Seleccionar Marca" />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Marcas</SelectLabel>
+                      {brands?.map((brand) => (
+                        <SelectItem key={brand.id} value={brand.id}>
+                          <div className="flex items-center">
+                            <img
+                              className="w-8 h-8 mr-2 object-contain"
+                              src={brand.logoImgUrl}
+                              alt={brand.name}
+                            />
+                            {brand.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex flex-col">
                 <Label className="font-semibold text-base mb-4 text-white">
                   Categoría:
                 </Label>
-                <Select onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="h-[52px]">
+                <Select
+                  onValueChange={handleCategoryChange}
+                  value={form.categoria?.id || ''}
+                  disabled={availableCategories.length === 0}
+                >
+                  <SelectTrigger className="h-[52px] w-[250px]">
                     {form.categoria ? (
                       <div className="flex items-center">
                         <img
-                          className="w-20 max-h-10"
+                          className="w-12"
                           src={form.categoria.imgUrl}
                           alt={form.categoria.name}
                         />
@@ -223,9 +375,16 @@ const Catalogo = () => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Categorías</SelectLabel>
-                      {categories?.map((category) => (
+                      {availableCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
-                          {category.name}
+                          <div className="flex items-center">
+                            <img
+                              className="w-8 h-8 mr-2 object-contain"
+                              src={category.imgUrl}
+                              alt={category.name}
+                            />
+                            {category.name}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectGroup>
@@ -316,6 +475,7 @@ const Catalogo = () => {
               <ProductsTable
                 category={category}
                 filtroInfo={form.filtro}
+                filtroTipo={form.filtroTipo}
               />
             )}
           </section>
