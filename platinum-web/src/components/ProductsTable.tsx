@@ -17,7 +17,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
@@ -46,8 +46,10 @@ const ProductsTable = ({
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
-  // Add a new state to track when data processing is complete
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const isFirstLoad = useRef(true);
 
   const { attributes } = category || {};
   const { products, getProductById } = useProducts();
@@ -128,19 +130,16 @@ const ProductsTable = ({
       {
         accessorKey: "sku",
         header: "Sku",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cell: ({ row }: { row: any }) => <div>{row.getValue("sku")}</div>,
       },
       {
         accessorKey: "name",
         header: "Nombre",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
       },
       {
         accessorKey: "type",
         header: "Tipo",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cell: ({ row }: { row: any }) => {
           return (
             <div>
@@ -152,7 +151,6 @@ const ProductsTable = ({
     ];
 
     const getColumns = (attributeType: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const getAttributeValues = (row: any, attribute: any) => {
         const attributeValues =
           attributeType === "product"
@@ -172,7 +170,6 @@ const ProductsTable = ({
         "N/A";
 
       return (
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         attributes?.[attributeType]?.map((attribute: any) => ({
           accessorKey: attribute.id,
           header: attribute.name,
@@ -184,12 +181,11 @@ const ProductsTable = ({
       );
     };
 
-    const dynamicColumnsProduct = !isInDetailsPage ? getColumns("product") : [];
+    // Only include variant attributes columns
     const dynamicColumnsVariant = getColumns("variant");
 
     return [
       ...initialColumns,
-      ...dynamicColumnsProduct,
       ...dynamicColumnsVariant,
     ];
   }, [attributes, location]);
@@ -206,27 +202,43 @@ const ProductsTable = ({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: (updater) => {
+      const newPagination = updater(table.getState().pagination);
+      setCurrentPage(newPagination.pageIndex);
+    },
     state: {
       columnVisibility,
       rowSelection,
+      pagination: {
+        pageIndex: currentPage,
+        pageSize: pageSize,
+      },
     },
+    pageCount: Math.ceil((mappedData?.length || 0) / pageSize),
+    manualPagination: false,
   });
 
   // Process and set data
   useEffect(() => {
     setIsDataLoaded(false);
-    setIsProcessingComplete(false); // Reset processing state
+    setIsProcessingComplete(false);
+
+    // Only reset to first page if it's not the first load or if data source has changed
+    if (!isFirstLoad.current) {
+      setCurrentPage(0);
+    }
+    isFirstLoad.current = false;
 
     if (isInDetailsPage && data) {
       setMappedData(data);
       setIsDataLoaded(true);
-      setIsProcessingComplete(true); // Mark processing as complete
+      setIsProcessingComplete(true);
     } else {
       // Make sure products is not undefined or empty before proceeding
       if (!products || products.length === 0) {
         setMappedData([]);
         setIsDataLoaded(true);
-        setIsProcessingComplete(true); // Mark processing as complete
+        setIsProcessingComplete(true);
         return;
       }
 
@@ -238,7 +250,7 @@ const ProductsTable = ({
         // Filter by reference if provided
         filteredProducts = products.filter((product: Item) =>
           product.references?.some((code: any) =>
-            code?.includes(filtroInfo.referencia)
+            code?.toLowerCase().includes(filtroInfo.referencia.toLowerCase())
           )
         );
         filteredVariants = flattenVariants(filteredProducts);
@@ -247,7 +259,7 @@ const ProductsTable = ({
         // Filter by part number if provided
         const allVariants = flattenVariants(products);
         filteredVariants = allVariants.filter((variant: any) =>
-          variant.sku?.includes(filtroInfo.numParte)
+          variant.sku?.toLowerCase().includes(filtroInfo.numParte.toLowerCase())
         );
       }
       else if (filtroTipo === "Vehiculo" && filtroInfo?.vehiculo?.selectedFilters?.length > 0) {
@@ -267,9 +279,10 @@ const ProductsTable = ({
         filteredVariants = flattenVariants(filteredProducts);
       }
 
-      setMappedData(filteredVariants ?? []);
+      console.log("Filtered variants count:", filteredVariants.length);
+      setMappedData(filteredVariants);
       setIsDataLoaded(true);
-      setIsProcessingComplete(true); // Mark processing as complete
+      setIsProcessingComplete(true);
     }
   }, [
     products,
@@ -313,6 +326,12 @@ const ProductsTable = ({
     setValuesAttributes(valuesMapped);
   }, [mappedData, isDataLoaded]);
 
+  // Calculate page info
+  const totalPages = Math.ceil((mappedData?.length || 0) / pageSize);
+  const currentPageItems = table.getRowModel().rows || [];
+  const startItem = currentPage * pageSize + 1;
+  const endItem = Math.min((currentPage + 1) * pageSize, mappedData.length);
+
   return (
     <div className="mt-6">
       <>
@@ -347,10 +366,10 @@ const ProductsTable = ({
                     Cargando resultados...
                   </TableCell>
                 </TableRow>
-              ) : table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row, index) => {
+              ) : mappedData.length > 0 ? (
+                currentPageItems.map((row, index) => {
                   const isLastRow =
-                    index - 1 === table.getRowModel().rows.length;
+                    index === currentPageItems.length - 1;
                   return (
                     <TableRow
                       key={row.id}
@@ -392,24 +411,66 @@ const ProductsTable = ({
             </TableBody>
           </Table>
         </Card>
-        {isProcessingComplete && mappedData?.length > 10 && (
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
+        {isProcessingComplete && mappedData.length > 0 && (
+          <div className="flex items-center justify-between space-x-2 py-4">
+            <div className="text-sm text-gray-500">
+              Mostrando {startItem} - {endItem} de {mappedData.length} resultados
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                &lt;&lt;
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                &lt;
+              </Button>
+              <span className="text-sm">
+                Página{" "}
+                <strong>
+                  {table.getState().pagination.pageIndex + 1} de {totalPages || 1}
+                </strong>
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                &gt;
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.setPageIndex(totalPages - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                &gt;&gt;
+              </Button>
+              <select
+                value={pageSize}
+                onChange={e => {
+                  const newPageSize = Number(e.target.value);
+                  setPageSize(newPageSize);
+                  table.setPageSize(newPageSize);
+                }}
+                className="border rounded px-2 py-1 text-sm"
+              >
+                {[10, 20, 30, 50].map(pageSize => (
+                  <option key={pageSize} value={pageSize}>
+                    Mostrar {pageSize}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
       </>
