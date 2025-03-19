@@ -70,12 +70,14 @@ const ProductsTable = ({
       return items.flatMap((item: Item) => {
         const type = item.type;
         const variants = item.variants;
+        const itemCategory = item.category; // Get the category from the item
         return variants?.map((variant: Variant) => ({
           id: variant.id,
           idParent: variant.idProduct,
           sku: variant.sku,
           name: variant.name,
           type: type,
+          category: itemCategory, // Add the category to the variant
           productAttributeValues: item.attributeValues,
           attributeValues: variant.attributeValues.map(
             (attribute: AttributeValue) => ({
@@ -218,7 +220,7 @@ const ProductsTable = ({
     manualPagination: false,
   });
 
-  // Process and set data
+  // Process and set data - FIXED VERSION
   useEffect(() => {
     setIsDataLoaded(false);
     setIsProcessingComplete(false);
@@ -242,13 +244,20 @@ const ProductsTable = ({
         return;
       }
 
+      // First filter products by category if a category is provided
       let filteredProducts = products;
+      if (category && category.id) {
+        filteredProducts = products.filter((product: Item) =>
+          product.category && product.category.id === category.id
+        );
+      }
+
       let filteredVariants = [];
 
       // Handle filtering based on filter type
       if (filtroTipo === "Referencia" && filtroInfo?.referencia) {
-        // Filter by reference if provided
-        filteredProducts = products.filter((product: Item) =>
+        // Filter by reference if provided (maintain category filtering)
+        filteredProducts = filteredProducts.filter((product: Item) =>
           product.references?.some((code: any) =>
             code?.toLowerCase().includes(filtroInfo.referencia.toLowerCase())
           )
@@ -256,15 +265,15 @@ const ProductsTable = ({
         filteredVariants = flattenVariants(filteredProducts);
       }
       else if (filtroTipo === "NumParte" && filtroInfo?.numParte) {
-        // Filter by part number if provided
-        const allVariants = flattenVariants(products);
+        // Filter by part number if provided (maintain category filtering)
+        const allVariants = flattenVariants(filteredProducts);
         filteredVariants = allVariants.filter((variant: any) =>
           variant.sku?.toLowerCase().includes(filtroInfo.numParte.toLowerCase())
         );
       }
       else if (filtroTipo === "Vehiculo" && filtroInfo?.vehiculo?.selectedFilters?.length > 0) {
-        // Filter based on the selected vehicle filters
-        const allVariants = flattenVariants(products);
+        // Filter based on the selected vehicle filters (maintain category filtering)
+        const allVariants = flattenVariants(filteredProducts);
         filteredVariants = allVariants.filter((variant: any) => {
           return filtroInfo.vehiculo.selectedFilters.every(filter => {
             return variant.attributeValues.some(attr =>
@@ -275,12 +284,12 @@ const ProductsTable = ({
         });
       }
       else {
-        // No filter applied, show all products
+        // No additional filters applied, show all products from the selected category
         filteredVariants = flattenVariants(filteredProducts);
       }
 
-      console.log("Filtered variants count:", filteredVariants.length);
       setMappedData(filteredVariants);
+      // Set both states at the same time - no timeout needed
       setIsDataLoaded(true);
       setIsProcessingComplete(true);
     }
@@ -291,7 +300,8 @@ const ProductsTable = ({
     filtroTipo,
     filtroInfo?.referencia,
     filtroInfo?.numParte,
-    filtroInfo?.vehiculo?.selectedFilters
+    filtroInfo?.vehiculo?.selectedFilters,
+    category
   ]);
 
   useEffect(() => {
@@ -357,19 +367,9 @@ const ProductsTable = ({
               ))}
             </TableHeader>
             <TableBody>
-              {!isProcessingComplete ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    Cargando resultados...
-                  </TableCell>
-                </TableRow>
-              ) : mappedData.length > 0 ? (
+              {isProcessingComplete && mappedData.length > 0 ? (
                 currentPageItems.map((row, index) => {
-                  const isLastRow =
-                    index === currentPageItems.length - 1;
+                  const isLastRow = index === currentPageItems.length - 1;
                   return (
                     <TableRow
                       key={row.id}
@@ -398,13 +398,16 @@ const ProductsTable = ({
                     </TableRow>
                   );
                 })
+              ) : isProcessingComplete && mappedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="text-center">
+                    No se encontraron resultados
+                  </TableCell>
+                </TableRow>
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No existen resultados
+                  <TableCell colSpan={columns.length} className="text-center">
+                    Cargando...
                   </TableCell>
                 </TableRow>
               )}

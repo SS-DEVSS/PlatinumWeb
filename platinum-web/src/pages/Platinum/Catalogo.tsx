@@ -74,7 +74,7 @@ const Catalogo = () => {
   useEffect(() => {
     if (brands && brands.length > 0 && !form.marca) {
       // Select first brand by default
-      const firstBrand = brands[0];
+      const firstBrand = brands[1];
       setForm(prevForm => ({
         ...prevForm,
         marca: firstBrand.id
