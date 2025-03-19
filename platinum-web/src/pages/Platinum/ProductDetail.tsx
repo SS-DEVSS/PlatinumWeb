@@ -256,9 +256,8 @@ const ProductDetail = () => {
           <section className="basis-1/2">
             <Tabs defaultValue="details">
               <TabsList
-                className={`${
-                  type === "KIT" ? "grid-cols-3" : "grid-cols-2"
-                } grid w-full 2xl:w-[70%]`}
+                className={`${type === "KIT" ? "grid-cols-3" : "grid-cols-2"
+                  } grid w-full 2xl:w-[70%]`}
               >
                 <TabsTrigger value="details">Detalles</TabsTrigger>
                 <TabsTrigger value="compatibilidades">
@@ -286,9 +285,8 @@ const ProductDetail = () => {
                       {itemVariant.notes.map((note, index) => (
                         <div key={index}>
                           <div
-                            className={`${
-                              index % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"
-                            } px-4 flex gap-3 py-3 last:rounded-b-lg`}
+                            className={`${index % 2 === 0 ? "bg-white" : "bg-[#f5f5f5]"
+                              } px-4 flex gap-3 py-3 last:rounded-b-lg`}
                           >
                             <p>{note.note}</p>
                           </div>

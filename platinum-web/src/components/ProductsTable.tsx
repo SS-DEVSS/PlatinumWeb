@@ -17,7 +17,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item, Variant } from "../models/item";
 import { useItemContext } from "../context/Item-context";
@@ -29,6 +29,7 @@ const ProductsTable = ({
   itemVariant,
   setItemVariant,
   filtroInfo,
+  filtroTipo,
 }: {
   category: Category | null;
   data?: Variant[] | null;
@@ -37,9 +38,18 @@ const ProductsTable = ({
   filtroInfo?: {
     numParte: string;
     referencia: string;
+    vehiculo?: {
+      selectedFilters?: Array<{ attributeId: string, value: string }>;
+    }
   };
+  filtroTipo?: "NumParte" | "Vehiculo" | "Referencia";
 }) => {
   const [mappedData, setMappedData] = useState<Variant[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
+  const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const isFirstLoad = useRef(true);
 
   const { attributes } = category || {};
   const { products, getProductById } = useProducts();
@@ -56,16 +66,18 @@ const ProductsTable = ({
   );
 
   const flattenVariants = (items: Item[]) => {
-    if (items.length) {
+    if (items?.length) {
       return items.flatMap((item: Item) => {
         const type = item.type;
         const variants = item.variants;
+        const itemCategory = item.category; // Get the category from the item
         return variants?.map((variant: Variant) => ({
           id: variant.id,
           idParent: variant.idProduct,
           sku: variant.sku,
           name: variant.name,
           type: type,
+          category: itemCategory, // Add the category to the variant
           productAttributeValues: item.attributeValues,
           attributeValues: variant.attributeValues.map(
             (attribute: AttributeValue) => ({
@@ -80,6 +92,7 @@ const ProductsTable = ({
         }));
       });
     }
+    return [];
   };
 
   const fetchDataProduct = async (item: string) => {
@@ -170,12 +183,11 @@ const ProductsTable = ({
       );
     };
 
-    const dynamicColumnsProduct = !isInDetailsPage ? getColumns("product") : [];
+    // Only include variant attributes columns
     const dynamicColumnsVariant = getColumns("variant");
 
     return [
       ...initialColumns,
-      ...dynamicColumnsProduct,
       ...dynamicColumnsVariant,
     ];
   }, [attributes, location]);
@@ -192,55 +204,109 @@ const ProductsTable = ({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: (updater) => {
+      const newPagination = updater(table.getState().pagination);
+      setCurrentPage(newPagination.pageIndex);
+    },
     state: {
       columnVisibility,
       rowSelection,
+      pagination: {
+        pageIndex: currentPage,
+        pageSize: pageSize,
+      },
     },
+    pageCount: Math.ceil((mappedData?.length || 0) / pageSize),
+    manualPagination: false,
   });
 
+  // Process and set data - FIXED VERSION
   useEffect(() => {
-    if (isInDetailsPage && data) {
-      const updateData = async () => {
-        try {
-          const resolvedData = await Promise.all(
-            data.map(async (variant: Variant) => {
-              const product = await fetchDataProduct(variant.idProduct!);
-              return {
-                ...variant,
-                type: product.type,
-              };
-            })
-          );
-          setMappedData(resolvedData);
-        } catch (error) {
-          console.error("Error updating data:", error);
-        }
-      };
-      updateData();
-    } else {
-      let filteredProducts = products;
+    setIsDataLoaded(false);
+    setIsProcessingComplete(false);
 
-      if (filtroInfo?.referencia) {
-        filteredProducts = products.filter((product: Item) =>
-          product.references.some((code: any) =>
-            code?.includes(filtroInfo?.referencia)
-          )
-        );
-      } else if (filtroInfo?.numParte) {
-        const flattenedVariants = flattenVariants(products);
-        const filteredVariants = flattenedVariants?.filter((variant: any) =>
-          variant.sku?.includes(filtroInfo?.numParte)
-        );
-        setMappedData(filteredVariants ?? []);
+    // Only reset to first page if it's not the first load or if data source has changed
+    if (!isFirstLoad.current) {
+      setCurrentPage(0);
+    }
+    isFirstLoad.current = false;
+
+    if (isInDetailsPage && data) {
+      setMappedData(data);
+      setIsDataLoaded(true);
+      setIsProcessingComplete(true);
+    } else {
+      // Make sure products is not undefined or empty before proceeding
+      if (!products || products.length === 0) {
+        setMappedData([]);
+        setIsDataLoaded(true);
+        setIsProcessingComplete(true);
         return;
       }
 
-      const flattenedData = flattenVariants(filteredProducts);
-      setMappedData(flattenedData ?? []);
+      // First filter products by category if a category is provided
+      let filteredProducts = products;
+      if (category && category.id) {
+        filteredProducts = products.filter((product: Item) =>
+          product.category && product.category.id === category.id
+        );
+      }
+
+      let filteredVariants = [];
+
+      // Handle filtering based on filter type
+      if (filtroTipo === "Referencia" && filtroInfo?.referencia) {
+        // Filter by reference if provided (maintain category filtering)
+        filteredProducts = filteredProducts.filter((product: Item) =>
+          product.references?.some((code: any) =>
+            code?.toLowerCase().includes(filtroInfo.referencia.toLowerCase())
+          )
+        );
+        filteredVariants = flattenVariants(filteredProducts);
+      }
+      else if (filtroTipo === "NumParte" && filtroInfo?.numParte) {
+        // Filter by part number if provided (maintain category filtering)
+        const allVariants = flattenVariants(filteredProducts);
+        filteredVariants = allVariants.filter((variant: any) =>
+          variant.sku?.toLowerCase().includes(filtroInfo.numParte.toLowerCase())
+        );
+      }
+      else if (filtroTipo === "Vehiculo" && filtroInfo?.vehiculo?.selectedFilters?.length > 0) {
+        // Filter based on the selected vehicle filters (maintain category filtering)
+        const allVariants = flattenVariants(filteredProducts);
+        filteredVariants = allVariants.filter((variant: any) => {
+          return filtroInfo.vehiculo.selectedFilters.every(filter => {
+            return variant.attributeValues.some(attr =>
+              attr.idAttribute === filter.attributeId &&
+              attr.valueString === filter.value
+            );
+          });
+        });
+      }
+      else {
+        // No additional filters applied, show all products from the selected category
+        filteredVariants = flattenVariants(filteredProducts);
+      }
+
+      setMappedData(filteredVariants);
+      // Set both states at the same time - no timeout needed
+      setIsDataLoaded(true);
+      setIsProcessingComplete(true);
     }
-  }, [products, data, location, filtroInfo?.referencia, filtroInfo?.numParte]);
+  }, [
+    products,
+    data,
+    location,
+    filtroTipo,
+    filtroInfo?.referencia,
+    filtroInfo?.numParte,
+    filtroInfo?.vehiculo?.selectedFilters,
+    category
+  ]);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
+
     const getVariantValues = (id: string) => {
       return mappedData
         .filter((variant: Variant) =>
@@ -268,7 +334,13 @@ const ProductsTable = ({
     });
 
     setValuesAttributes(valuesMapped);
-  }, [mappedData]);
+  }, [mappedData, isDataLoaded]);
+
+  // Calculate page info
+  const totalPages = Math.ceil((mappedData?.length || 0) / pageSize);
+  const currentPageItems = table.getRowModel().rows || [];
+  const startItem = currentPage * pageSize + 1;
+  const endItem = Math.min((currentPage + 1) * pageSize, mappedData.length);
 
   return (
     <div className="mt-6">
@@ -286,19 +358,18 @@ const ProductsTable = ({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row, index) => {
-                  const isLastRow =
-                    index - 1 === table.getRowModel().rows.length;
+              {isProcessingComplete && mappedData.length > 0 ? (
+                currentPageItems.map((row, index) => {
+                  const isLastRow = index === currentPageItems.length - 1;
                   return (
                     <TableRow
                       key={row.id}
@@ -327,37 +398,82 @@ const ProductsTable = ({
                     </TableRow>
                   );
                 })
+              ) : isProcessingComplete && mappedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="text-center">
+                    No se encontraron resultados
+                  </TableCell>
+                </TableRow>
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No existen resultados.
+                  <TableCell colSpan={columns.length} className="text-center">
+                    Cargando...
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </Card>
-        {mappedData?.length > 10 && (
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
+        {isProcessingComplete && mappedData.length > 0 && (
+          <div className="flex items-center justify-between space-x-2 py-4">
+            <div className="text-sm text-gray-500">
+              Mostrando {startItem} - {endItem} de {mappedData.length} resultados
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                &lt;&lt;
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                &lt;
+              </Button>
+              <span className="text-sm">
+                Página{" "}
+                <strong>
+                  {table.getState().pagination.pageIndex + 1} de {totalPages || 1}
+                </strong>
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                &gt;
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.setPageIndex(totalPages - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                &gt;&gt;
+              </Button>
+              <select
+                value={pageSize}
+                onChange={e => {
+                  const newPageSize = Number(e.target.value);
+                  setPageSize(newPageSize);
+                  table.setPageSize(newPageSize);
+                }}
+                className="border rounded px-2 py-1 text-sm"
+              >
+                {[10, 20, 30, 50].map(pageSize => (
+                  <option key={pageSize} value={pageSize}>
+                    Mostrar {pageSize}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
       </>
