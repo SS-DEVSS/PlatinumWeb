@@ -3,6 +3,12 @@ import { Item, Variant, AttributeValue } from "../models/item";
 import { Reference } from "../models/reference";
 import { Application } from "../models/application";
 import { Card, CardHeader, CardTitle } from "./ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+} from "./ui/table";
 
 interface ProductAttributesProps {
   selectedProduct: Item;
@@ -19,10 +25,10 @@ export const ProductAttributes = ({
   reference,
   applications = [],
 }: ProductAttributesProps) => {
-  const renderAttributes = (attributes: Attribute[] | undefined, values: AttributeValue[]) => {
+  const renderAttributes = (attributes: Attribute[] | undefined, values: AttributeValue[], isLastSection: boolean = false) => {
     if (!attributes || attributes.length === 0) return null;
 
-    return attributes.map((attribute) => {
+    return attributes.map((attribute, index) => {
       const valueObj = values.find((val) => val.idAttribute === attribute.id);
       const displayValue =
         valueObj?.valueString ||
@@ -31,17 +37,19 @@ export const ProductAttributes = ({
         valueObj?.valueDate?.toString() ||
         "No value";
 
+      const isLastRow = isLastSection && index === attributes.length - 1;
+
       return (
-        <div
+        <TableRow
           key={attribute.id}
-          className={`flex gap-3 py-3 ${attributes.indexOf(attribute) % 2 === 0
+          className={`${index % 2 !== 0
             ? "bg-white"
             : "bg-[#f5f5f5]"
-            } px-4 last:rounded-b-lg`}
+            }`}
         >
-          <p className="font-bold">{attribute.name}:</p>
-          <p>{displayValue}</p>
-        </div>
+          <TableCell className={`font-bold w-1/3 ${isLastRow ? 'rounded-bl-lg' : ''}`}>{attribute.displayName || attribute.name}</TableCell>
+          <TableCell className={isLastRow ? 'rounded-br-lg' : ''}>{displayValue}</TableCell>
+        </TableRow>
       );
     });
   };
@@ -54,27 +62,30 @@ export const ProductAttributes = ({
   return (
     <>
       {selectedProduct && (
-        <Card className="border-none shadow-md">
+        <Card className="border-none shadow-md rounded-lg overflow-hidden">
           <CardHeader className="bg-[#333333] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
             <CardTitle className="text-lg">Características</CardTitle>
           </CardHeader>
           <section>
-            <div className={`flex gap-3 py-3 px-4 last:rounded-b-lg`}>
-              <p className="font-bold">Nombre:</p>
-              <p>{selectedProduct.name}</p>
-            </div>
-            {selectedVariant && (
-              <div
-                className={`flex gap-3 py-3 px-4 bg-[#f5f5f5] last:rounded-b-lg`}
-              >
-                <p className="font-bold">SKU:</p>
-                <p>{selectedVariant.sku}</p>
-              </div>
-            )}
-            {hasProductAttributes && renderAttributes(
-              category.attributes!.product!,
-              selectedProduct.attributeValues
-            )}
+            <Table className="border-separate border-spacing-0">
+              <TableBody>
+                <TableRow className="bg-white">
+                  <TableCell className="font-bold w-1/3 rounded-tl-lg">Nombre</TableCell>
+                  <TableCell className="rounded-tr-lg">{selectedProduct.name}</TableCell>
+                </TableRow>
+                {selectedVariant && (
+                  <TableRow className="bg-[#f5f5f5]">
+                    <TableCell className="font-bold w-1/3">SKU</TableCell>
+                    <TableCell>{selectedVariant.sku}</TableCell>
+                  </TableRow>
+                )}
+                {hasProductAttributes && (() => {
+                  const productAttrs = category.attributes!.product!;
+                  const hasMoreSections = hasVariantAttributes || hasReferenceAttributes || hasApplicationAttributes;
+                  return renderAttributes(productAttrs, selectedProduct.attributeValues, !hasMoreSections);
+                })()}
+              </TableBody>
+            </Table>
           </section>
         </Card>
       )}
@@ -85,10 +96,14 @@ export const ProductAttributes = ({
             <CardTitle className="text-lg">Atributos de Variante</CardTitle>
           </CardHeader>
           <section>
-            {renderAttributes(
-              category.attributes!.variant!,
-              selectedVariant.attributeValues || []
-            )}
+            <Table>
+              <TableBody>
+                {renderAttributes(
+                  category.attributes!.variant!,
+                  selectedVariant.attributeValues || []
+                )}
+              </TableBody>
+            </Table>
           </section>
         </Card>
       )}
@@ -99,40 +114,44 @@ export const ProductAttributes = ({
             <CardTitle className="text-lg">Atributos de Referencia</CardTitle>
           </CardHeader>
           <section>
-            {/* Display direct reference fields first */}
-            {reference.referenceBrand && (
-              <div className="flex gap-3 py-3 px-4 bg-white">
-                <p className="font-bold">Marca de Referencia:</p>
-                <p>{reference.referenceBrand}</p>
-              </div>
-            )}
-            <div className={`flex gap-3 py-3 px-4 ${reference.referenceBrand ? 'bg-[#f5f5f5]' : 'bg-white'}`}>
-              <p className="font-bold">Número de Referencia:</p>
-              <p>{reference.referenceNumber}</p>
-            </div>
-            {reference.typeOfPart && (
-              <div className="flex gap-3 py-3 px-4 bg-white">
-                <p className="font-bold">Tipo de Parte:</p>
-                <p>{reference.typeOfPart}</p>
-              </div>
-            )}
-            {reference.type && (
-              <div className={`flex gap-3 py-3 px-4 ${reference.typeOfPart ? 'bg-[#f5f5f5]' : 'bg-white'}`}>
-                <p className="font-bold">Tipo:</p>
-                <p>{reference.type}</p>
-              </div>
-            )}
-            {reference.description && (
-              <div className={`flex gap-3 py-3 px-4 ${reference.type ? 'bg-white' : 'bg-[#f5f5f5]'}`}>
-                <p className="font-bold">Descripción:</p>
-                <p>{reference.description}</p>
-              </div>
-            )}
-            {/* Display custom reference attributes */}
-            {renderAttributes(
-              category.attributes!.reference!,
-              reference.attributeValues || []
-            )}
+            <Table>
+              <TableBody>
+                {/* Display direct reference fields first */}
+                {reference.referenceBrand && (
+                  <TableRow className="bg-white">
+                    <TableCell className="font-bold w-1/3">Marca de Referencia</TableCell>
+                    <TableCell>{reference.referenceBrand}</TableCell>
+                  </TableRow>
+                )}
+                <TableRow className={reference.referenceBrand ? 'bg-[#f5f5f5]' : 'bg-white'}>
+                  <TableCell className="font-bold w-1/3">Número de Referencia</TableCell>
+                  <TableCell>{reference.referenceNumber}</TableCell>
+                </TableRow>
+                {reference.typeOfPart && (
+                  <TableRow className="bg-white">
+                    <TableCell className="font-bold w-1/3">Tipo de Parte</TableCell>
+                    <TableCell>{reference.typeOfPart}</TableCell>
+                  </TableRow>
+                )}
+                {reference.type && (
+                  <TableRow className={reference.typeOfPart ? 'bg-[#f5f5f5]' : 'bg-white'}>
+                    <TableCell className="font-bold w-1/3">Tipo</TableCell>
+                    <TableCell>{reference.type}</TableCell>
+                  </TableRow>
+                )}
+                {reference.description && (
+                  <TableRow className={reference.type ? 'bg-white' : 'bg-[#f5f5f5]'}>
+                    <TableCell className="font-bold w-1/3">Descripción:</TableCell>
+                    <TableCell>{reference.description}</TableCell>
+                  </TableRow>
+                )}
+                {/* Display custom reference attributes */}
+                {renderAttributes(
+                  category.attributes!.reference!,
+                  reference.attributeValues || []
+                )}
+              </TableBody>
+            </Table>
           </section>
         </Card>
       )}
@@ -145,16 +164,20 @@ export const ProductAttributes = ({
           <section>
             {applications.map((application, appIndex) => (
               <div key={application.id} className={appIndex > 0 ? "mt-4 border-t pt-4" : ""}>
-                {application.origin && (
-                  <div className="flex gap-3 py-3 px-4 bg-white">
-                    <p className="font-bold">Origen:</p>
-                    <p>{application.origin}</p>
-                  </div>
-                )}
-                {renderAttributes(
-                  category.attributes!.application!,
-                  application.attributeValues || []
-                )}
+                <Table>
+                  <TableBody>
+                    {application.origin && (
+                      <TableRow className="bg-white">
+                        <TableCell className="font-bold w-1/3">Origen:</TableCell>
+                        <TableCell>{application.origin}</TableCell>
+                      </TableRow>
+                    )}
+                    {renderAttributes(
+                      category.attributes!.application!,
+                      application.attributeValues || []
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             ))}
           </section>

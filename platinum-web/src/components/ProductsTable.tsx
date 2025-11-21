@@ -160,7 +160,7 @@ const ProductsTable = ({
         })
         .map((attribute: Attribute) => ({
           accessorKey: attribute.id,
-          header: attribute.name,
+          header: attribute.displayName || attribute.name,
           cell: ({ row }: { row: any }) => {
             const product: Item = row.original;
             const attrValue = product.attributeValues.find(

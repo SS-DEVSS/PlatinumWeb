@@ -18,6 +18,8 @@ export type Category = {
 export interface Attribute {
   id: string;
   name: string;
+  csvName?: string | null; // CSV column name (e.g., "CC_Motor")
+  displayName?: string | null; // Display name for UI (e.g., "CC Motor")
   required: boolean;
   type: CategoryAttributesTypes;
   order: number;

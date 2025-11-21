@@ -310,7 +310,7 @@ const Catalogo = () => {
         <>
           <section className="bg-hero-catalog bg-cover pl-20 pb-14">
             <h2 className="font-bold text-4xl pt-20 pb-10 text-white">
-              Catálogo Electrónico Platinum
+              Catálogo Electrónico
             </h2>
             <div className="flex gap-10">
               <div className="flex flex-col">

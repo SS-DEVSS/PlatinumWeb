@@ -90,14 +90,14 @@ const FilterComponent = ({
         >
           {selectedValue ? (
             <div>
-              <h4 className="font-bold text-left mb-1">{attribute.name}</h4>
+              <h4 className="font-bold text-left mb-1">{attribute.displayName || attribute.name}</h4>
               {selectedValue}
             </div>
           ) : (
             <div className="text-left">
-              <h4 className="font-bold">{attribute.name}</h4>
+              <h4 className="font-bold">{attribute.displayName || attribute.name}</h4>
               <p className="font-light text-[15px] mt-1">
-                Seleccionar {attribute.name.toLowerCase()}
+                Seleccionar {(attribute.displayName || attribute.name).toLowerCase()}
               </p>
             </div>
           )}
@@ -108,11 +108,11 @@ const FilterComponent = ({
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-[400px] p-0">
         <Command>
           <CommandInput
-            placeholder={`Buscar ${attribute.name.toLowerCase()}...`}
+            placeholder={`Buscar ${(attribute.displayName || attribute.name).toLowerCase()}...`}
           />
           <CommandList>
             <CommandEmpty>
-              No se encontró {attribute.name.toLowerCase()}.
+              No se encontró {(attribute.displayName || attribute.name).toLowerCase()}.
             </CommandEmpty>
             <CommandGroup>
               <CommandItem
