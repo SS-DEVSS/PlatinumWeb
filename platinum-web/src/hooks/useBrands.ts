@@ -38,8 +38,6 @@ export const useBrands = () => {
       acc[brand.id] = {
         id: brand.id,
         name: brand.name,
-        label: brand.name,
-        value: brand.id,
         logoImgUrl: brand.logoImgUrl,
         categories: brand.categories,
       };

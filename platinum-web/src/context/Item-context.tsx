@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import { AttributeValue } from "../models/item";
 
 type ItemContextType = {
   type: "KIT" | "SINGLE" | "";
@@ -6,8 +7,8 @@ type ItemContextType = {
   variant: string;
   setVariant: React.Dispatch<React.SetStateAction<string>>;
 
-  valuesAttributes: [];
-  setValuesAttributes: React.Dispatch<React.SetStateAction<[]>>;
+  valuesAttributes: Array<{ attributeId: string; values: AttributeValue[][] }>;
+  setValuesAttributes: React.Dispatch<React.SetStateAction<Array<{ attributeId: string; values: AttributeValue[][] }>>>;
 
   selectedFilters: { attributeId: string; value: string }[];
   setSelectedFilters: React.Dispatch<
@@ -34,7 +35,7 @@ export const ItemContextProvider = ({
 }) => {
   const [type, setType] = useState<"KIT" | "SINGLE" | "">("");
   const [variant, setVariant] = useState<string>("");
-  const [valuesAttributes, setValuesAttributes] = useState<[]>([]);
+  const [valuesAttributes, setValuesAttributes] = useState<Array<{ attributeId: string; values: AttributeValue[][] }>>([]);
   const [selectedFilters, setSelectedFilters] = useState<
     { attributeId: string; value: string }[]
   >([]);

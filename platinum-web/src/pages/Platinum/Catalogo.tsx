@@ -19,7 +19,7 @@ import ProductsTable from "../../components/ProductsTable";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import SkeletonProductsTable from "../../skeletons/SkeletonProductsTable";
 import { Category } from "../../models/category";
-import { Alert, AlertDescription } from "../../components/ui/Alert";
+import { Alert, AlertDescription } from "../../components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 type formState = {
@@ -74,21 +74,23 @@ const Catalogo = () => {
   useEffect(() => {
     if (brands && brands.length > 0 && !form.marca) {
       // Select first brand by default
-      const firstBrand = brands[1];
-      setForm(prevForm => ({
-        ...prevForm,
-        marca: firstBrand.id
-      }));
-
-      // Set available categories for the first brand
-      setAvailableCategories(firstBrand.categories || []);
-
-      // If brand has categories, select the first one
-      if (firstBrand.categories && firstBrand.categories.length > 0) {
+      const firstBrand = brands[0];
+      if (firstBrand) {
         setForm(prevForm => ({
           ...prevForm,
-          categoria: firstBrand.categories[0],
+          marca: firstBrand.id
         }));
+
+        // Set available categories for the first brand
+        setAvailableCategories(firstBrand.categories || []);
+
+        // If brand has categories, select the first one
+        if (firstBrand.categories && firstBrand.categories.length > 0) {
+          setForm(prevForm => ({
+            ...prevForm,
+            categoria: firstBrand.categories![0],
+          }));
+        }
       }
     }
   }, [brands]);
@@ -105,7 +107,7 @@ const Catalogo = () => {
       if (selectedBrand.categories && selectedBrand.categories.length > 0) {
         setForm(prevForm => ({
           ...prevForm,
-          categoria: selectedBrand.categories[0],
+          categoria: selectedBrand.categories![0],
           // Reset vehicle filters when changing brand
           filtro: {
             ...prevForm.filtro,
@@ -148,7 +150,7 @@ const Catalogo = () => {
   // MODIFIED: Only trigger loading for vehicle filters that require server-side processing
   useEffect(() => {
     if (initialLoad && form.filtroTipo === "Vehiculo" &&
-      form.filtro.vehiculo.selectedFilters?.length > 0) {
+      form.filtro.vehiculo.selectedFilters && form.filtro.vehiculo.selectedFilters.length > 0) {
       setProductsError(null);
       setLoadingProducts(true);
 
@@ -297,7 +299,7 @@ const Catalogo = () => {
         <Alert variant="destructive" className="mx-20 mt-4">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {errorMessage}
+            {typeof errorMessage === 'string' ? errorMessage : errorMessage?.message || 'Ocurrió un error'}
           </AlertDescription>
         </Alert>
       )}
@@ -307,7 +309,7 @@ const Catalogo = () => {
       ) : (
         <>
           <section className="bg-hero-catalog bg-cover pl-20 pb-14">
-            <h2 className="font-bold text-4xl pt-36 pb-20 text-white">
+            <h2 className="font-bold text-4xl pt-20 pb-10 text-white">
               Catálogo Electrónico Platinum
             </h2>
             <div className="flex gap-10">
@@ -319,11 +321,19 @@ const Catalogo = () => {
                   <SelectTrigger className="h-[52px] w-[250px]">
                     {selectedBrand ? (
                       <div className="flex items-center">
-                        <img
-                          className="w-16"
-                          src={selectedBrand.logoImgUrl}
-                          alt={selectedBrand.name}
-                        />
+                        {selectedBrand.logoImgUrl ? (
+                          <img
+                            className="w-12 h-12 object-contain"
+                            src={selectedBrand.logoImgUrl}
+                            alt={selectedBrand.name}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 flex items-center justify-center bg-gray-200 rounded">
+                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
                         <span className="ml-2 mx-4">{selectedBrand.name}</span>
                       </div>
                     ) : (
@@ -336,11 +346,19 @@ const Catalogo = () => {
                       {brands?.map((brand) => (
                         <SelectItem key={brand.id} value={brand.id}>
                           <div className="flex items-center">
-                            <img
-                              className="w-8 h-8 mr-2 object-contain"
-                              src={brand.logoImgUrl}
-                              alt={brand.name}
-                            />
+                            {brand.logoImgUrl ? (
+                              <img
+                                className="w-8 h-8 mr-2 object-contain"
+                                src={brand.logoImgUrl}
+                                alt={brand.name}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 mr-2 flex items-center justify-center bg-gray-200 rounded">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
                             {brand.name}
                           </div>
                         </SelectItem>
@@ -361,11 +379,19 @@ const Catalogo = () => {
                   <SelectTrigger className="h-[52px] w-[250px]">
                     {form.categoria ? (
                       <div className="flex items-center">
-                        <img
-                          className="w-12"
-                          src={form.categoria.imgUrl}
-                          alt={form.categoria.name}
-                        />
+                        {form.categoria.imgUrl ? (
+                          <img
+                            className="w-12 h-12 object-contain"
+                            src={form.categoria.imgUrl}
+                            alt={form.categoria.name}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 flex items-center justify-center bg-gray-200 rounded">
+                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
                         <span className="ml-2 mx-4">{form.categoria.name}</span>
                       </div>
                     ) : (
@@ -378,11 +404,19 @@ const Catalogo = () => {
                       {availableCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center">
-                            <img
-                              className="w-8 h-8 mr-2 object-contain"
-                              src={category.imgUrl}
-                              alt={category.name}
-                            />
+                            {category.imgUrl ? (
+                              <img
+                                className="w-8 h-8 mr-2 object-contain"
+                                src={category.imgUrl}
+                                alt={category.name}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 mr-2 flex items-center justify-center bg-gray-200 rounded">
+                                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
                             {category.name}
                           </div>
                         </SelectItem>
@@ -465,7 +499,6 @@ const Catalogo = () => {
                 </div>
               </div>
             </div>
-            <section className="pt-8 flex gap-10 items-end"></section>
           </section>
           <section className="px-20 py-8 bg-[#E4E4E4]">
             {getFilterComponent()}

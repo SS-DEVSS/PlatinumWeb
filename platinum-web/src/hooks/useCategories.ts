@@ -37,6 +37,7 @@ export const useCategories = () => {
       const formattedCategories = data.map((cat: any) => ({
         id: cat.id,
         name: cat.name,
+        description: cat.description || "",
         imgUrl: cat.imgUrl,
         label: cat.name,
         value: cat.id,
