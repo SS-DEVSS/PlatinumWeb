@@ -2,18 +2,23 @@ import { TechnicalSheet } from "./techincalSheet";
 import { Note } from "./note";
 import { Reference } from "./reference";
 import { Image } from "./image";
+import { Component } from "./component";
+import { Application } from "./application";
 
 export type Item = {
   id: string;
   name: string;
   type: "SINGLE" | "KIT";
   description: string;
+  sku?: string | null; // Product SKU from CSV
   category: {
     id: string;
     name: string;
   };
-  references: Reference[];
-  variants?: Variant[];
+  references?: Reference[]; // Updated structure
+  applications?: Application[]; // NEW - vehicle applications
+  variants?: Variant[]; // Placeholders for size/color variations
+  components?: Component[]; // NEW - only present for KIT products
   attributeValues: AttributeValue[];
 };
 
@@ -27,7 +32,7 @@ export type Variant = {
   notes: Note[];
   technicalSheets: TechnicalSheet[];
   images: Image[];
-  kitItems?: Item[];
+  // kitItems REMOVED - no longer exists
   attributeValues: AttributeValue[];
 };
 
@@ -40,11 +45,4 @@ export interface AttributeValue {
   idAttribute: string;
 }
 
-export interface KitItem {
-  id: string;
-  name: string;
-  sku: string;
-  price: number;
-  stockQuantity: number;
-  idProduct: string;
-}
+// KitItem interface removed - no longer used

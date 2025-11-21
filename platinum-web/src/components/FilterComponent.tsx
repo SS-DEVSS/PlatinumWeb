@@ -25,7 +25,9 @@ type FilterComponentProps = {
   filtroInfo: {
     numParte: string;
     referencia: string;
-    vehiculo?: any;
+    vehiculo?: {
+      selectedFilters?: Array<{ attributeId: string, value: string }>;
+    };
   };
   open: boolean;
   selectedValue: string;
@@ -37,7 +39,6 @@ type FilterComponentProps = {
 
 const FilterComponent = ({
   attribute,
-  category,
   open,
   selectedValue,
   enabled,
@@ -58,7 +59,7 @@ const FilterComponent = ({
     } else {
       // Otherwise get all possible values for this attribute
       const getValues = valuesAttributes.filter(
-        (attributeObject: any) => attributeObject.attributeId === attribute.id
+        (attributeObject) => attributeObject.attributeId === attribute.id
       );
 
       const allValues = getValues[0]?.values
@@ -69,7 +70,7 @@ const FilterComponent = ({
             attributeValue.valueBoolean?.toString() ||
             attributeValue.valueDate?.toString();
         })
-        .filter(Boolean) || [];
+        .filter((value): value is string => value !== null && value !== undefined && typeof value === 'string') || [];
 
       // Remove duplicates and sort
       const uniqueValues = Array.from(new Set(allValues)).sort();
@@ -85,7 +86,7 @@ const FilterComponent = ({
           role="combobox"
           aria-expanded={open}
           disabled={!enabled}
-          className="w-[300px] py-8 justify-between text-[#545454] bg-white shadow-sm"
+          className="w-full py-8 justify-between text-[#545454] bg-white shadow-sm"
         >
           {selectedValue ? (
             <div>
@@ -104,7 +105,7 @@ const FilterComponent = ({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-[300px] p-0">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-[400px] p-0">
         <Command>
           <CommandInput
             placeholder={`Buscar ${attribute.name.toLowerCase()}...`}

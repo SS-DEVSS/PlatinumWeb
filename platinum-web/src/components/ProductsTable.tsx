@@ -19,7 +19,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { Attribute, Category } from "../models/category";
-import { AttributeValue, Item, Variant } from "../models/item";
+import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 import { useProducts } from "../hooks/useProducts";
 
@@ -32,9 +32,9 @@ const ProductsTable = ({
   filtroTipo,
 }: {
   category: Category | null;
-  data?: Variant[] | null;
-  itemVariant?: Variant | null;
-  setItemVariant?: React.Dispatch<React.SetStateAction<Variant | null>>;
+  data?: Item[] | null;
+  itemVariant?: Item | null;
+  setItemVariant?: React.Dispatch<React.SetStateAction<Item | null>>;
   filtroInfo?: {
     numParte: string;
     referencia: string;
@@ -44,7 +44,7 @@ const ProductsTable = ({
   };
   filtroTipo?: "NumParte" | "Vehiculo" | "Referencia";
 }) => {
-  const [mappedData, setMappedData] = useState<Variant[]>([]);
+  const [mappedData, setMappedData] = useState<Item[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -52,7 +52,7 @@ const ProductsTable = ({
   const isFirstLoad = useRef(true);
 
   const { attributes } = category || {};
-  const { products, getProductById } = useProducts();
+  const { products } = useProducts();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -65,64 +65,28 @@ const ProductsTable = ({
     [location]
   );
 
-  const flattenVariants = (items: Item[]) => {
-    if (items?.length) {
-      return items.flatMap((item: Item) => {
-        const type = item.type;
-        const variants = item.variants;
-        const itemCategory = item.category; // Get the category from the item
-        return variants?.map((variant: Variant) => ({
-          id: variant.id,
-          idParent: variant.idProduct,
-          sku: variant.sku,
-          name: variant.name,
-          type: type,
-          category: itemCategory, // Add the category to the variant
-          productAttributeValues: item.attributeValues,
-          attributeValues: variant.attributeValues.map(
-            (attribute: AttributeValue) => ({
-              id: attribute.id,
-              valueString: attribute.valueString,
-              valueNumber: attribute.valueNumber,
-              valueBoolean: attribute.valueBoolean,
-              valueDate: attribute.valueDate,
-              idAttribute: attribute.idAttribute,
-            })
-          ),
-        }));
-      });
-    }
-    return [];
-  };
-
-  const fetchDataProduct = async (item: string) => {
-    try {
-      const data = await getProductById(item);
-      return data;
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const handleClick = (row: any) => {
+    const product: Item = row.original;
+
     if (
       location.pathname.includes("producto") ||
       location.pathname.includes("kit")
     ) {
       if (setItemVariant) {
-        setItemVariant(row.original);
+        setItemVariant(product);
       }
       return;
     } else {
-      setVariant(row.original.id);
+      setVariant(product.id);
     }
-    const type = row.getValue("type");
+
+    const type = product.type;
     if (type === "KIT") {
       setType("KIT");
-      navigate(`/kit/${row.original.idParent}`);
+      navigate(`/kit/${product.id}`);
     } else {
       setType("SINGLE");
-      navigate(`/producto/${row.original.idParent}`);
+      navigate(`/producto/${product.id}`);
     }
     localStorage.setItem("type", type);
   };
@@ -130,65 +94,109 @@ const ProductsTable = ({
   const columns = useMemo(() => {
     const initialColumns = [
       {
-        accessorKey: "sku",
-        header: "Sku",
-        cell: ({ row }: { row: any }) => <div>{row.getValue("sku")}</div>,
-      },
-      {
-        accessorKey: "name",
-        header: "Nombre",
-        cell: ({ row }: { row: any }) => <div>{row.getValue("name")}</div>,
-      },
-      {
-        accessorKey: "type",
-        header: "Tipo",
+        accessorKey: "image",
+        header: "Imagen",
         cell: ({ row }: { row: any }) => {
+          const product: Item = row.original;
+          // Get first image from first variant if available
+          const firstImage = product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0
+            ? product.variants[0].images[0].url
+            : null;
+
           return (
-            <div>
-              {row.getValue("type") === "SINGLE" ? "Componente" : "Kit"}
+            <div className="flex items-center justify-center w-16 h-16">
+              {firstImage ? (
+                <img
+                  src={firstImage}
+                  alt={product.name}
+                  className="w-12 h-12 object-cover rounded"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-gray-400 w-12 h-12">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
             </div>
           );
         },
       },
+      {
+        accessorKey: "sku",
+        header: "SKU",
+        cell: ({ row }: { row: any }) => {
+          const product: Item = row.original;
+          return <div>{product.sku || "N/A"}</div>;
+        },
+      },
+      {
+        accessorKey: "name",
+        header: "Nombre",
+        cell: ({ row }: { row: any }) => {
+          const product: Item = row.original;
+          return <div>{product.name}</div>;
+        },
+      },
     ];
 
-    const getColumns = (attributeType: string) => {
-      const getAttributeValues = (row: any, attribute: any) => {
-        const attributeValues =
-          attributeType === "product"
-            ? row.original?.productAttributeValues
-            : row.original?.attributeValues || [];
+    // Get product attribute columns
+    const getProductAttributeColumns = () => {
+      if (!attributes?.product || attributes.product.length === 0) return [];
 
-        return attributeValues.find(
-          (attrValue: AttributeValue) => attrValue.idAttribute === attribute.id
-        );
-      };
+      // Sort attributes by order field (ascending) before filtering
+      const sortedAttributes = [...attributes.product].sort((a, b) => (a.order || 0) - (b.order || 0));
 
-      const getDisplayValue = (value: AttributeValue | undefined) =>
-        value?.valueString ||
-        value?.valueNumber ||
-        value?.valueBoolean?.toString() ||
-        value?.valueDate?.toDateString() ||
-        "N/A";
+      return sortedAttributes
+        .filter((attribute: Attribute) => {
+          // Filter out "Descripción" and attributes that are explicitly set to not visible in catalog
+          const nameLower = attribute.name.toLowerCase();
+          const visibleInCatalog = (attribute as any).visibleInCatalog;
 
-      return (
-        attributes?.[attributeType]?.map((attribute: any) => ({
+          // Include if:
+          // 1. Not "descripción" AND
+          // 2. visibleInCatalog is not explicitly false (undefined/null/true are all OK)
+          return nameLower !== "descripción" && visibleInCatalog !== false;
+        })
+        .map((attribute: Attribute) => ({
           accessorKey: attribute.id,
           header: attribute.name,
           cell: ({ row }: { row: any }) => {
-            const value = getAttributeValues(row, attribute);
-            return <div>{getDisplayValue(value)}</div>;
+            const product: Item = row.original;
+            const attrValue = product.attributeValues.find(
+              (av: AttributeValue) => av.idAttribute === attribute.id
+            );
+
+            const fullValue =
+              attrValue?.valueString ||
+              attrValue?.valueNumber?.toString() ||
+              attrValue?.valueBoolean?.toString() ||
+              attrValue?.valueDate?.toDateString() ||
+              "N/A";
+
+            const valueStr = String(fullValue);
+            const displayValue = valueStr.length > 30 ? `${valueStr.substring(0, 30)}...` : valueStr;
+
+            return (
+              <div
+                className="truncate max-w-[200px]"
+                title={valueStr}
+              >
+                {displayValue}
+              </div>
+            );
           },
-        })) || []
-      );
+        }));
     };
 
-    // Only include variant attributes columns
-    const dynamicColumnsVariant = getColumns("variant");
+    const dynamicColumns = getProductAttributeColumns();
+
+    // Debug: Log columns to verify they're being created
+    console.log('[ProductsTable] Attribute columns:', dynamicColumns.length, dynamicColumns.map((col: any) => col.header));
 
     return [
       ...initialColumns,
-      ...dynamicColumnsVariant,
+      ...dynamicColumns,
     ];
   }, [attributes, location]);
 
@@ -204,9 +212,13 @@ const ProductsTable = ({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onPaginationChange: (updater) => {
-      const newPagination = updater(table.getState().pagination);
-      setCurrentPage(newPagination.pageIndex);
+    onPaginationChange: (updater: any) => {
+      if (typeof updater === 'function') {
+        const newPagination = updater(table.getState().pagination);
+        setCurrentPage(newPagination.pageIndex);
+      } else {
+        setCurrentPage(updater.pageIndex);
+      }
     },
     state: {
       columnVisibility,
@@ -232,6 +244,7 @@ const ProductsTable = ({
     isFirstLoad.current = false;
 
     if (isInDetailsPage && data) {
+      // In detail page, use provided data (compatibility variants)
       setMappedData(data);
       setIsDataLoaded(true);
       setIsProcessingComplete(true);
@@ -250,45 +263,59 @@ const ProductsTable = ({
         filteredProducts = products.filter((product: Item) =>
           product.category && product.category.id === category.id
         );
-      }
-
-      let filteredVariants = [];
-
-      // Handle filtering based on filter type
-      if (filtroTipo === "Referencia" && filtroInfo?.referencia) {
-        // Filter by reference if provided (maintain category filtering)
-        filteredProducts = filteredProducts.filter((product: Item) =>
-          product.references?.some((code: any) =>
-            code?.toLowerCase().includes(filtroInfo.referencia.toLowerCase())
-          )
-        );
-        filteredVariants = flattenVariants(filteredProducts);
-      }
-      else if (filtroTipo === "NumParte" && filtroInfo?.numParte) {
-        // Filter by part number if provided (maintain category filtering)
-        const allVariants = flattenVariants(filteredProducts);
-        filteredVariants = allVariants.filter((variant: any) =>
-          variant.sku?.toLowerCase().includes(filtroInfo.numParte.toLowerCase())
-        );
-      }
-      else if (filtroTipo === "Vehiculo" && filtroInfo?.vehiculo?.selectedFilters?.length > 0) {
-        // Filter based on the selected vehicle filters (maintain category filtering)
-        const allVariants = flattenVariants(filteredProducts);
-        filteredVariants = allVariants.filter((variant: any) => {
-          return filtroInfo.vehiculo.selectedFilters.every(filter => {
-            return variant.attributeValues.some(attr =>
-              attr.idAttribute === filter.attributeId &&
-              attr.valueString === filter.value
-            );
-          });
+        console.log(`[ProductsTable] Category filter:`, {
+          categoryId: category.id,
+          categoryName: category.name,
+          totalProducts: products.length,
+          filteredProducts: filteredProducts.length
         });
       }
-      else {
-        // No additional filters applied, show all products from the selected category
-        filteredVariants = flattenVariants(filteredProducts);
+
+      // Handle filtering based on filter type
+      if (filtroTipo === "Referencia" && filtroInfo?.referencia && filtroInfo.referencia.trim() !== "") {
+        // Filter by reference if provided (maintain category filtering)
+        filteredProducts = filteredProducts.filter((product: Item) =>
+          product.references?.some((ref) => {
+            // Handle both old format (string) and new format (Reference object)
+            const refValue = typeof ref === 'string' ? ref : ref.referenceNumber;
+            return refValue?.toLowerCase().includes(filtroInfo.referencia.toLowerCase());
+          })
+        );
+      }
+      else if (filtroTipo === "NumParte" && filtroInfo?.numParte && filtroInfo.numParte.trim() !== "") {
+        // Filter by product SKU if provided (maintain category filtering)
+        filteredProducts = filteredProducts.filter((product: Item) =>
+          product.sku?.toLowerCase().includes(filtroInfo.numParte.toLowerCase())
+        );
+      }
+      else if (filtroTipo === "Vehiculo" && filtroInfo?.vehiculo?.selectedFilters && filtroInfo.vehiculo.selectedFilters.length > 0) {
+        // Filter based on application attributes (vehicle filtering)
+        const usingApplicationAttributes = category?.attributes?.application && category.attributes.application.length > 0;
+
+        if (usingApplicationAttributes) {
+          // Filter using application attributes (vehicle filtering)
+          // A product matches if ANY of its applications matches ALL the selected filters
+          filteredProducts = filteredProducts.filter((product: Item) => {
+            if (!product.applications || product.applications.length === 0) return false;
+
+            // Check if any application matches all filters
+            return product.applications.some(application => {
+              return filtroInfo.vehiculo!.selectedFilters!.every(filter => {
+                const attrValue = application.attributeValues.find(av => av.idAttribute === filter.attributeId);
+                const value = attrValue?.valueString ||
+                  attrValue?.valueNumber?.toString() ||
+                  attrValue?.valueBoolean?.toString() ||
+                  attrValue?.valueDate?.toString();
+                return value === filter.value;
+              });
+            });
+          });
+        }
+        // Note: If no application attributes, we can't filter by vehicle
       }
 
-      setMappedData(filteredVariants);
+      console.log(`[ProductsTable] Final products to display:`, filteredProducts.length);
+      setMappedData(filteredProducts);
       // Set both states at the same time - no timeout needed
       setIsDataLoaded(true);
       setIsProcessingComplete(true);
@@ -305,28 +332,42 @@ const ProductsTable = ({
   ]);
 
   useEffect(() => {
-    if (!isDataLoaded) return;
+    if (!isDataLoaded || !products || products.length === 0) return;
 
-    const getVariantValues = (id: string) => {
-      return mappedData
-        .filter((variant: Variant) =>
-          variant.attributeValues.some((attribute: AttributeValue) => {
-            return attribute.idAttribute.includes(id);
+    // Use application attributes for hierarchical filtering
+    const filterAttributes = category?.attributes?.application || [];
+
+    if (!filterAttributes || filterAttributes.length === 0) {
+      setValuesAttributes([]);
+      return;
+    }
+
+    // Extract attribute values from applications for hierarchical filtering
+    const getAttributeValues = (attributeId: string) => {
+      // Get values from applications
+      const allApplications = products.flatMap((product: Item) =>
+        product.applications || []
+      );
+
+      return allApplications
+        .filter((application) =>
+          application.attributeValues.some((attribute: AttributeValue) => {
+            return attribute.idAttribute === attributeId;
           })
         )
-        .map((variant: Variant) =>
-          variant.attributeValues.filter((attribute) =>
-            attribute.idAttribute.includes(id)
+        .map((application) =>
+          application.attributeValues.filter((attribute) =>
+            attribute.idAttribute === attributeId
           )
         );
     };
 
-    const attributeIdList = category?.attributes?.variant?.map(
+    const attributeIdList = filterAttributes.map(
       (attribute: Attribute) => attribute.id
     );
 
-    const valuesMapped = attributeIdList?.map((attributeId: string) => {
-      const values = getVariantValues(attributeId);
+    const valuesMapped = attributeIdList.map((attributeId: string) => {
+      const values = getAttributeValues(attributeId);
       return {
         attributeId,
         values,
@@ -334,7 +375,7 @@ const ProductsTable = ({
     });
 
     setValuesAttributes(valuesMapped);
-  }, [mappedData, isDataLoaded]);
+  }, [products, isDataLoaded, category]);
 
   // Calculate page info
   const totalPages = Math.ceil((mappedData?.length || 0) / pageSize);
@@ -378,7 +419,7 @@ const ProductsTable = ({
                       className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
                       style={{
                         backgroundColor:
-                          row.original.id === itemVariant?.id ? "#d87e2e" : "",
+                          itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
                         borderBottomLeftRadius: isLastRow
                           ? "12px !important"
                           : "0",
@@ -388,7 +429,7 @@ const ProductsTable = ({
                       }}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
+                        <TableCell key={cell.id} className="py-2">
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()

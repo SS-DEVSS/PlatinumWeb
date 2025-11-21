@@ -7,8 +7,10 @@ export type Category = {
   imgUrl: string;
   brands?: Brand[];
   attributes?: {
-    product?: Attribute[];
-    variant?: Attribute[];
+    product?: Attribute[];      // Product attributes
+    variant?: Attribute[];       // Variant attributes (placeholders)
+    reference?: Attribute[];     // Reference attributes (custom fields only)
+    application?: Attribute[];   // Application attributes (Modelo, Submodelo, Año, etc.)
   };
   products?: [];
 };
@@ -20,6 +22,7 @@ export interface Attribute {
   type: CategoryAttributesTypes;
   order: number;
   scope: string;
+  visibleInCatalog?: boolean; // Optional field to control visibility in catalog
 }
 
 export enum CategoryAttributesTypes {

@@ -1,23 +1,27 @@
-import { Category } from "../models/category";
+import { Category, Attribute } from "../models/category";
 import { useEffect, useState } from "react";
 import FilterComponent from "./FilterComponent";
 import { useItemContext } from "../context/Item-context";
 import { useProducts } from "../hooks/useProducts";
 import { Button } from "./ui/button";
 import { X } from "lucide-react";
+import { Item } from "../models/item";
+import { AttributeValue } from "../models/item";
 
 type FilterSectionProps = {
   category: Category | null;
   filtroInfo: {
     numParte: string;
     referencia: string;
-    vehiculo?: any;
+    vehiculo?: {
+      selectedFilters?: Array<{ attributeId: string, value: string }>;
+    };
   };
   onFilterChange?: (filters: Array<{ attributeId: string, value: string }>) => void;
 };
 
 const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionProps) => {
-  const { setSelectedFilters, valuesAttributes } = useItemContext();
+  const { setSelectedFilters } = useItemContext();
   const { products } = useProducts();
 
   const [attributeStates, setAttributeStates] = useState<{
@@ -29,9 +33,24 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
     [key: string]: string[];
   }>({});
 
+  // Determine which attributes to use for filtering (application first, then variant as fallback)
+  const getFilterAttributes = () => {
+    let attributes: Attribute[] = [];
+    if (category?.attributes?.application && category.attributes.application.length > 0) {
+      attributes = category.attributes.application;
+    } else if (category?.attributes?.variant && category.attributes.variant.length > 0) {
+      attributes = category.attributes.variant;
+    }
+    // Sort by order field (ascending) - Modelo should be first (order: 1)
+    return attributes.sort((a, b) => (a.order || 0) - (b.order || 0));
+  };
+
   useEffect(() => {
-    if (category?.attributes?.variant) {
-      const initialStates = category.attributes.variant.reduce(
+    // Use flexible attribute structure - application attributes for vehicle filtering, variant for size/color
+    const filterAttributes = getFilterAttributes();
+
+    if (filterAttributes.length > 0) {
+      const initialStates = filterAttributes.reduce(
         (acc, attribute, index) => {
           acc[attribute.id] = {
             open: false,
@@ -63,19 +82,37 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
   }, []);
 
   // Calculate available options for a specific attribute based on current selections
+  // Works with application attributes (for vehicle filtering) or variant attributes (for size/color)
   const calculateAvailableOptions = (attributeId: string, currentFilters: Array<{ attributeId: string, value: string }>) => {
-    if (!category?.attributes?.variant || !products.length) return [];
+    const filterAttributes = getFilterAttributes();
+    if (!filterAttributes.length || !products.length) return [];
 
-    // Get all variants from all products
-    const allVariants = products.flatMap(product =>
-      product.variants?.map(variant => ({
-        id: variant.id,
-        attributeValues: variant.attributeValues
-      })) || []
-    );
+    // Determine if we're using application or variant attributes
+    const usingApplicationAttributes = category?.attributes?.application && category.attributes.application.length > 0;
+
+    // Get attribute values from either applications or variants
+    let allAttributeSources: Array<{ id: string; attributeValues: AttributeValue[] }> = [];
+
+    if (usingApplicationAttributes) {
+      // Get all applications from all products
+      allAttributeSources = products.flatMap((product: Item) =>
+        product.applications?.map((application) => ({
+          id: application.id,
+          attributeValues: application.attributeValues || []
+        })) || []
+      );
+    } else {
+      // Get all variants from all products
+      allAttributeSources = products.flatMap((product: Item) =>
+        product.variants?.map((variant) => ({
+          id: variant.id,
+          attributeValues: variant.attributeValues || []
+        })) || []
+      );
+    }
 
     // Get selected attribute indices for ordering
-    const attributeOrder = category.attributes.variant.map(attr => attr.id);
+    const attributeOrder = filterAttributes.map(attr => attr.id);
     const currentAttributeIndex = attributeOrder.indexOf(attributeId);
 
     // Only consider filters for attributes that come before the current one
@@ -88,34 +125,46 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
     if (relevantFilters.length === 0) {
       const allValues = new Set<string>();
 
-      allVariants.forEach(variant => {
-        const attrValue = variant.attributeValues.find(av => av.idAttribute === attributeId);
-        if (attrValue?.valueString) {
-          allValues.add(attrValue.valueString);
+      allAttributeSources.forEach((source) => {
+        const attrValue = source.attributeValues.find((av: AttributeValue) => av.idAttribute === attributeId);
+        const value = attrValue?.valueString ||
+          attrValue?.valueNumber?.toString() ||
+          attrValue?.valueBoolean?.toString() ||
+          attrValue?.valueDate?.toString();
+        if (value) {
+          allValues.add(value);
         }
       });
 
       return Array.from(allValues).sort();
     }
 
-    // Filter variants that match all selected filters
-    const matchingVariants = allVariants.filter(variant =>
-      relevantFilters.every(filter => {
-        const matchingValue = variant.attributeValues.find(av =>
+    // Filter sources that match all selected filters
+    const matchingSources = allAttributeSources.filter((source) =>
+      relevantFilters.every((filter) => {
+        const matchingValue = source.attributeValues.find((av: AttributeValue) =>
           av.idAttribute === filter.attributeId
         );
+        const value = matchingValue?.valueString ||
+          matchingValue?.valueNumber?.toString() ||
+          matchingValue?.valueBoolean?.toString() ||
+          matchingValue?.valueDate?.toString();
 
-        return matchingValue?.valueString === filter.value;
+        return value === filter.value;
       })
     );
 
-    // Get all possible values for the current attribute from matching variants
+    // Get all possible values for the current attribute from matching sources
     const validValues = new Set<string>();
 
-    matchingVariants.forEach(variant => {
-      const attrValue = variant.attributeValues.find(av => av.idAttribute === attributeId);
-      if (attrValue?.valueString) {
-        validValues.add(attrValue.valueString);
+    matchingSources.forEach((source) => {
+      const attrValue = source.attributeValues.find((av: AttributeValue) => av.idAttribute === attributeId);
+      const value = attrValue?.valueString ||
+        attrValue?.valueNumber?.toString() ||
+        attrValue?.valueBoolean?.toString() ||
+        attrValue?.valueDate?.toString();
+      if (value) {
+        validValues.add(value);
       }
     });
 
@@ -124,11 +173,12 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
 
   // Update available options for all attributes
   const updateAllAvailableOptions = (currentFilters: Array<{ attributeId: string, value: string }>) => {
-    if (!category?.attributes?.variant) return;
+    const filterAttributes = getFilterAttributes();
+    if (!filterAttributes.length) return;
 
     const newOptions: { [key: string]: string[] } = {};
 
-    category.attributes.variant.forEach(attribute => {
+    filterAttributes.forEach(attribute => {
       newOptions[attribute.id] = calculateAvailableOptions(attribute.id, currentFilters);
     });
 
@@ -137,7 +187,8 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
 
   const handleSelect = (attributeId: string, name: string) => {
     setAttributeStates(prevState => {
-      const attributeOrder = category?.attributes?.variant?.map(attr => attr.id) || [];
+      const filterAttributes = getFilterAttributes();
+      const attributeOrder = filterAttributes.map(attr => attr.id);
       const currentIndex = attributeOrder.indexOf(attributeId);
       const updatedState = { ...prevState };
 
@@ -178,7 +229,8 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
 
       if (!name) {
         // Remove this filter and all subsequent ones
-        const attributeOrder = category?.attributes?.variant?.map(attr => attr.id) || [];
+        const filterAttributes = getFilterAttributes();
+        const attributeOrder = filterAttributes.map(attr => attr.id);
         const currentIndex = attributeOrder.indexOf(attributeId);
 
         newFilters = prevFilters.filter(filter => {
@@ -217,9 +269,10 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
 
   // Clear all filters
   const clearAllFilters = () => {
-    if (category?.attributes?.variant) {
+    const filterAttributes = getFilterAttributes();
+    if (filterAttributes.length > 0) {
       // Reset all attribute states
-      const resetStates = category.attributes.variant.reduce(
+      const resetStates = filterAttributes.reduce(
         (acc, attribute, index) => {
           acc[attribute.id] = {
             open: false,
@@ -248,35 +301,47 @@ const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionPr
     }
   };
 
+  const filterAttributes = getFilterAttributes();
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-4">
-        {category?.attributes?.variant?.map((attribute) => (
-          <FilterComponent
-            key={attribute.id}
-            attribute={attribute}
-            category={category}
-            filtroInfo={filtroInfo}
-            open={attributeStates[attribute.id]?.open || false}
-            selectedValue={attributeStates[attribute.id]?.selectedValue || ""}
-            enabled={!attributeStates[attribute.id]?.disabled}
-            availableOptions={availableOptions[attribute.id] || []}
-            onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
-            onSelect={(name: string) => handleSelect(attribute.id, name)}
-          />
-        ))}
-        {activeFiltersCount > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearAllFilters}
-            className="h-10 self-end mb-3 text-naranja hover:bg-gray-100 hover:text-naranja"
-          >
-            <X className="h-4 w-4 mr-1" />
-            Limpiar filtros
-          </Button>
-        )}
-      </div>
+      {filterAttributes.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+            {filterAttributes.map((attribute) => (
+              <FilterComponent
+                key={attribute.id}
+                attribute={attribute}
+                category={category!}
+                filtroInfo={filtroInfo}
+                open={attributeStates[attribute.id]?.open || false}
+                selectedValue={attributeStates[attribute.id]?.selectedValue || ""}
+                enabled={!attributeStates[attribute.id]?.disabled}
+                availableOptions={availableOptions[attribute.id] || []}
+                onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
+                onSelect={(name: string) => handleSelect(attribute.id, name)}
+              />
+            ))}
+          </div>
+          {activeFiltersCount > 0 && (
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="h-10 text-naranja hover:bg-gray-100 hover:text-naranja"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Limpiar filtros ({activeFiltersCount})
+              </Button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-gray-500 text-sm">
+          No hay filtros disponibles para esta categoría.
+        </div>
+      )}
     </div>
   );
 };
