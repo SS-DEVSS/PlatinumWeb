@@ -44,7 +44,7 @@ const Catalogo = () => {
     getCategoryById,
     error: categoriesError
   } = useCategories();
-  const { getProductsByCategory } = useProducts();
+  const { getProductsByCategory, products: categoryProducts } = useProducts();
 
   // Convert brandsMap to array for rendering
   const brands = Object.values(brandsMap || {});
@@ -136,21 +136,19 @@ const Catalogo = () => {
     setLoadingProducts(true);
 
     // Fetch category with attributes
-    getCategoryById(form.categoria.id)
+    const categoryId = form.categoria.id;
+    getCategoryById(categoryId)
       .then(() => {
         // Fetch products for this category
-        return getProductsByCategory(form.categoria.id);
+        return getProductsByCategory(categoryId);
       })
       .then(() => {
         setInitialLoad(true);
+        // Don't set loading to false here - let ProductsTable control it
       })
       .catch((err) => {
         setProductsError(`Error al cargar productos: ${err.message || 'Ocurrió un error inesperado'}`);
-      })
-      .finally(() => {
-        setTimeout(() => {
-          setLoadingProducts(false);
-        }, 800);
+        setLoadingProducts(false);
       });
   }, [form.categoria]);
 
@@ -215,11 +213,7 @@ const Catalogo = () => {
         })
         .catch((err) => {
           setProductsError(`Error al cargar categoría: ${err.message || 'Ocurrió un error inesperado'}`);
-        })
-        .finally(() => {
-          setTimeout(() => {
-            setLoadingProducts(false);
-          }, 800);
+          setLoadingProducts(false);
         });
     }
   };
@@ -265,7 +259,7 @@ const Catalogo = () => {
     switch (form.filtroTipo) {
       case "NumParte":
         return (
-          <div className="flex gap-3 w-[30%]">
+          <div className="flex gap-3 w-[100%]">
             <Input
               value={form.filtro.numParte}
               onChange={handleNumParte}
@@ -276,7 +270,7 @@ const Catalogo = () => {
         );
       case "Referencia":
         return (
-          <div className="flex gap-3 w-[30%]">
+          <div className="flex gap-3 w-[100%]">
             <Input
               value={form.filtro.referencia}
               onChange={handleReference}
@@ -285,7 +279,7 @@ const Catalogo = () => {
             />
           </div>
         );
-      case "Vehiculo":
+      case "Vehiculo": {
         // Use the fetched category (with full attributes) if available, otherwise use form.categoria
         const categoryForFilters = category && category.attributes ? category : form.categoria;
         return (
@@ -293,8 +287,10 @@ const Catalogo = () => {
             category={categoryForFilters}
             filtroInfo={form.filtro}
             onFilterChange={handleVehicleFilterChange}
+            products={categoryProducts} // Pass products for filtering logic
           />
         );
+      }
     }
   };
 
@@ -325,8 +321,8 @@ const Catalogo = () => {
             <h2 className="font-bold text-4xl pt-20 pb-10 text-white">
               Catálogo Electrónico
             </h2>
-            <div className="flex gap-10">
-              <div className="flex flex-col">
+            <div className="flex gap-10 flex-wrap">
+              <div className="flex flex-col flex-wrap">
                 <Label className="font-semibold text-base mb-4 text-white">
                   Marca:
                 </Label>
@@ -515,13 +511,16 @@ const Catalogo = () => {
           </section>
           <section className="px-20 py-8 bg-[#E4E4E4]">
             {getFilterComponent()}
-            {loadingProducts ? (
+            {loadingProducts && !initialLoad ? (
               <SkeletonProductsTable />
             ) : (
               <ProductsTable
                 category={category}
                 filtroInfo={form.filtro}
                 filtroTipo={form.filtroTipo}
+                onLoadingChange={setLoadingProducts}
+                products={categoryProducts} // Pass fetched products
+                loading={loadingProducts} // Pass loading state
               />
             )}
           </section>

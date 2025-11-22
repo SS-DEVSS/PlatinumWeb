@@ -92,7 +92,7 @@ export const ProductAttributes = ({
                   </TableRow>
                 )}
                 {hasProductAttributes && (() => {
-                  const productAttrs = category.attributes!.product!;
+                  const productAttrs = category.attributes!.product!.filter(attr => attr.name.toLowerCase() !== 'descripción');
                   const hasMoreSections = hasVariantAttributes || hasReferenceAttributes || hasApplicationAttributes;
                   return renderAttributes(productAttrs, selectedProduct.attributeValues, !hasMoreSections);
                 })()}

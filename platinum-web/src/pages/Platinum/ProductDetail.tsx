@@ -57,6 +57,7 @@ const ProductDetail = () => {
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     const fetchData = async () => {
       if (itemId) {
         const data = await getProductById(itemId);
