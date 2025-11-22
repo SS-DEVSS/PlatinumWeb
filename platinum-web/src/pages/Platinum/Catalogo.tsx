@@ -13,6 +13,7 @@ import { Button } from "../../components/ui/button";
 import { useState, useEffect } from "react";
 import { useCategories } from "../../hooks/useCategories";
 import { useBrands } from "../../hooks/useBrands";
+import { useProducts } from "../../hooks/useProducts";
 import FilterSection from "../../components/FilterSection";
 import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
@@ -43,6 +44,7 @@ const Catalogo = () => {
     getCategoryById,
     error: categoriesError
   } = useCategories();
+  const { getProductsByCategory } = useProducts();
 
   // Convert brandsMap to array for rendering
   const brands = Object.values(brandsMap || {});
@@ -126,14 +128,19 @@ const Catalogo = () => {
     }
   }, [form.marca, brandsMap]);
 
-  // Fetch category data when selected category changes
+  // Fetch category data and products when selected category changes
   useEffect(() => {
     if (!form.categoria) return;
 
     setProductsError(null);
     setLoadingProducts(true);
 
+    // Fetch category with attributes
     getCategoryById(form.categoria.id)
+      .then(() => {
+        // Fetch products for this category
+        return getProductsByCategory(form.categoria.id);
+      })
       .then(() => {
         setInitialLoad(true);
       })
@@ -202,6 +209,10 @@ const Catalogo = () => {
       setLoadingProducts(true);
 
       getCategoryById(categoryId)
+        .then(() => {
+          // Fetch products for this category
+          return getProductsByCategory(categoryId);
+        })
         .catch((err) => {
           setProductsError(`Error al cargar categoría: ${err.message || 'Ocurrió un error inesperado'}`);
         })
@@ -275,9 +286,11 @@ const Catalogo = () => {
           </div>
         );
       case "Vehiculo":
+        // Use the fetched category (with full attributes) if available, otherwise use form.categoria
+        const categoryForFilters = category && category.attributes ? category : form.categoria;
         return (
           <FilterSection
-            category={category}
+            category={categoryForFilters}
             filtroInfo={form.filtro}
             onFilterChange={handleVehicleFilterChange}
           />

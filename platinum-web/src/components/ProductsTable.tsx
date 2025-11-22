@@ -48,7 +48,7 @@ const ProductsTable = ({
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [pageIndex, setPageIndex] = useState<number>(0);
   const isFirstLoad = useRef(true);
 
   const { attributes } = category || {};
@@ -212,50 +212,69 @@ const ProductsTable = ({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onPaginationChange: (updater: any) => {
-      if (typeof updater === 'function') {
-        const newPagination = updater(table.getState().pagination);
-        setCurrentPage(newPagination.pageIndex);
-      } else {
-        setCurrentPage(updater.pageIndex);
-      }
-    },
     state: {
       columnVisibility,
       rowSelection,
       pagination: {
-        pageIndex: currentPage,
+        pageIndex: pageIndex,
         pageSize: pageSize,
       },
     },
-    pageCount: Math.ceil((mappedData?.length || 0) / pageSize),
+    onPaginationChange: (updater: unknown) => {
+      if (typeof updater === 'function') {
+        const newPagination = updater(table.getState().pagination);
+        setPageIndex(newPagination.pageIndex);
+        setPageSize(newPagination.pageSize);
+      } else if (typeof updater === 'object' && updater !== null && 'pageIndex' in updater) {
+        setPageIndex((updater as { pageIndex: number }).pageIndex);
+        if ('pageSize' in updater) {
+          setPageSize((updater as { pageSize: number }).pageSize);
+        }
+      }
+    },
     manualPagination: false,
   });
 
   // Process and set data - FIXED VERSION
   useEffect(() => {
+    console.log(`[ProductsTable] useEffect triggered:`, {
+      isInDetailsPage,
+      hasData: !!data,
+      dataLength: data?.length,
+      hasProducts: !!products,
+      productsLength: products?.length,
+      categoryId: category?.id,
+      filtroTipo,
+      filtroInfo
+    });
+
     setIsDataLoaded(false);
     setIsProcessingComplete(false);
 
     // Only reset to first page if it's not the first load or if data source has changed
     if (!isFirstLoad.current) {
-      setCurrentPage(0);
+      table.setPageIndex(0);
+      setPageIndex(0);
     }
     isFirstLoad.current = false;
 
     if (isInDetailsPage && data) {
       // In detail page, use provided data (compatibility variants)
+      console.log(`[ProductsTable] Using detail page data:`, data.length);
       setMappedData(data);
       setIsDataLoaded(true);
       setIsProcessingComplete(true);
     } else {
       // Make sure products is not undefined or empty before proceeding
       if (!products || products.length === 0) {
+        console.log(`[ProductsTable] No products available`);
         setMappedData([]);
         setIsDataLoaded(true);
         setIsProcessingComplete(true);
         return;
       }
+
+      console.log(`[ProductsTable] Starting with ${products.length} total products`);
 
       // First filter products by category if a category is provided
       let filteredProducts = products;
@@ -267,8 +286,11 @@ const ProductsTable = ({
           categoryId: category.id,
           categoryName: category.name,
           totalProducts: products.length,
-          filteredProducts: filteredProducts.length
+          filteredProducts: filteredProducts.length,
+          filteredProductIds: filteredProducts.map((p: Item) => p.id)
         });
+      } else {
+        console.log(`[ProductsTable] No category filter applied`);
       }
 
       // Handle filtering based on filter type
@@ -314,7 +336,11 @@ const ProductsTable = ({
         // Note: If no application attributes, we can't filter by vehicle
       }
 
-      console.log(`[ProductsTable] Final products to display:`, filteredProducts.length);
+      console.log(`[ProductsTable] Final products to display:`, {
+        count: filteredProducts.length,
+        productIds: filteredProducts.map((p: Item) => ({ id: p.id, name: p.name, sku: p.sku })),
+        allProductIds: products.map((p: Item) => ({ id: p.id, name: p.name, sku: p.sku, categoryId: p.category?.id }))
+      });
       setMappedData(filteredProducts);
       // Set both states at the same time - no timeout needed
       setIsDataLoaded(true);
@@ -378,10 +404,27 @@ const ProductsTable = ({
   }, [products, isDataLoaded, category]);
 
   // Calculate page info
-  const totalPages = Math.ceil((mappedData?.length || 0) / pageSize);
+  const totalPages = table.getPageCount();
   const currentPageItems = table.getRowModel().rows || [];
-  const startItem = currentPage * pageSize + 1;
-  const endItem = Math.min((currentPage + 1) * pageSize, mappedData.length);
+  const currentPageIndex = table.getState().pagination.pageIndex;
+  const startItem = currentPageIndex * pageSize + 1;
+  const endItem = Math.min((currentPageIndex + 1) * pageSize, mappedData.length);
+
+  // Debug pagination state
+  useEffect(() => {
+    console.log(`[ProductsTable] Pagination state:`, {
+      mappedDataLength: mappedData.length,
+      pageSize,
+      pageIndex: currentPageIndex,
+      totalPages,
+      canPreviousPage: table.getCanPreviousPage(),
+      canNextPage: table.getCanNextPage(),
+      currentPageItemsCount: currentPageItems.length,
+      startItem,
+      endItem,
+      tableState: table.getState().pagination
+    });
+  }, [mappedData.length, pageSize, currentPageIndex, totalPages, currentPageItems.length]);
 
   return (
     <div className="mt-6">

@@ -48,13 +48,21 @@ export const useCategories = () => {
     }
     // If it's a single category object
     else if (typeof data === 'object' && data !== null) {
+      // Ensure attributes are properly structured (with product, variant, reference, application)
+      const attributes = data.attributes || {};
       const formattedCategory = {
         id: data.id,
         name: data.name,
+        description: data.description || "",
         imgUrl: data.imgUrl,
         label: data.name,
         value: data.id,
-        attributes: data.attributes || [],
+        attributes: {
+          product: attributes.product || [],
+          variant: attributes.variant || [],
+          reference: attributes.reference || [],
+          application: attributes.application || [],
+        },
         ...data
       };
       setCategory(formattedCategory);
