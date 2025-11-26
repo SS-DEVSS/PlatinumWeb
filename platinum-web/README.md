@@ -1,50 +1,50 @@
-# React + TypeScript + Vite
+# Platinum Driveline - Public Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Purpose
+The **Platinum Driveline Web** project is the public-facing website designed for customers and distributors. It serves as the primary digital storefront and information hub, allowing users to:
+- **Browse the Product Catalog**: Search and filter products by vehicle application, category, or part number.
+- **View Technical Information**: Access technical sheets, bulletins, and installation guides.
+- **Company Information**: Learn about Platinum Driveline, its philosophy, and warranty policies.
+- **Distributor Tools**: Access resources relevant to partners and distributors.
 
-Currently, two official plugins are available:
+## Tech Stack
+- **Framework**: React (Vite)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Radix UI
+- **Package Manager**: pnpm
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Installation
 
-## Expanding the ESLint configuration
+Ensure you have `node` and `pnpm` installed.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+1. Navigate to the project directory:
+   ```bash
+   cd web/platinum-web
+   ```
 
-- Configure the top-level `parserOptions` property like this:
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Usage
+
+### Development
+To start the development server with hot reload:
+```bash
+pnpm dev
+```
+The application will typically run on `http://localhost:5173` (check terminal output).
+
+### Build
+To build the application for production:
+```bash
+pnpm build
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+### Linting
+To run the linter:
+```bash
+pnpm lint
 ```

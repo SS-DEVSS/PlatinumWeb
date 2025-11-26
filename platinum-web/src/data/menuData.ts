@@ -1,5 +1,6 @@
 export const menuItems = [
   { href: "/", text: "Inicio", icon: "arrowWhite.png" },
+  { href: "/Catalogo", text: "Catálogo", icon: "arrowWhite.png" },
   { href: "/quienes-somos", text: "¿Quiénes Somos?", icon: "arrowWhite.png" },
   {
     href: "/Productos",

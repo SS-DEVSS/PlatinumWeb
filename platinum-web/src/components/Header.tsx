@@ -37,7 +37,7 @@ function Header() {
           <section className="flex gap-5 text-[#edeaea] py-1">
             <Link to="https://catalogoplatinumdriveline.com/" target="_blank">
               <article className="flex items-center px-5 gap-3 rounded-xl bg-white py-2 hover:bg-slate-200">
-                <img src="/icons/webBlack.png" alt="email" />
+                <img className="w-5" src="/icons/webBlack.png" alt="email" />
                 <p className="font-medium text-gris_oscuro hover:underline">
                   Visita el Catálogo Electrónico
                 </p>
@@ -48,7 +48,7 @@ function Header() {
               target="_blank"
             >
               <article className="flex items-center px-5 gap-3 rounded-xl bg-white py-2 hover:bg-slate-200">
-                <img src="/icons/webBlack.png" alt="email" />
+                <img className="w-5" src="/icons/webBlack.png" alt="email" />
                 <p className="font-medium text-gris_oscuro hover:underline">
                   Visita el Catálogo Ligero
                 </p>
@@ -67,14 +67,14 @@ function Header() {
         <section
           className={`${
             isVisible ? "bg-white" : "bg-gris_oscuro"
-          } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[100px] h-[10vh]`}
+          } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[50px] h-[10vh]`}
         >
           <section className="flex gap-4 items-center">
             <a href="/">
               <img
                 src="/LOGOPlatinum.png"
                 alt="Kit"
-                className="w-[200px] h-auto"
+                className="w-[160px] h-auto ml-8 nav:ml-0"
               />
             </a>
           </section>
