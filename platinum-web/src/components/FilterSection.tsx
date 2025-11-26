@@ -2,7 +2,7 @@ import { Category, Attribute } from "../models/category";
 import { useEffect, useState } from "react";
 import FilterComponent from "./FilterComponent";
 import { useItemContext } from "../context/Item-context";
-import { useProducts } from "../hooks/useProducts";
+// import { useProducts } from "../hooks/useProducts";
 import { Button } from "./ui/button";
 import { X } from "lucide-react";
 import { Item } from "../models/item";
@@ -17,12 +17,13 @@ type FilterSectionProps = {
       selectedFilters?: Array<{ attributeId: string, value: string }>;
     };
   };
+  products?: Item[]; // Products for filtering logic
   onFilterChange?: (filters: Array<{ attributeId: string, value: string }>) => void;
 };
 
-const FilterSection = ({ category, filtroInfo, onFilterChange }: FilterSectionProps) => {
+const FilterSection = ({ category, filtroInfo, onFilterChange, products = [] }: FilterSectionProps) => {
   const { setSelectedFilters } = useItemContext();
-  const { products } = useProducts();
+  // const { products } = useProducts(); // Removed internal hook usage
 
   const [attributeStates, setAttributeStates] = useState<{
     [key: string]: { open: boolean; selectedValue: string; disabled: boolean };

@@ -73,14 +73,26 @@ export const ProductAttributes = ({
                   <TableCell className="font-bold w-1/3 rounded-tl-lg">Nombre</TableCell>
                   <TableCell className="rounded-tr-lg">{selectedProduct.name}</TableCell>
                 </TableRow>
-                {selectedVariant && (
+                {selectedProduct.sku && (
                   <TableRow className="bg-[#f5f5f5]">
                     <TableCell className="font-bold w-1/3">SKU</TableCell>
+                    <TableCell>{selectedProduct.sku}</TableCell>
+                  </TableRow>
+                )}
+                {selectedVariant && selectedVariant.sku && (
+                  <TableRow className="bg-[#f5f5f5]">
+                    <TableCell className="font-bold w-1/3">SKU Variante</TableCell>
                     <TableCell>{selectedVariant.sku}</TableCell>
                   </TableRow>
                 )}
+                {selectedProduct.description && (
+                  <TableRow className={selectedProduct.sku ? "bg-white" : "bg-[#f5f5f5]"}>
+                    <TableCell className="font-bold w-1/3">Descripción</TableCell>
+                    <TableCell>{selectedProduct.description}</TableCell>
+                  </TableRow>
+                )}
                 {hasProductAttributes && (() => {
-                  const productAttrs = category.attributes!.product!;
+                  const productAttrs = category.attributes!.product!.filter(attr => attr.name.toLowerCase() !== 'descripción');
                   const hasMoreSections = hasVariantAttributes || hasReferenceAttributes || hasApplicationAttributes;
                   return renderAttributes(productAttrs, selectedProduct.attributeValues, !hasMoreSections);
                 })()}

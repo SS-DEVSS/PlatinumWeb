@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -17,11 +18,10 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { useEffect, useMemo, useState, useRef } from "react";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
-import { useProducts } from "../hooks/useProducts";
+// import { useProducts } from "../hooks/useProducts";
 
 const ProductsTable = ({
   category,
@@ -30,9 +30,13 @@ const ProductsTable = ({
   setItemVariant,
   filtroInfo,
   filtroTipo,
+  onLoadingChange,
+  products, // Receive products as prop
+  loading = false, // Add loading prop
 }: {
   category: Category | null;
-  data?: Item[] | null;
+  data?: Item[] | null; // Used for details page
+  products?: Item[]; // Used for main catalog
   itemVariant?: Item | null;
   setItemVariant?: React.Dispatch<React.SetStateAction<Item | null>>;
   filtroInfo?: {
@@ -43,16 +47,27 @@ const ProductsTable = ({
     }
   };
   filtroTipo?: "NumParte" | "Vehiculo" | "Referencia";
+  onLoadingChange?: (isLoading: boolean) => void;
+  loading?: boolean;
 }) => {
   const [mappedData, setMappedData] = useState<Item[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
+  const [showNoResults, setShowNoResults] = useState<boolean>(false);
   const [pageSize, setPageSize] = useState<number>(10);
-  const [currentPage, setCurrentPage] = useState<number>(0);
+  const onLoadingChangeRef = useRef(onLoadingChange);
+  const [pageIndex, setPageIndex] = useState<number>(0);
   const isFirstLoad = useRef(true);
+  const lastProcessedProductsRef = useRef<string>('');
+  const isProcessingRef = useRef(false);
+
+  // Keep ref updated
+  useEffect(() => {
+    onLoadingChangeRef.current = onLoadingChange;
+  }, [onLoadingChange]);
 
   const { attributes } = category || {};
-  const { products } = useProducts();
+  // const { products } = useProducts(); // Remove internal fetch
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -191,9 +206,6 @@ const ProductsTable = ({
 
     const dynamicColumns = getProductAttributeColumns();
 
-    // Debug: Log columns to verify they're being created
-    console.log('[ProductsTable] Attribute columns:', dynamicColumns.length, dynamicColumns.map((col: any) => col.header));
-
     return [
       ...initialColumns,
       ...dynamicColumns,
@@ -212,49 +224,109 @@ const ProductsTable = ({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onPaginationChange: (updater: any) => {
-      if (typeof updater === 'function') {
-        const newPagination = updater(table.getState().pagination);
-        setCurrentPage(newPagination.pageIndex);
-      } else {
-        setCurrentPage(updater.pageIndex);
-      }
-    },
     state: {
       columnVisibility,
       rowSelection,
       pagination: {
-        pageIndex: currentPage,
+        pageIndex: pageIndex,
         pageSize: pageSize,
       },
     },
-    pageCount: Math.ceil((mappedData?.length || 0) / pageSize),
+    onPaginationChange: (updater: unknown) => {
+      if (typeof updater === 'function') {
+        const newPagination = updater(table.getState().pagination);
+        setPageIndex(newPagination.pageIndex);
+        setPageSize(newPagination.pageSize);
+      } else if (typeof updater === 'object' && updater !== null && 'pageIndex' in updater) {
+        setPageIndex((updater as { pageIndex: number }).pageIndex);
+        if ('pageSize' in updater) {
+          setPageSize((updater as { pageSize: number }).pageSize);
+        }
+      }
+    },
     manualPagination: false,
   });
 
   // Process and set data - FIXED VERSION
   useEffect(() => {
+    // Create a hash of current products + filters to detect actual changes
+    const productsHash = JSON.stringify({
+      productIds: products?.map(p => p.id) || [],
+      categoryId: category?.id || '',
+      filtroTipo,
+      referencia: filtroInfo?.referencia || '',
+      numParte: filtroInfo?.numParte || '',
+      vehiculoFilters: filtroInfo?.vehiculo?.selectedFilters || []
+    });
+
+    // Skip if we're already processing the same data
+    if (lastProcessedProductsRef.current === productsHash) {
+      return;
+    }
+
+    // Mark as processing and store hash
+    lastProcessedProductsRef.current = productsHash;
+    isProcessingRef.current = true;
+
+    // Only set loading if we have data to process (not on initial empty state)
+    const hasDataToProcess = (products && products.length > 0) || (isInDetailsPage && data);
+    if (hasDataToProcess && onLoadingChangeRef.current) {
+      onLoadingChangeRef.current(true);
+    }
+
     setIsDataLoaded(false);
     setIsProcessingComplete(false);
+    setShowNoResults(false);
 
     // Only reset to first page if it's not the first load or if data source has changed
     if (!isFirstLoad.current) {
-      setCurrentPage(0);
+      table.setPageIndex(0);
+      setPageIndex(0);
     }
     isFirstLoad.current = false;
+
+    let timer: NodeJS.Timeout;
 
     if (isInDetailsPage && data) {
       // In detail page, use provided data (compatibility variants)
       setMappedData(data);
       setIsDataLoaded(true);
       setIsProcessingComplete(true);
+
+      if (data.length === 0) {
+        timer = setTimeout(() => setShowNoResults(true), 200);
+      } else {
+        setShowNoResults(false);
+      }
+
+      // Notify parent that processing is complete
+      if (onLoadingChangeRef.current) {
+        setTimeout(() => {
+          onLoadingChangeRef.current?.(false);
+          isProcessingRef.current = false;
+        }, 150);
+      } else {
+        isProcessingRef.current = false;
+      }
     } else {
       // Make sure products is not undefined or empty before proceeding
       if (!products || products.length === 0) {
         setMappedData([]);
         setIsDataLoaded(true);
         setIsProcessingComplete(true);
-        return;
+
+        timer = setTimeout(() => setShowNoResults(true), 200);
+
+        // Notify parent that processing is complete (even if no products)
+        if (onLoadingChangeRef.current) {
+          setTimeout(() => {
+            onLoadingChangeRef.current?.(false);
+            isProcessingRef.current = false;
+          }, 150);
+        } else {
+          isProcessingRef.current = false;
+        }
+        return () => clearTimeout(timer);
       }
 
       // First filter products by category if a category is provided
@@ -263,12 +335,6 @@ const ProductsTable = ({
         filteredProducts = products.filter((product: Item) =>
           product.category && product.category.id === category.id
         );
-        console.log(`[ProductsTable] Category filter:`, {
-          categoryId: category.id,
-          categoryName: category.name,
-          totalProducts: products.length,
-          filteredProducts: filteredProducts.length
-        });
       }
 
       // Handle filtering based on filter type
@@ -314,12 +380,36 @@ const ProductsTable = ({
         // Note: If no application attributes, we can't filter by vehicle
       }
 
-      console.log(`[ProductsTable] Final products to display:`, filteredProducts.length);
       setMappedData(filteredProducts);
       // Set both states at the same time - no timeout needed
       setIsDataLoaded(true);
       setIsProcessingComplete(true);
+
+      // Handle "No Results" state with a delay to prevent flash
+      if (filteredProducts.length === 0) {
+        // Only set timeout if not currently loading
+        if (!loading) {
+          timer = setTimeout(() => setShowNoResults(true), 200);
+        }
+      } else {
+        setShowNoResults(false);
+      }
     }
+
+    // Notify parent that processing is complete (after state updates)
+    // Use setTimeout to ensure React has processed the state updates
+    if (onLoadingChangeRef.current) {
+      setTimeout(() => {
+        onLoadingChangeRef.current?.(false);
+        isProcessingRef.current = false;
+      }, 150);
+    } else {
+      isProcessingRef.current = false;
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [
     products,
     data,
@@ -377,11 +467,20 @@ const ProductsTable = ({
     setValuesAttributes(valuesMapped);
   }, [products, isDataLoaded, category]);
 
+
+  // Reset showNoResults when loading starts
+  useEffect(() => {
+    if (loading) {
+      setShowNoResults(false);
+    }
+  }, [loading]);
+
   // Calculate page info
-  const totalPages = Math.ceil((mappedData?.length || 0) / pageSize);
+  const totalPages = table.getPageCount();
   const currentPageItems = table.getRowModel().rows || [];
-  const startItem = currentPage * pageSize + 1;
-  const endItem = Math.min((currentPage + 1) * pageSize, mappedData.length);
+  const currentPageIndex = table.getState().pagination.pageIndex;
+  const startItem = currentPageIndex * pageSize + 1;
+  const endItem = Math.min((currentPageIndex + 1) * pageSize, mappedData.length);
 
   return (
     <div className="mt-6">
@@ -429,7 +528,7 @@ const ProductsTable = ({
                       }}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="py-2">
+                        <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()
@@ -439,7 +538,7 @@ const ProductsTable = ({
                     </TableRow>
                   );
                 })
-              ) : isProcessingComplete && mappedData.length === 0 ? (
+              ) : isProcessingComplete && showNoResults ? (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="text-center">
                     No se encontraron resultados
