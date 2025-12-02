@@ -62,8 +62,8 @@ export const ProductAttributes = ({
   return (
     <>
       {selectedProduct && (
-        <Card className="border-none shadow-md rounded-lg overflow-hidden">
-          <CardHeader className="bg-[#333333] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
+        <Card className="border-none rounded-lg overflow-hidden">
+          <CardHeader className="bg-[#20314f] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
             <CardTitle className="text-lg">Características</CardTitle>
           </CardHeader>
           <section>

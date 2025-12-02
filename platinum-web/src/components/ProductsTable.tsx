@@ -124,10 +124,12 @@ const ProductsTable = ({
         header: "Imagen",
         cell: ({ row }: { row: Row<Item> }) => {
           const product: Item = row.original;
-          // Get first image from first variant if available
-          const firstImage = product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0
-            ? product.variants[0].images[0].url
-            : null;
+          // Get first image from product images, fallback to variant images
+          const firstImage = product.images && product.images.length > 0
+            ? product.images[0].url
+            : (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0
+              ? product.variants[0].images[0].url
+              : null);
 
           return (
             <div className="flex items-center justify-center w-16 h-16">
