@@ -62,6 +62,8 @@ const ProductDetail = () => {
     const fetchData = async () => {
       if (itemId) {
         const data = await getProductById(itemId);
+        console.log('[ProductDetail] Product data:', data);
+        console.log('[ProductDetail] Images:', data?.images);
         setItem(data);
         // Set type from product data
         if (data.type) {
@@ -134,7 +136,12 @@ const ProductDetail = () => {
                               <Card className="border-none shadow-none bg-white">
                                 <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
                                   {image.url ? (
-                                    <img src={image.url} alt={item.name} className="max-w-full max-h-full object-contain" />
+                                    <img
+                                      src={image.url}
+                                      alt={item.name}
+                                      className="max-w-full max-h-full object-contain"
+                                      loading="lazy"
+                                    />
                                   ) : (
                                     <div className="flex flex-col items-center justify-center text-gray-400">
                                       <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

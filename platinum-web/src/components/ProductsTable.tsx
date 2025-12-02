@@ -20,10 +20,11 @@ import {
 } from "./ui/table";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
+import { LayoutGrid, Table2 } from "lucide-react";
 
 const ProductsTable = ({
   category,
@@ -67,6 +68,7 @@ const ProductsTable = ({
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
   const [showNoResults, setShowNoResults] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
 
   const onLoadingChangeRef = useRef(onLoadingChange);
   const isFirstLoad = useRef(true);
@@ -138,6 +140,21 @@ const ProductsTable = ({
                   src={firstImage}
                   alt={product.name}
                   className="w-12 h-12 object-cover rounded"
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `
+                        <div class="flex flex-col items-center justify-center text-gray-400 w-12 h-12">
+                          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      `;
+                    }
+                  }}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-gray-400 w-12 h-12">
@@ -288,14 +305,6 @@ const ProductsTable = ({
     // Mark as processing and store hash
     lastProcessedProductsRef.current = productsHash;
     isProcessingRef.current = true;
-
-    // Only set loading if we have data to process (not on initial empty state)
-    const hasDataToProcess = (products && products.length > 0) || (isInDetailsPage && data);
-
-    // Remove modifying parent's loading state from here
-    // if (hasDataToProcess && onLoadingChangeRef.current) {
-    //   onLoadingChangeRef.current(true);
-    // }
 
     setIsDataLoaded(false);
     setIsProcessingComplete(false);
@@ -478,8 +487,51 @@ const ProductsTable = ({
   // If server side totalItems is provided, use it. Otherwise estimate.
   const endItem = Math.min((currentPageIndex + 1) * pageSize, totalItems || (currentPageIndex * pageSize + mappedData.length));
 
+  // Get image URL for a product
+  const getProductImageUrl = (product: Item): string | null => {
+    if (product.images && product.images.length > 0) {
+      return product.images[0].url;
+    } else if (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) {
+      return product.variants[0].images[0].url;
+    }
+    return null;
+  };
+
+  // Format references for display
+  const formatReferences = (product: Item): string[] => {
+    if (!product.references) return [];
+    return product.references.map((ref: string | { referenceNumber?: string }) => {
+      if (typeof ref === 'string') return ref;
+      return (ref as { referenceNumber?: string }).referenceNumber || '';
+    }).filter(Boolean) as string[];
+  };
+
   return (
     <div className="mt-6 relative">
+      {/* View Toggle */}
+      <div className="flex justify-end items-center mb-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === "cards" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("cards")}
+            className="flex items-center gap-2"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            <span>Tarjetas</span>
+          </Button>
+          <Button
+            variant={viewMode === "table" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("table")}
+            className="flex items-center gap-2"
+          >
+            <Table2 className="h-4 w-4" />
+            <span>Tabla</span>
+          </Button>
+        </div>
+      </div>
+
       {/* Loading Overlay */}
       {loading && (
         <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-lg">
@@ -491,75 +543,171 @@ const ProductsTable = ({
       )}
 
       <>
-        <Card className={`border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead
-                      className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
-                      key={header.id}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {isProcessingComplete && mappedData.length > 0 ? (
-                currentPageItems.map((row, index) => {
-                  const isLastRow = index === currentPageItems.length - 1;
-                  return (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                      onClick={() => handleClick(row)}
-                      className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
-                      style={{
-                        backgroundColor:
-                          itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
-                        borderBottomLeftRadius: isLastRow
-                          ? "12px !important"
-                          : "0",
-                        borderBottomRightRadius: isLastRow
-                          ? "12px !important"
-                          : "0",
-                      }}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
+        {viewMode === "table" ? (
+          <Card className={`border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
+                        key={header.id}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
                           )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  );
-                })
-              ) : isProcessingComplete && showNoResults ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="text-center">
-                    No se encontraron resultados
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="text-center">
-                    Cargando...
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Card>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {isProcessingComplete && mappedData.length > 0 ? (
+                  currentPageItems.map((row, index) => {
+                    const isLastRow = index === currentPageItems.length - 1;
+                    return (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                        onClick={() => handleClick(row)}
+                        className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
+                        style={{
+                          backgroundColor:
+                            itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
+                          borderBottomLeftRadius: isLastRow
+                            ? "12px !important"
+                            : "0",
+                          borderBottomRightRadius: isLastRow
+                            ? "12px !important"
+                            : "0",
+                        }}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    );
+                  })
+                ) : isProcessingComplete && showNoResults ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="text-center">
+                      No se encontraron resultados
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="text-center">
+                      Cargando...
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        ) : (
+          /* Card Grid View */
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+            {isProcessingComplete && mappedData.length > 0 ? (
+              currentPageItems.map((row) => {
+                const product: Item = row.original;
+                const imageUrl = getProductImageUrl(product);
+                const references = formatReferences(product);
+                const isSelected = itemVariant && product.id === itemVariant.id;
+
+                return (
+                  <Card
+                    key={product.id}
+                    className={`cursor-pointer hover:shadow-lg transition-shadow overflow-hidden ${isSelected ? 'ring-2 ring-naranja' : ''
+                      }`}
+                    onClick={() => handleClick(row)}
+                  >
+                    {/* Product Image */}
+                    <div className="w-full aspect-square bg-white flex items-center justify-center p-4">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-contain"
+                          loading="lazy"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `
+                                <div class="flex flex-col items-center justify-center text-gray-400">
+                                  <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                              `;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-gray-400">
+                          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Details */}
+                    <CardContent className="p-4 bg-gray-50">
+                      {/* SKU */}
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-600 font-medium">No. Parte: </span>
+                        <span className="text-sm font-semibold text-naranja">{product.sku || 'N/A'}</span>
+                      </div>
+
+                      {/* Product Name */}
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[2.5rem]">
+                        {product.name}
+                      </h3>
+
+                      {/* References */}
+                      {references.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-xs text-gray-600 font-medium">Referencias: </span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {references.slice(0, 2).map((ref: string, index: number) => (
+                              <span key={index} className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
+                                {ref}
+                              </span>
+                            ))}
+                            {references.length > 2 && (
+                              <span className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
+                                +{references.length - 2} más
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            ) : isProcessingComplete && showNoResults ? (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                No se encontraron resultados
+              </div>
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-500">
+                Cargando...
+              </div>
+            )}
+          </div>
+        )}
         {isProcessingComplete && mappedData.length > 0 && (
           <div className="flex items-center justify-between space-x-2 py-4">
             <div className="text-sm text-gray-500">

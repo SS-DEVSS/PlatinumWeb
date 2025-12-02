@@ -20,7 +20,13 @@ import ProductsTable from "../../components/ProductsTable";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import SkeletonProductsTable from "../../skeletons/SkeletonProductsTable";
 import { Category } from "../../models/category";
-import { Alert, AlertDescription } from "../../components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../../components/ui/dialog";
 import { AlertCircle } from "lucide-react";
 
 type formState = {
@@ -414,21 +420,75 @@ const Catalogo = () => {
   // Find the current selected brand object
   const selectedBrand = form.marca ? brandsMap[form.marca] : null;
 
+  // Helper function to translate error messages to Spanish
+  const translateErrorMessage = (message: string | Error | null | undefined): string => {
+    if (!message) return 'Ocurrió un error inesperado';
+
+    const messageStr = typeof message === 'string' ? message : message?.message || 'Ocurrió un error inesperado';
+
+    // Translate common error messages
+    if (messageStr.toLowerCase().includes('network error') || messageStr.toLowerCase().includes('failed to fetch')) {
+      return 'Error de Red';
+    }
+    if (messageStr.toLowerCase().includes('timeout')) {
+      return 'Tiempo de espera agotado';
+    }
+    if (messageStr.toLowerCase().includes('unauthorized') || messageStr.toLowerCase().includes('401')) {
+      return 'No autorizado';
+    }
+    if (messageStr.toLowerCase().includes('forbidden') || messageStr.toLowerCase().includes('403')) {
+      return 'Acceso prohibido';
+    }
+    if (messageStr.toLowerCase().includes('not found') || messageStr.toLowerCase().includes('404')) {
+      return 'No encontrado';
+    }
+    if (messageStr.toLowerCase().includes('server error') || messageStr.toLowerCase().includes('500')) {
+      return 'Error del servidor';
+    }
+
+    return messageStr;
+  };
+
   // Determine if we have any errors to display
   const hasError = brandsError || categoriesError || productsError;
   const errorMessage = brandsError || categoriesError || productsError;
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
+
+  // Open error dialog when error occurs
+  useEffect(() => {
+    if (hasError) {
+      setIsErrorDialogOpen(true);
+    }
+  }, [hasError]);
 
   return (
     <PlatinumLayout>
-      {/* Error Alert */}
-      {hasError && (
-        <Alert variant="destructive" className="mx-20 mt-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {typeof errorMessage === 'string' ? errorMessage : errorMessage?.message || 'Ocurrió un error'}
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Error Dialog */}
+      <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <DialogTitle className="text-xl font-semibold text-red-600">
+                Error
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <DialogDescription className="pt-4 text-base">
+            {translateErrorMessage(errorMessage)}
+          </DialogDescription>
+          <div className="flex justify-end pt-4">
+            <Button
+              onClick={() => setIsErrorDialogOpen(false)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {loadingCategories || loadingBrands ? (
         <SkeletonCatalog />
