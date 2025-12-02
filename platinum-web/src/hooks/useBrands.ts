@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Brand } from "../models/brand";
 import axiosClient from "../services/axiosInstance";
 
@@ -7,16 +7,25 @@ import axiosClient from "../services/axiosInstance";
  * Based on mobile implementation
  */
 export const useBrands = () => {
-  const client = axiosClient();
+  const client = useMemo(() => axiosClient(), []);
   const [brands, setBrands] = useState<Record<string, Brand>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    getBrands();
+  const processBrands = useCallback((data: any[]) => {
+    const brandsMap = data.reduce((acc: Record<string, Brand>, brand: any) => {
+      acc[brand.id] = {
+        id: brand.id,
+        name: brand.name,
+        logoImgUrl: brand.logoImgUrl,
+        categories: brand.categories,
+      };
+      return acc;
+    }, {});
+    setBrands(brandsMap);
   }, []);
 
-  const getBrands = async () => {
+  const getBrands = useCallback(async () => {
     try {
       setLoading(true);
       const response = await client.get("/brands");
@@ -28,23 +37,11 @@ export const useBrands = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [client, processBrands]);
 
-  /**
-   * Process brand data from API and convert it into a hashmap
-   */
-  const processBrands = (data: any[]) => {
-    const brandsMap = data.reduce((acc: Record<string, Brand>, brand: any) => {
-      acc[brand.id] = {
-        id: brand.id,
-        name: brand.name,
-        logoImgUrl: brand.logoImgUrl,
-        categories: brand.categories,
-      };
-      return acc;
-    }, {});
-    setBrands(brandsMap);
-  };
+  useEffect(() => {
+    getBrands();
+  }, [getBrands]);
 
   return {
     brands,
