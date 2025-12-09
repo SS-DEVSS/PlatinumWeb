@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import axiosClient from "../services/axiosInstance";
 import { Item } from "../models/item";
 
