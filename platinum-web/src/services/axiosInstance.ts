@@ -11,13 +11,13 @@ const axiosClient = (token: string | null = null): AxiosInstance => {
       };
 
   const client = axios.create({
-    baseURL: "http://localhost:4000/api/v1",
+    baseURL: import.meta.env.VITE_PLATINUM_DRIVELINE_API_URL || "http://localhost:4000/api/v1",
     headers,
     timeout: 60000,
     withCredentials: false,
   });
 
-  client.interceptors.request.use((config: any) => {
+  client.interceptors.request.use((config) => {
     const token = localStorage.getItem("ACCESS_TOKEN");
     config.headers = config.headers || {};
     if (token) {
