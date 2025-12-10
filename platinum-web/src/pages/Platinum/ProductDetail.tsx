@@ -12,8 +12,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
+  CarouselDots,
+  type CarouselApi,
 } from "../../components/ui/carousel";
 import {
   Tabs,
@@ -26,7 +26,7 @@ import { useEffect, useState } from "react";
 import { useProducts } from "../../hooks/useProducts";
 import { Item } from "../../models/item";
 import { Component } from "../../models/component";
-import { Image as ProductImage } from "../../models/image";
+import { Image } from "../../models/image";
 import { useItemContext } from "../../context/Item-context";
 import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
@@ -55,12 +55,15 @@ const ProductDetail = () => {
   const [item, setItem] = useState<Item | null>(null);
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>(undefined);
 
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchData = async () => {
       if (itemId) {
         const data = await getProductById(itemId);
+        console.log('[ProductDetail] Product data:', data);
+        console.log('[ProductDetail] Images:', data?.images);
         setItem(data);
         // Set type from product data
         if (data.type) {
@@ -103,7 +106,7 @@ const ProductDetail = () => {
             <Button
               onClick={() => navigate(`/Catalogo`)}
               variant={"ghost"}
-              className="flex gap-3 border border-black rounded-full py-2 px-7"
+              className="flex gap-3 border border-[#20314f] text-[#20314f] rounded-full py-2 px-7"
             >
               <MoveLeft />
               <p>Regresar</p>
@@ -113,8 +116,8 @@ const ProductDetail = () => {
               onClick={handleCopyLink}
               className="flex gap-4 hover:underline hover:cursor-pointer"
             >
-              <Share2 className="rotate-180 fill-black" />
-              <p>Compartir aplicación</p>
+              <Share2 className="rotate-180 fill-[#20314f]" />
+              <p className="text-[#20314f]">Compartir aplicación</p>
             </Button>
           </div>
 
@@ -122,35 +125,43 @@ const ProductDetail = () => {
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 mb-8">
             {/* Left Section: Image */}
             <section className="w-full lg:w-1/3">
-              {item?.variants && item.variants.length > 0 && item.variants[0].images && item.variants[0].images.length > 0 ? (
-                <Card className="w-full">
-                  <Carousel className="w-full">
-                    <CarouselContent>
-                      {item.variants[0].images.map((image: ProductImage, index: number) => (
-                        <CarouselItem key={index}>
-                          <div className="p-1">
-                            <Card className="border-none shadow-none">
-                              <CardContent className="flex aspect-square items-center justify-center p-6">
-                                {image.url ? (
-                                  <img src={image.url} alt={item.name} className="max-w-full max-h-full object-contain" />
-                                ) : (
-                                  <div className="flex flex-col items-center justify-center text-gray-400">
-                                    <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <p className="text-sm">Sin imagen</p>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </div>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
-                  </Carousel>
-                </Card>
+              {item?.images && item.images.length > 0 ? (
+                <div className="w-full">
+                  <Card className="w-full">
+                    <Carousel className="w-full" setApi={setCarouselApi}>
+                      <CarouselContent>
+                        {item.images.map((image: Image, index: number) => (
+                          <CarouselItem key={index}>
+                            <div className="p-1">
+                              <Card className="border-none shadow-none bg-white">
+                                <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
+                                  {image.url ? (
+                                    <img
+                                      src={image.url}
+                                      alt={item.name}
+                                      className="max-w-full max-h-full object-contain"
+                                      loading="lazy"
+                                    />
+                                  ) : (
+                                    <div className="flex flex-col items-center justify-center text-gray-400">
+                                      <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      <p className="text-sm">Sin imagen</p>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                    </Carousel>
+                  </Card>
+                  {item.images.length > 1 && (
+                    <CarouselDots count={item.images.length} className="mt-2" api={carouselApi} />
+                  )}
+                </div>
               ) : (
                 <Card className="w-full">
                   <CardContent className="flex aspect-square items-center justify-center p-6">
@@ -176,8 +187,13 @@ const ProductDetail = () => {
                       {item?.sku || item?.name}
                     </h4>
                   </div>
-                  <div className="bg-black text-white font-semibold rounded-full px-8 h-10 flex flex-col justify-center">
-                    {item?.category.name}
+                  <div className="text-[#20314f] px-8 flex flex-row justify-center gap-2">
+                    <span className="text-[#20314f]">
+                      Categoría:
+                    </span>
+                    <span className="text-[#20314f] font-semibold">
+                      {item?.category.name}
+                    </span>
                   </div>
                 </div>
 
@@ -190,7 +206,7 @@ const ProductDetail = () => {
                           return (
                             <div
                               key={`ref-string-${index}`}
-                              className="bg-gris_oscuro text-white rounded-full px-8 py-1"
+                              className="bg-[#20314f] text-white rounded-full px-8 py-1"
                             >
                               {reference}
                             </div>
@@ -199,7 +215,7 @@ const ProductDetail = () => {
                         return (
                           <button
                             key={reference.id || `ref-${index}`}
-                            className="bg-gris_oscuro text-white rounded-full px-8 py-1 hover:bg-gris_oscuro/80 cursor-pointer transition-colors"
+                            className="bg-[#20314f] text-white rounded-full px-8 py-1 hover:bg-[#20314f]/80 cursor-pointer transition-colors"
                             onClick={() => {
                               setSelectedReference(reference);
                               setIsReferenceDialogOpen(true);

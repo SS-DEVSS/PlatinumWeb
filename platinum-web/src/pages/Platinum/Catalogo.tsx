@@ -10,17 +10,23 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
-import { useState, useEffect } from "react";
+import { Input } from "../../components/ui/input";
+import { useState, useEffect, useMemo } from "react";
 import { useCategories } from "../../hooks/useCategories";
 import { useBrands } from "../../hooks/useBrands";
 import { useProducts } from "../../hooks/useProducts";
 import FilterSection from "../../components/FilterSection";
-import { Input } from "../../components/ui/input";
 import ProductsTable from "../../components/ProductsTable";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import SkeletonProductsTable from "../../skeletons/SkeletonProductsTable";
 import { Category } from "../../models/category";
-import { Alert, AlertDescription } from "../../components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../../components/ui/dialog";
 import { AlertCircle } from "lucide-react";
 
 type formState = {
@@ -42,12 +48,13 @@ const Catalogo = () => {
     loading: loadingCategories,
     category,
     getCategoryById,
+    getCategoryFilters,
     error: categoriesError
   } = useCategories();
   const { getProductsByCategory, products: categoryProducts } = useProducts();
 
   // Convert brandsMap to array for rendering
-  const brands = Object.values(brandsMap || {});
+  const brands = useMemo(() => Object.values(brandsMap || {}), [brandsMap]);
 
   // Adding loading state for products table
   const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
@@ -58,6 +65,15 @@ const Catalogo = () => {
 
   // State to track available categories based on selected brand
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+
+  // Pagination state
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalItems, setTotalItems] = useState<number>(0);
+
+  // State for server-side filter options
+  const [filterOptions, setFilterOptions] = useState<Record<string, (string | number | boolean | Date)[]> | undefined>(undefined);
 
   const [form, setForm] = useState<formState>({
     filtroTipo: "NumParte",
@@ -72,36 +88,25 @@ const Catalogo = () => {
     marca: null,
   });
 
-  // Handle initial brand selection
+  // Debounce search term changes to reset page
   useEffect(() => {
-    if (brands && brands.length > 0 && !form.marca) {
-      // Select first brand by default
-      const firstBrand = brands[0];
-      if (firstBrand) {
-        setForm(prevForm => ({
-          ...prevForm,
-          marca: firstBrand.id
-        }));
+    const timer = setTimeout(() => {
+      // Only set page to 1 if it's not already 1 to avoid redundant effect triggers
+      setPage(prev => prev !== 1 ? 1 : prev);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [form.filtro.numParte, form.filtro.referencia]);
 
-        // Set available categories for the first brand
-        setAvailableCategories(firstBrand.categories || []);
-
-        // If brand has categories, select the first one
-        if (firstBrand.categories && firstBrand.categories.length > 0) {
-          setForm(prevForm => ({
-            ...prevForm,
-            categoria: firstBrand.categories![0],
-          }));
-        }
-      }
-    }
-  }, [brands]);
+  const handlePaginationChange = (newPageIndex: number, newPageSize: number) => {
+    setPage(newPageIndex + 1); // Convert 0-indexed to 1-indexed
+    setPageSize(newPageSize);
+  };
 
   // Update available categories when brand changes
   useEffect(() => {
     if (!brands || brands.length === 0 || !form.marca) return;
 
-    const selectedBrand = brandsMap[form.marca];
+    const selectedBrand = brandsMap ? brandsMap[form.marca] : null;
     if (selectedBrand) {
       setAvailableCategories(selectedBrand.categories || []);
 
@@ -126,46 +131,160 @@ const Catalogo = () => {
         }));
       }
     }
-  }, [form.marca, brandsMap]);
+  }, [form.marca, brandsMap, brands]);
 
-  // Fetch category data and products when selected category changes
+  // Handle initial brand selection
   useEffect(() => {
+    if (brands && brands.length > 0 && !form.marca) {
+      // Select first brand by default
+      const firstBrand = brands[0];
+      if (firstBrand) {
+        setForm(prevForm => ({
+          ...prevForm,
+          marca: firstBrand.id
+        }));
+      }
+    }
+  }, [brands, form.marca]);
+
+  const selectedFiltersHash = JSON.stringify(form.filtro.vehiculo.selectedFilters);
+
+  // Fetch category data and filters when selected category changes
+  useEffect(() => {
+    const controller = new AbortController();
+
     if (!form.categoria) return;
 
-    setProductsError(null);
+    const categoryId = form.categoria.id;
+
+    // Only fetch category if it's different from current or not loaded
+    if (!category || category.id !== categoryId) {
+      setProductsError(null);
+      // Reset filter options only when category actually changes
+      setFilterOptions(undefined);
+
+      getCategoryById(categoryId)
+        .then(() => {
+          // Initial fetch of filters (no filters applied) for the base dropdowns
+          if (controller.signal.aborted) return;
+          return getCategoryFilters(categoryId, undefined, controller.signal);
+        })
+        .then((options) => {
+          if (controller.signal.aborted) return;
+          if (options) {
+            setFilterOptions(options);
+          }
+        })
+        .catch((err: Error) => {
+          if (controller.signal.aborted) return;
+          if (err.name !== 'CanceledError' && (err as any).code !== "ERR_CANCELED") {
+            setProductsError(`Error al cargar categoría: ${err.message || 'Ocurrió un error inesperado'}`);
+          }
+        });
+    }
+
+    return () => controller.abort();
+  }, [form.categoria?.id, category, getCategoryById, getCategoryFilters]); // Added category
+
+  // Fetch filtered options when vehicle filters change
+  useEffect(() => {
+    const controller = new AbortController();
+
+    // Use category from form
+    const currentCategory = form.categoria;
+    if (!currentCategory || form.filtroTipo !== "Vehiculo") return;
+
+    const categoryId = currentCategory.id;
+    const currentFilters = form.filtro.vehiculo.selectedFilters;
+
+    if (currentFilters && currentFilters.length > 0) {
+      // Convert to dictionary for backend
+      const filtersDict: Record<string, any> = {};
+      currentFilters.forEach(f => {
+        filtersDict[f.attributeId] = f.value;
+      });
+
+      getCategoryFilters(categoryId, filtersDict, controller.signal)
+        .then((options) => {
+          if (controller.signal.aborted) return;
+          if (options) {
+            setFilterOptions(options);
+          }
+        })
+        .catch(console.error);
+    } else {
+      // If filters cleared, re-fetch base options
+      getCategoryFilters(categoryId, undefined, controller.signal)
+        .then((options) => {
+          if (controller.signal.aborted) return;
+          if (options) setFilterOptions(options);
+        })
+        .catch(console.error);
+    }
+
+    return () => controller.abort();
+  }, [form.categoria, selectedFiltersHash, form.filtroTipo, getCategoryFilters]);
+
+  // Fetch products when category, filters, or pagination changes
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const currentCategory = form.categoria;
+    if (!currentCategory) return;
+
+    const categoryId = currentCategory.id;
     setLoadingProducts(true);
 
-    // Fetch category with attributes
-    const categoryId = form.categoria.id;
-    getCategoryById(categoryId)
-      .then(() => {
-        // Fetch products for this category
-        return getProductsByCategory(categoryId);
-      })
-      .then(() => {
+    // Determine search query
+    let searchQuery = "";
+    if (form.filtroTipo === "NumParte") {
+      searchQuery = form.filtro.numParte;
+    } else if (form.filtroTipo === "Referencia") {
+      searchQuery = form.filtro.referencia;
+    }
+
+    // Prepare vehicle filters for server-side
+    let filters: Record<string, string | number | boolean | Date> | undefined = undefined;
+    if (form.filtroTipo === "Vehiculo" && form.filtro.vehiculo.selectedFilters && form.filtro.vehiculo.selectedFilters.length > 0) {
+      filters = {};
+      form.filtro.vehiculo.selectedFilters.forEach(f => {
+        filters![f.attributeId] = f.value;
+      });
+    }
+
+    getProductsByCategory(categoryId, page, pageSize, searchQuery, filters, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return;
+
+        if (result && 'totalPages' in result) {
+          setTotalPages(result.totalPages);
+          setTotalItems(result.total);
+        }
         setInitialLoad(true);
-        // Don't set loading to false here - let ProductsTable control it
+        setLoadingProducts(false);
       })
-      .catch((err) => {
-        setProductsError(`Error al cargar productos: ${err.message || 'Ocurrió un error inesperado'}`);
+      .catch((err: Error) => {
+        if (controller.signal.aborted) return;
+
+        if (err.name !== 'CanceledError' && (err as any).code !== "ERR_CANCELED") {
+          setProductsError(`Error al cargar productos: ${err.message || 'Ocurrió un error inesperado'}`);
+        }
         setLoadingProducts(false);
       });
-  }, [form.categoria]);
 
-  // MODIFIED: Only trigger loading for vehicle filters that require server-side processing
-  useEffect(() => {
-    if (initialLoad && form.filtroTipo === "Vehiculo" &&
-      form.filtro.vehiculo.selectedFilters && form.filtro.vehiculo.selectedFilters.length > 0) {
-      setProductsError(null);
-      setLoadingProducts(true);
+    return () => controller.abort();
+  }, [
+    form.categoria,
+    page,
+    pageSize,
+    form.filtroTipo,
+    form.filtro.numParte,
+    form.filtro.referencia,
+    selectedFiltersHash,
+    getProductsByCategory
+  ]);
 
-      // Your API call or data processing here
-
-      setTimeout(() => {
-        setLoadingProducts(false);
-      }, 800); // Simulate loading time
-    }
-  }, [form.filtroTipo, form.filtro.vehiculo.selectedFilters, initialLoad]);
+  // ... (handlers)
 
   const handleBrandChange = (brandId: string) => {
     if (form.marca === brandId) return;
@@ -206,41 +325,26 @@ const Catalogo = () => {
       setProductsError(null);
       setLoadingProducts(true);
 
+      // Reset pagination
+      setPage(1);
+
       getCategoryById(categoryId)
         .then(() => {
+          return getCategoryFilters(categoryId);
+        })
+        .then((options) => {
+          if (options) setFilterOptions(options);
           // Fetch products for this category
           return getProductsByCategory(categoryId);
         })
-        .catch((err) => {
+        .catch((err: Error) => {
           setProductsError(`Error al cargar categoría: ${err.message || 'Ocurrió un error inesperado'}`);
           setLoadingProducts(false);
         });
     }
   };
 
-  const handleReference = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setForm((prevform) => ({
-      ...prevform,
-      filtro: {
-        ...prevform.filtro,
-        numParte: "",
-        referencia: value,
-      },
-    }));
-  };
-
-  const handleNumParte = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setForm((prevform) => ({
-      ...prevform,
-      filtro: {
-        ...prevform.filtro,
-        numParte: value,
-        referencia: "",
-      },
-    }));
-  };
+  // Removed unused handlers: handleReference, handleNumParte
 
   const handleVehicleFilterChange = (filters: Array<{ attributeId: string, value: string }>) => {
     setForm((prevform) => ({
@@ -259,23 +363,41 @@ const Catalogo = () => {
     switch (form.filtroTipo) {
       case "NumParte":
         return (
-          <div className="flex gap-3 w-[100%]">
+          <div className="flex flex-col gap-4 mb-6">
+            <Label className="font-semibold text-base">Número de Parte:</Label>
             <Input
+              placeholder="Buscar por número de parte..."
               value={form.filtro.numParte}
-              onChange={handleNumParte}
-              placeholder="Ingresa un número de parte"
-              className="pl-5 py-7"
+              onChange={(e) =>
+                setForm((prevForm) => ({
+                  ...prevForm,
+                  filtro: {
+                    ...prevForm.filtro,
+                    numParte: e.target.value,
+                  },
+                }))
+              }
+              className="bg-white h-12"
             />
           </div>
         );
       case "Referencia":
         return (
-          <div className="flex gap-3 w-[100%]">
+          <div className="flex flex-col gap-4 mb-6">
+            <Label className="font-semibold text-base">Referencia:</Label>
             <Input
+              placeholder="Buscar por referencia..."
               value={form.filtro.referencia}
-              onChange={handleReference}
-              placeholder="Ingresa un número de referencia"
-              className="pl-5 py-7"
+              onChange={(e) =>
+                setForm((prevForm) => ({
+                  ...prevForm,
+                  filtro: {
+                    ...prevForm.filtro,
+                    referencia: e.target.value,
+                  },
+                }))
+              }
+              className="bg-white h-12"
             />
           </div>
         );
@@ -287,7 +409,8 @@ const Catalogo = () => {
             category={categoryForFilters}
             filtroInfo={form.filtro}
             onFilterChange={handleVehicleFilterChange}
-            products={categoryProducts} // Pass products for filtering logic
+            products={categoryProducts} // Pass products for filtering logic (legacy fallback)
+            filterOptions={filterOptions} // Pass server-side filter options
           />
         );
       }
@@ -297,21 +420,75 @@ const Catalogo = () => {
   // Find the current selected brand object
   const selectedBrand = form.marca ? brandsMap[form.marca] : null;
 
+  // Helper function to translate error messages to Spanish
+  const translateErrorMessage = (message: string | Error | null | undefined): string => {
+    if (!message) return 'Ocurrió un error inesperado';
+
+    const messageStr = typeof message === 'string' ? message : message?.message || 'Ocurrió un error inesperado';
+
+    // Translate common error messages
+    if (messageStr.toLowerCase().includes('network error') || messageStr.toLowerCase().includes('failed to fetch')) {
+      return 'Error de Red';
+    }
+    if (messageStr.toLowerCase().includes('timeout')) {
+      return 'Tiempo de espera agotado';
+    }
+    if (messageStr.toLowerCase().includes('unauthorized') || messageStr.toLowerCase().includes('401')) {
+      return 'No autorizado';
+    }
+    if (messageStr.toLowerCase().includes('forbidden') || messageStr.toLowerCase().includes('403')) {
+      return 'Acceso prohibido';
+    }
+    if (messageStr.toLowerCase().includes('not found') || messageStr.toLowerCase().includes('404')) {
+      return 'No encontrado';
+    }
+    if (messageStr.toLowerCase().includes('server error') || messageStr.toLowerCase().includes('500')) {
+      return 'Error del servidor';
+    }
+
+    return messageStr;
+  };
+
   // Determine if we have any errors to display
   const hasError = brandsError || categoriesError || productsError;
   const errorMessage = brandsError || categoriesError || productsError;
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
+
+  // Open error dialog when error occurs
+  useEffect(() => {
+    if (hasError) {
+      setIsErrorDialogOpen(true);
+    }
+  }, [hasError]);
 
   return (
     <PlatinumLayout>
-      {/* Error Alert */}
-      {hasError && (
-        <Alert variant="destructive" className="mx-20 mt-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {typeof errorMessage === 'string' ? errorMessage : errorMessage?.message || 'Ocurrió un error'}
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Error Dialog */}
+      <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <DialogTitle className="text-xl font-semibold text-red-600">
+                Error
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          <DialogDescription className="pt-4 text-base">
+            {translateErrorMessage(errorMessage)}
+          </DialogDescription>
+          <div className="flex justify-end pt-4">
+            <Button
+              onClick={() => setIsErrorDialogOpen(false)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {loadingCategories || loadingBrands ? (
         <SkeletonCatalog />
@@ -440,9 +617,11 @@ const Catalogo = () => {
                 </Label>
                 <div className="flex gap-2 rounded-lg bg-white p-2 items-center h-[52px]">
                   <Button
+                    type="button"
                     size={"lg"}
                     variant={"ghost"}
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.preventDefault();
                       setForm((prevForm) => ({
                         ...prevForm,
                         filtroTipo: "NumParte",
@@ -451,8 +630,8 @@ const Catalogo = () => {
                           referencia: "",
                           numParte: "",
                         },
-                      }))
-                    }
+                      }));
+                    }}
                     className={
                       form.filtroTipo === "NumParte"
                         ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
@@ -462,9 +641,11 @@ const Catalogo = () => {
                     Número de Parte
                   </Button>
                   <Button
+                    type="button"
                     size={"lg"}
                     variant={"ghost"}
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.preventDefault();
                       setForm((prevForm) => ({
                         ...prevForm,
                         filtroTipo: "Referencia",
@@ -473,8 +654,8 @@ const Catalogo = () => {
                           referencia: "",
                           numParte: "",
                         },
-                      }))
-                    }
+                      }));
+                    }}
                     className={
                       form.filtroTipo === "Referencia"
                         ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
@@ -484,9 +665,11 @@ const Catalogo = () => {
                     Referencia
                   </Button>
                   <Button
+                    type="button"
                     size={"lg"}
                     variant={"ghost"}
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.preventDefault();
                       setForm((prevForm) => ({
                         ...prevForm,
                         filtroTipo: "Vehiculo",
@@ -495,8 +678,8 @@ const Catalogo = () => {
                           referencia: "",
                           numParte: "",
                         },
-                      }))
-                    }
+                      }));
+                    }}
                     className={
                       form.filtroTipo === "Vehiculo"
                         ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
@@ -521,6 +704,11 @@ const Catalogo = () => {
                 onLoadingChange={setLoadingProducts}
                 products={categoryProducts} // Pass fetched products
                 loading={loadingProducts} // Pass loading state
+                pageIndex={page - 1} // 0-indexed for table
+                pageSize={pageSize}
+                pageCount={totalPages}
+                totalItems={totalItems}
+                onPaginationChange={handlePaginationChange}
               />
             )}
           </section>

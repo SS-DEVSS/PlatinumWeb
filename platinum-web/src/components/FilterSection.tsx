@@ -17,11 +17,12 @@ type FilterSectionProps = {
       selectedFilters?: Array<{ attributeId: string, value: string }>;
     };
   };
-  products?: Item[]; // Products for filtering logic
+  products?: Item[]; // Products for filtering logic (legacy/fallback)
+  filterOptions?: Record<string, any[]>; // New server-side filter options
   onFilterChange?: (filters: Array<{ attributeId: string, value: string }>) => void;
 };
 
-const FilterSection = ({ category, filtroInfo, onFilterChange, products = [] }: FilterSectionProps) => {
+const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], filterOptions }: FilterSectionProps) => {
   const { setSelectedFilters } = useItemContext();
   // const { products } = useProducts(); // Removed internal hook usage
 
@@ -75,12 +76,37 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [] }: 
     } else {
       setAttributeStates({});
     }
-  }, [category]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category?.id]); // Only re-run if category ID changes to prevent loops
 
   useEffect(() => {
     // Initialize with empty filters
     setSelectedFilters([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Update available options when filterOptions change
+  useEffect(() => {
+    if (filterOptions) {
+      const newOptions: { [key: string]: string[] } = {};
+      const filterAttributes = getFilterAttributes();
+
+      filterAttributes.forEach(attribute => {
+        if (filterOptions[attribute.id]) {
+          newOptions[attribute.id] = filterOptions[attribute.id];
+        }
+      });
+
+      // Only update if options actually changed to avoid loops
+      setAvailableOptions(prev => {
+        const hasChanges = Object.keys(newOptions).some(key =>
+          JSON.stringify(newOptions[key]) !== JSON.stringify(prev[key])
+        );
+        return hasChanges ? { ...prev, ...newOptions } : prev;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterOptions]);
 
   // Calculate available options for a specific attribute based on current selections
   // Works with application attributes (for vehicle filtering) or variant attributes (for size/color)
@@ -172,6 +198,16 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [] }: 
     return Array.from(validValues).sort();
   };
 
+  // Use server-provided options if available, otherwise fallback to client-side calculation
+  const getOptionsForAttribute = (attributeId: string, currentFilters: Array<{ attributeId: string, value: string }>) => {
+    if (filterOptions && filterOptions[attributeId]) {
+      return filterOptions[attributeId];
+    }
+
+    // Fallback to legacy client-side calculation
+    return calculateAvailableOptions(attributeId, currentFilters);
+  };
+
   // Update available options for all attributes
   const updateAllAvailableOptions = (currentFilters: Array<{ attributeId: string, value: string }>) => {
     const filterAttributes = getFilterAttributes();
@@ -180,7 +216,7 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [] }: 
     const newOptions: { [key: string]: string[] } = {};
 
     filterAttributes.forEach(attribute => {
-      newOptions[attribute.id] = calculateAvailableOptions(attribute.id, currentFilters);
+      newOptions[attribute.id] = getOptionsForAttribute(attribute.id, currentFilters);
     });
 
     setAvailableOptions(newOptions);

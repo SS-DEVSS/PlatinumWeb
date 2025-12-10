@@ -20,6 +20,7 @@ export type Item = {
   variants?: Variant[]; // Placeholders for size/color variations
   components?: Component[]; // NEW - only present for KIT products
   attributeValues: AttributeValue[];
+  images?: Image[]; // Product images
 };
 
 export type Variant = {
