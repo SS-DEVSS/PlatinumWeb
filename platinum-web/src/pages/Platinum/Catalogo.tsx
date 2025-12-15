@@ -364,7 +364,7 @@ const Catalogo = () => {
       case "NumParte":
         return (
           <div className="flex flex-col gap-4 mb-6">
-            <Label className="font-semibold text-base">Número de Parte:</Label>
+            <Label className="font-semibold text-sm sm:text-base">Número de Parte:</Label>
             <Input
               placeholder="Buscar por número de parte..."
               value={form.filtro.numParte}
@@ -377,14 +377,14 @@ const Catalogo = () => {
                   },
                 }))
               }
-              className="bg-white h-12"
+              className="bg-white h-10 sm:h-12 text-sm sm:text-base"
             />
           </div>
         );
       case "Referencia":
         return (
           <div className="flex flex-col gap-4 mb-6">
-            <Label className="font-semibold text-base">Referencia:</Label>
+            <Label className="font-semibold text-sm sm:text-base">Referencia:</Label>
             <Input
               placeholder="Buscar por referencia..."
               value={form.filtro.referencia}
@@ -397,7 +397,7 @@ const Catalogo = () => {
                   },
                 }))
               }
-              className="bg-white h-12"
+              className="bg-white h-10 sm:h-12 text-sm sm:text-base"
             />
           </div>
         );
@@ -494,17 +494,17 @@ const Catalogo = () => {
         <SkeletonCatalog />
       ) : (
         <>
-          <section className="bg-hero-catalog bg-cover pl-20 pb-14">
-            <h2 className="font-bold text-4xl pt-20 pb-10 text-white">
+          <section className="bg-hero-catalog bg-cover px-4 sm:px-8 md:px-12 lg:px-20 pb-8 sm:pb-10 md:pb-14">
+            <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl pt-12 sm:pt-16 md:pt-20 pb-6 sm:pb-8 md:pb-10 text-white">
               Catálogo Electrónico
             </h2>
-            <div className="flex gap-10 flex-wrap">
-              <div className="flex flex-col flex-wrap">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-10 flex-wrap">
+              <div className="flex flex-col flex-wrap w-full sm:w-auto">
                 <Label className="font-semibold text-base mb-4 text-white">
                   Marca:
                 </Label>
                 <Select onValueChange={handleBrandChange} value={form.marca || ''}>
-                  <SelectTrigger className="h-[52px] w-[250px]">
+                  <SelectTrigger className="h-[52px] w-full sm:w-[250px]">
                     {selectedBrand ? (
                       <div className="flex items-center">
                         {selectedBrand.logoImgUrl ? (
@@ -553,7 +553,7 @@ const Catalogo = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col w-full sm:w-auto">
                 <Label className="font-semibold text-base mb-4 text-white">
                   Categoría:
                 </Label>
@@ -562,7 +562,7 @@ const Catalogo = () => {
                   value={form.categoria?.id || ''}
                   disabled={availableCategories.length === 0}
                 >
-                  <SelectTrigger className="h-[52px] w-[250px]">
+                  <SelectTrigger className="h-[52px] w-full sm:w-[250px]">
                     {form.categoria ? (
                       <div className="flex items-center">
                         {form.categoria.imgUrl ? (
@@ -611,14 +611,14 @@ const Catalogo = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col w-full sm:w-auto">
                 <Label className="font-semibold text-base mb-4 text-white">
                   Filtrar Por:
                 </Label>
-                <div className="flex gap-2 rounded-lg bg-white p-2 items-center h-[52px]">
+                <div className="flex flex-wrap gap-2 rounded-lg bg-white p-2 items-center min-h-[52px]">
                   <Button
                     type="button"
-                    size={"lg"}
+                    size={"sm"}
                     variant={"ghost"}
                     onClick={(e) => {
                       e.preventDefault();
@@ -634,15 +634,15 @@ const Catalogo = () => {
                     }}
                     className={
                       form.filtroTipo === "NumParte"
-                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
-                        : "text-black"
+                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs sm:text-sm"
+                        : "text-black text-xs sm:text-sm"
                     }
                   >
-                    Número de Parte
+                    <span className="hidden sm:inline">Número de </span>Parte
                   </Button>
                   <Button
                     type="button"
-                    size={"lg"}
+                    size={"sm"}
                     variant={"ghost"}
                     onClick={(e) => {
                       e.preventDefault();
@@ -658,15 +658,15 @@ const Catalogo = () => {
                     }}
                     className={
                       form.filtroTipo === "Referencia"
-                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
-                        : "text-black"
+                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs sm:text-sm"
+                        : "text-black text-xs sm:text-sm"
                     }
                   >
                     Referencia
                   </Button>
                   <Button
                     type="button"
-                    size={"lg"}
+                    size={"sm"}
                     variant={"ghost"}
                     onClick={(e) => {
                       e.preventDefault();
@@ -682,8 +682,8 @@ const Catalogo = () => {
                     }}
                     className={
                       form.filtroTipo === "Vehiculo"
-                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white"
-                        : "text-black"
+                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs sm:text-sm"
+                        : "text-black text-xs sm:text-sm"
                     }
                   >
                     Vehículo
@@ -692,7 +692,7 @@ const Catalogo = () => {
               </div>
             </div>
           </section>
-          <section className="px-20 py-8 bg-[#E4E4E4]">
+          <section className="px-4 sm:px-6 md:px-12 lg:px-20 py-6 sm:py-8 bg-[#E4E4E4]">
             {getFilterComponent()}
             {loadingProducts && !initialLoad ? (
               <SkeletonProductsTable />

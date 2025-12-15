@@ -515,19 +515,21 @@ const ProductsTable = ({
             variant={viewMode === "cards" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("cards")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
+            title="Vista de tarjetas"
           >
             <LayoutGrid className="h-4 w-4" />
-            <span>Tarjetas</span>
+            <span className="hidden sm:inline">Tarjetas</span>
           </Button>
           <Button
             variant={viewMode === "table" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("table")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2"
+            title="Vista de tabla"
           >
             <Table2 className="h-4 w-4" />
-            <span>Tabla</span>
+            <span className="hidden sm:inline">Tabla</span>
           </Button>
         </div>
       </div>
@@ -545,73 +547,75 @@ const ProductsTable = ({
       <>
         {viewMode === "table" ? (
           <Card className={`border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
-                        key={header.id}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {isProcessingComplete && mappedData.length > 0 ? (
-                  currentPageItems.map((row, index) => {
-                    const isLastRow = index === currentPageItems.length - 1;
-                    return (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                        onClick={() => handleClick(row)}
-                        className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
-                        style={{
-                          backgroundColor:
-                            itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
-                          borderBottomLeftRadius: isLastRow
-                            ? "12px !important"
-                            : "0",
-                          borderBottomRightRadius: isLastRow
-                            ? "12px !important"
-                            : "0",
-                        }}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
+                          key={header.id}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
                             )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })
-                ) : isProcessingComplete && showNoResults ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center">
-                      No se encontraron resultados
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center">
-                      Cargando...
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {isProcessingComplete && mappedData.length > 0 ? (
+                    currentPageItems.map((row, index) => {
+                      const isLastRow = index === currentPageItems.length - 1;
+                      return (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
+                          onClick={() => handleClick(row)}
+                          className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
+                          style={{
+                            backgroundColor:
+                              itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
+                            borderBottomLeftRadius: isLastRow
+                              ? "12px !important"
+                              : "0",
+                            borderBottomRightRadius: isLastRow
+                              ? "12px !important"
+                              : "0",
+                          }}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })
+                  ) : isProcessingComplete && showNoResults ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center">
+                        No se encontraron resultados
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center">
+                        Cargando...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
         ) : (
           /* Card Grid View */
@@ -709,11 +713,11 @@ const ProductsTable = ({
           </div>
         )}
         {isProcessingComplete && mappedData.length > 0 && (
-          <div className="flex items-center justify-between space-x-4 py-6 bg-gray-50 rounded-lg px-4 border border-gray-200 mt-6">
-            <div className="text-sm font-medium text-gray-700">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:space-x-4 py-4 sm:py-6 bg-gray-50 rounded-lg px-3 sm:px-4 border border-gray-200 mt-6">
+            <div className="text-xs sm:text-sm font-medium text-gray-700 text-center sm:text-left">
               Mostrando <span className="font-semibold text-gray-900">{startItem}</span> - <span className="font-semibold text-gray-900">{endItem}</span> de <span className="font-semibold text-gray-900">{totalItems}</span> resultados
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -732,8 +736,8 @@ const ProductsTable = ({
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                <span className="text-sm text-gray-700">
+              <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
                   Página{" "}
                   <strong className="text-gray-900 font-semibold">
                     {table.getState().pagination.pageIndex + 1}
@@ -771,7 +775,7 @@ const ProductsTable = ({
                     onPaginationChange(0, newPageSize); // Reset to first page
                   }
                 }}
-                className="h-9 px-3 pr-8 text-sm border border-gray-300 rounded-md bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow cursor-pointer font-medium text-gray-700"
+                className="h-9 px-2 sm:px-3 pr-6 sm:pr-8 text-xs sm:text-sm border border-gray-300 rounded-md bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow cursor-pointer font-medium text-gray-700"
               >
                 {[8, 12, 16, 20, 24].map(pageSize => (
                   <option key={pageSize} value={pageSize}>
