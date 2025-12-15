@@ -24,7 +24,7 @@ import { Card, CardContent } from "./ui/card";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
-import { LayoutGrid, Table2 } from "lucide-react";
+import { LayoutGrid, Table2, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 const ProductsTable = ({
   category,
@@ -709,9 +709,9 @@ const ProductsTable = ({
           </div>
         )}
         {isProcessingComplete && mappedData.length > 0 && (
-          <div className="flex items-center justify-between space-x-2 py-4">
-            <div className="text-sm text-gray-500">
-              Mostrando {startItem} - {endItem} de {totalItems} resultados
+          <div className="flex items-center justify-between space-x-4 py-6 bg-gray-50 rounded-lg px-4 border border-gray-200 mt-6">
+            <div className="text-sm font-medium text-gray-700">
+              Mostrando <span className="font-semibold text-gray-900">{startItem}</span> - <span className="font-semibold text-gray-900">{endItem}</span> de <span className="font-semibold text-gray-900">{totalItems}</span> resultados
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -719,38 +719,48 @@ const ProductsTable = ({
                 size="sm"
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &lt;&lt;
+                <ChevronsLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &lt;
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm">
-                Página{" "}
-                <strong>
-                  {table.getState().pagination.pageIndex + 1} de {totalPages || 1}
-                </strong>
-              </span>
+              <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                <span className="text-sm text-gray-700">
+                  Página{" "}
+                  <strong className="text-gray-900 font-semibold">
+                    {table.getState().pagination.pageIndex + 1}
+                  </strong>{" "}
+                  de{" "}
+                  <strong className="text-gray-900 font-semibold">
+                    {totalPages || 1}
+                  </strong>
+                </span>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &gt;
+                <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.setPageIndex(totalPages - 1)}
                 disabled={!table.getCanNextPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &gt;&gt;
+                <ChevronsRight className="h-4 w-4" />
               </Button>
               <select
                 value={pageSize}
@@ -761,9 +771,9 @@ const ProductsTable = ({
                     onPaginationChange(0, newPageSize); // Reset to first page
                   }
                 }}
-                className="border rounded px-2 py-1 text-sm"
+                className="h-9 px-3 pr-8 text-sm border border-gray-300 rounded-md bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow cursor-pointer font-medium text-gray-700"
               >
-                {[10, 20, 30, 50].map(pageSize => (
+                {[8, 12, 16, 20, 24].map(pageSize => (
                   <option key={pageSize} value={pageSize}>
                     Mostrar {pageSize}
                   </option>
