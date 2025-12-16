@@ -1,5 +1,5 @@
 import { Category, Attribute } from "../models/category";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import FilterComponent from "./FilterComponent";
 import { useItemContext } from "../context/Item-context";
 // import { useProducts } from "../hooks/useProducts";
@@ -20,9 +20,10 @@ type FilterSectionProps = {
   products?: Item[]; // Products for filtering logic (legacy/fallback)
   filterOptions?: Record<string, any[]>; // New server-side filter options
   onFilterChange?: (filters: Array<{ attributeId: string, value: string }>) => void;
+  onActiveFiltersChange?: (filters: Array<{ attributeId: string, attributeName: string, value: string }>) => void;
 };
 
-const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], filterOptions }: FilterSectionProps) => {
+const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], filterOptions, onActiveFiltersChange }: FilterSectionProps) => {
   const { setSelectedFilters } = useItemContext();
   // const { products } = useProducts(); // Removed internal hook usage
 
@@ -304,6 +305,26 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
     state => state.selectedValue !== ""
   ).length;
 
+  const filterAttributes = getFilterAttributes();
+
+  // Get active filters with attribute names for display
+  const activeFilters = useMemo(() => {
+    return filterAttributes
+      .filter(attr => attributeStates[attr.id]?.selectedValue)
+      .map(attr => ({
+        attributeId: attr.id,
+        attributeName: attr.displayName || attr.name,
+        value: attributeStates[attr.id]?.selectedValue || ""
+      }));
+  }, [attributeStates, filterAttributes]);
+
+  // Notify parent of active filters change
+  useEffect(() => {
+    if (onActiveFiltersChange) {
+      onActiveFiltersChange(activeFilters);
+    }
+  }, [activeFilters, onActiveFiltersChange]);
+
   // Clear all filters
   const clearAllFilters = () => {
     const filterAttributes = getFilterAttributes();
@@ -338,13 +359,11 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
     }
   };
 
-  const filterAttributes = getFilterAttributes();
-
   return (
     <div className="flex flex-col gap-4">
       {filterAttributes.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 gap-3">
             {filterAttributes.map((attribute) => (
               <FilterComponent
                 key={attribute.id}
@@ -361,12 +380,12 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
             ))}
           </div>
           {activeFiltersCount > 0 && (
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-2 border-t">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearAllFilters}
-                className="h-10 text-naranja hover:bg-gray-100 hover:text-naranja"
+                className="h-9 text-naranja hover:bg-gray-100 hover:text-naranja text-sm"
               >
                 <X className="h-4 w-4 mr-1" />
                 Limpiar filtros ({activeFiltersCount})

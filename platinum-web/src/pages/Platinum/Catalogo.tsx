@@ -27,7 +27,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../components/ui/dialog";
-import { AlertCircle } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "../../components/ui/sheet";
+import { AlertCircle, Filter } from "lucide-react";
 
 type formState = {
   filtroTipo: "NumParte" | "Vehiculo" | "Referencia";
@@ -74,6 +80,12 @@ const Catalogo = () => {
 
   // State for server-side filter options
   const [filterOptions, setFilterOptions] = useState<Record<string, (string | number | boolean | Date)[]> | undefined>(undefined);
+
+  // State for mobile filter drawer
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+
+  // State for active vehicle filters (for mobile display)
+  const [activeVehicleFilters, setActiveVehicleFilters] = useState<Array<{ attributeId: string, attributeName: string, value: string }>>([]);
 
   const [form, setForm] = useState<formState>({
     filtroTipo: "NumParte",
@@ -411,6 +423,7 @@ const Catalogo = () => {
             onFilterChange={handleVehicleFilterChange}
             products={categoryProducts} // Pass products for filtering logic (legacy fallback)
             filterOptions={filterOptions} // Pass server-side filter options
+            onActiveFiltersChange={setActiveVehicleFilters}
           />
         );
       }
@@ -494,33 +507,33 @@ const Catalogo = () => {
         <SkeletonCatalog />
       ) : (
         <>
-          <section className="bg-hero-catalog bg-cover px-4 sm:px-8 md:px-12 lg:px-20 pb-8 sm:pb-10 md:pb-14">
-            <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl pt-12 sm:pt-16 md:pt-20 pb-6 sm:pb-8 md:pb-10 text-white">
+          <section className="bg-hero-catalog bg-cover px-4 sm:px-8 md:px-12 lg:px-20 pb-6 sm:pb-8 md:pb-10">
+            <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl pt-6 pb-4 sm:pb-5 md:pb-6 text-white">
               Catálogo Electrónico
             </h2>
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 md:gap-10 flex-wrap">
-              <div className="flex flex-col flex-wrap w-full sm:w-auto">
-                <Label className="font-semibold text-base mb-4 text-white">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 flex-wrap items-end">
+              <div className="flex flex-col flex-wrap w-full sm:w-auto flex-1 sm:flex-none">
+                <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-white">
                   Marca:
                 </Label>
                 <Select onValueChange={handleBrandChange} value={form.marca || ''}>
-                  <SelectTrigger className="h-[52px] w-full sm:w-[250px]">
+                  <SelectTrigger className="h-9 sm:h-10 w-full sm:w-[200px] md:w-[220px]">
                     {selectedBrand ? (
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-2">
                         {selectedBrand.logoImgUrl ? (
                           <img
-                            className="w-12 h-12 object-contain"
+                            className="w-6 h-6 sm:w-7 sm:h-7 object-contain"
                             src={selectedBrand.logoImgUrl}
                             alt={selectedBrand.name}
                           />
                         ) : (
-                          <div className="w-12 h-12 flex items-center justify-center bg-gray-200 rounded">
-                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-gray-200 rounded">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
                         )}
-                        <span className="ml-2 mx-4">{selectedBrand.name}</span>
+                        <span className="text-sm truncate">{selectedBrand.name}</span>
                       </div>
                     ) : (
                       <SelectValue placeholder="Seleccionar Marca" />
@@ -553,8 +566,8 @@ const Catalogo = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col w-full sm:w-auto">
-                <Label className="font-semibold text-base mb-4 text-white">
+              <div className="flex flex-col w-full sm:w-auto flex-1 sm:flex-none">
+                <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-white">
                   Categoría:
                 </Label>
                 <Select
@@ -562,23 +575,23 @@ const Catalogo = () => {
                   value={form.categoria?.id || ''}
                   disabled={availableCategories.length === 0}
                 >
-                  <SelectTrigger className="h-[52px] w-full sm:w-[250px]">
+                  <SelectTrigger className="h-9 sm:h-10 w-full sm:w-[200px] md:w-[220px]">
                     {form.categoria ? (
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-2">
                         {form.categoria.imgUrl ? (
                           <img
-                            className="w-12 h-12 object-contain"
+                            className="w-6 h-6 sm:w-7 sm:h-7 object-contain"
                             src={form.categoria.imgUrl}
                             alt={form.categoria.name}
                           />
                         ) : (
-                          <div className="w-12 h-12 flex items-center justify-center bg-gray-200 rounded">
-                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-gray-200 rounded">
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
                         )}
-                        <span className="ml-2 mx-4">{form.categoria.name}</span>
+                        <span className="text-sm truncate">{form.categoria.name}</span>
                       </div>
                     ) : (
                       <SelectValue placeholder="Seleccionar Categoría" />
@@ -611,11 +624,11 @@ const Catalogo = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex flex-col w-full sm:w-auto">
-                <Label className="font-semibold text-base mb-4 text-white">
+              <div className="flex flex-col w-full sm:w-auto flex-1 sm:flex-none">
+                <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-white">
                   Filtrar Por:
                 </Label>
-                <div className="flex flex-wrap gap-2 rounded-lg bg-white p-2 items-center min-h-[52px]">
+                <div className="flex flex-wrap gap-1.5 rounded-lg bg-white p-1.5 items-center">
                   <Button
                     type="button"
                     size={"sm"}
@@ -634,8 +647,8 @@ const Catalogo = () => {
                     }}
                     className={
                       form.filtroTipo === "NumParte"
-                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs sm:text-sm"
-                        : "text-black text-xs sm:text-sm"
+                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs h-8 px-2 sm:px-3"
+                        : "text-black text-xs h-8 px-2 sm:px-3"
                     }
                   >
                     <span className="hidden sm:inline">Número de </span>Parte
@@ -658,8 +671,8 @@ const Catalogo = () => {
                     }}
                     className={
                       form.filtroTipo === "Referencia"
-                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs sm:text-sm"
-                        : "text-black text-xs sm:text-sm"
+                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs h-8 px-2 sm:px-3"
+                        : "text-black text-xs h-8 px-2 sm:px-3"
                     }
                   >
                     Referencia
@@ -682,8 +695,8 @@ const Catalogo = () => {
                     }}
                     className={
                       form.filtroTipo === "Vehiculo"
-                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs sm:text-sm"
-                        : "text-black text-xs sm:text-sm"
+                        ? "bg-gris_oscuro text-white hover:bg-gris_oscuro hover:text-white text-xs h-8 px-2 sm:px-3"
+                        : "text-black text-xs h-8 px-2 sm:px-3"
                     }
                   >
                     Vehículo
@@ -693,23 +706,93 @@ const Catalogo = () => {
             </div>
           </section>
           <section className="px-4 sm:px-6 md:px-12 lg:px-20 py-6 sm:py-8 bg-[#E4E4E4]">
-            {getFilterComponent()}
-            {loadingProducts && !initialLoad ? (
-              <SkeletonProductsTable />
-            ) : (
-              <ProductsTable
-                category={category}
-                filtroInfo={form.filtro}
-                filtroTipo={form.filtroTipo}
-                onLoadingChange={setLoadingProducts}
-                products={categoryProducts} // Pass fetched products
-                loading={loadingProducts} // Pass loading state
-                pageIndex={page - 1} // 0-indexed for table
-                pageSize={pageSize}
-                pageCount={totalPages}
-                totalItems={totalItems}
-                onPaginationChange={handlePaginationChange}
-              />
+            {/* Mobile: Filter Toggle Button and Active Filters */}
+            {form.filtroTipo === "Vehiculo" && (
+              <div className="lg:hidden mb-4 space-y-3">
+                <Button
+                  onClick={() => setIsFilterDrawerOpen(true)}
+                  variant="outline"
+                  className="w-full sm:w-auto justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    <span>Filtros</span>
+                    {activeVehicleFilters.length > 0 && (
+                      <span className="bg-naranja text-white rounded-full px-2 py-0.5 text-xs font-semibold">
+                        {activeVehicleFilters.length}
+                      </span>
+                    )}
+                  </div>
+                </Button>
+
+                {/* Active Filter Chips */}
+                {activeVehicleFilters.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {activeVehicleFilters.map((filter) => (
+                      <div
+                        key={filter.attributeId}
+                        className="flex items-center gap-1.5 bg-naranja text-white px-3 py-1.5 rounded-full text-xs"
+                      >
+                        <span className="font-medium">{filter.attributeName}:</span>
+                        <span>{filter.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Desktop: Sidebar Layout, Mobile: Full Width */}
+            <div className="flex gap-6">
+              {/* Desktop Sidebar - Only for Vehicle filters */}
+              {form.filtroTipo === "Vehiculo" && (
+                <aside className="hidden lg:block w-80 flex-shrink-0">
+                  <div className="bg-white rounded-lg p-4 shadow-sm sticky top-4">
+                    <h3 className="font-semibold text-lg mb-4 text-gray-900">Filtros</h3>
+                    {getFilterComponent()}
+                  </div>
+                </aside>
+              )}
+
+              {/* Main Content */}
+              <main className="flex-1 min-w-0">
+                {/* NumParte/Referencia filters - shown in main content */}
+                {form.filtroTipo !== "Vehiculo" && getFilterComponent()}
+
+                {loadingProducts && !initialLoad ? (
+                  <SkeletonProductsTable />
+                ) : (
+                  <ProductsTable
+                    category={category}
+                    filtroInfo={form.filtro}
+                    filtroTipo={form.filtroTipo}
+                    onLoadingChange={setLoadingProducts}
+                    products={categoryProducts} // Pass fetched products
+                    loading={loadingProducts} // Pass loading state
+                    pageIndex={page - 1} // 0-indexed for table
+                    pageSize={pageSize}
+                    pageCount={totalPages}
+                    totalItems={totalItems}
+                    onPaginationChange={handlePaginationChange}
+                  />
+                )}
+              </main>
+            </div>
+
+            {/* Mobile Filter Drawer */}
+            {form.filtroTipo === "Vehiculo" && (
+              <Sheet open={isFilterDrawerOpen} onOpenChange={setIsFilterDrawerOpen}>
+                <SheetContent side="left" className="w-80 sm:w-96 p-0">
+                  <div className="p-4 border-b">
+                    <SheetHeader>
+                      <SheetTitle className="text-lg font-semibold">Filtros</SheetTitle>
+                    </SheetHeader>
+                  </div>
+                  <div className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
+                    {getFilterComponent()}
+                  </div>
+                </SheetContent>
+              </Sheet>
             )}
           </section>
         </>
