@@ -14,11 +14,11 @@ import {
   TableRow,
 } from "./ui/table";
 import { Button } from "./ui/button";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue } from "../models/item";
 import { Application } from "../models/application";
-import { Info } from "lucide-react";
+import { Info, ChevronLeft, ChevronRight } from "lucide-react";
 
 type ApplicationsTableProps = {
   category: Category | null;
@@ -28,6 +28,9 @@ type ApplicationsTableProps = {
 const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const [showLeftScroll, setShowLeftScroll] = useState<boolean>(false);
+  const [showRightScroll, setShowRightScroll] = useState<boolean>(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { attributes } = category || {};
 
@@ -306,6 +309,44 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
 
   const totalPages = table.getPageCount();
 
+  // Check scroll position and update indicators
+  const checkScrollPosition = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    setShowLeftScroll(scrollLeft > 0);
+    setShowRightScroll(scrollLeft < scrollWidth - clientWidth - 1);
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    checkScrollPosition();
+    container.addEventListener('scroll', checkScrollPosition);
+    window.addEventListener('resize', checkScrollPosition);
+
+    // Reset scroll position when data changes
+    container.scrollLeft = 0;
+    checkScrollPosition();
+
+    return () => {
+      container.removeEventListener('scroll', checkScrollPosition);
+      window.removeEventListener('resize', checkScrollPosition);
+    };
+  }, [groupedApplications, currentPage, pageSize]);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+    }
+  };
+
   if (!applications || applications.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -316,8 +357,71 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-white" style={{ overflow: 'visible', position: 'relative' }}>
-        <div style={{ overflowX: 'auto', overflowY: 'visible' }}>
+      <div className="rounded-lg border bg-white relative" style={{ overflow: 'visible' }}>
+        {/* Left scroll gradient overlay */}
+        {showLeftScroll && (
+          <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-white to-transparent pointer-events-none z-10 rounded-l-lg" />
+        )}
+
+        {/* Right scroll gradient overlay */}
+        {showRightScroll && (
+          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-10 rounded-r-lg" />
+        )}
+
+        {/* Left scroll button */}
+        {showLeftScroll && (
+          <button
+            onClick={scrollLeft}
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-2 shadow-lg hover:bg-gray-50 transition-all duration-200 flex items-center justify-center"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="h-5 w-5 text-gray-700" />
+          </button>
+        )}
+
+        {/* Right scroll button */}
+        {showRightScroll && (
+          <button
+            onClick={scrollRight}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-white border border-gray-300 rounded-full p-2 shadow-lg hover:bg-gray-50 transition-all duration-200 flex items-center justify-center"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="h-5 w-5 text-gray-700" />
+          </button>
+        )}
+
+        <div
+          ref={scrollContainerRef}
+          className="custom-scrollbar"
+          style={{
+            overflowX: 'auto',
+            overflowY: 'visible',
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#e2e8f0 #f8fafc'
+          }}
+        >
+          <style>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              height: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: #f8fafc;
+              border-radius: 5px;
+              margin: 0 8px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: #e2e8f0;
+              border-radius: 5px;
+              border: 2px solid #f8fafc;
+              transition: background 0.2s ease;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #cbd5e1;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:active {
+              background: #cbd5e1;
+            }
+          `}</style>
           <Table style={{ overflow: 'visible' }}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

@@ -130,7 +130,7 @@ const ProductDetail = () => {
                   <Card className="w-full">
                     <Carousel className="w-full" setApi={setCarouselApi}>
                       <CarouselContent>
-                        {item.images.map((image: Image, index: number) => (
+                        {[...item.images].sort((a, b) => (a.order || 0) - (b.order || 0)).map((image: Image, index: number) => (
                           <CarouselItem key={index}>
                             <div className="p-1">
                               <Card className="border-none shadow-none bg-white">

@@ -62,6 +62,10 @@ const SkeletonProductsTable = () => {
             <div className="bg-gray-200 h-9 w-9 rounded"></div>
             <div className="bg-gray-200 h-9 w-9 rounded"></div>
             <div className="bg-gray-200 h-9 w-24 sm:w-32 rounded"></div>
+            <div className="flex items-center gap-1.5">
+              <div className="bg-gray-200 h-4 w-8 hidden sm:block rounded"></div>
+              <div className="bg-gray-200 h-9 w-16 sm:w-20 rounded"></div>
+            </div>
             <div className="bg-gray-200 h-9 w-9 rounded"></div>
             <div className="bg-gray-200 h-9 w-9 rounded"></div>
             <div className="bg-gray-200 h-9 w-20 sm:w-24 rounded"></div>

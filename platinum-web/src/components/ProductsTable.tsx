@@ -21,6 +21,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
+import { Input } from "./ui/input";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
@@ -75,6 +76,7 @@ const ProductsTable = ({
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
   const [showNoResults, setShowNoResults] = useState<boolean>(false);
   const [internalViewMode, setInternalViewMode] = useState<"table" | "cards">("cards");
+  const [pageInputValue, setPageInputValue] = useState<string>("");
 
   // Use external viewMode if provided, otherwise use internal
   const currentViewMode = externalViewMode ?? internalViewMode;
@@ -497,6 +499,31 @@ const ProductsTable = ({
   // If server side totalItems is provided, use it. Otherwise estimate.
   const endItem = Math.min((currentPageIndex + 1) * pageSize, totalItems || (currentPageIndex * pageSize + mappedData.length));
 
+  // Sync page input value with current page
+  useEffect(() => {
+    setPageInputValue(String(currentPageIndex + 1));
+  }, [currentPageIndex]);
+
+  // Handle page navigation
+  const handlePageNavigation = () => {
+    const pageNum = parseInt(pageInputValue);
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+      if (onPaginationChange) {
+        onPaginationChange(pageNum - 1, pageSize); // Convert to 0-indexed
+      }
+    } else {
+      // Reset to current page if invalid
+      setPageInputValue(String(currentPageIndex + 1));
+    }
+  };
+
+  // Handle Enter key press
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handlePageNavigation();
+    }
+  };
+
   // Get image URL for a product
   const getProductImageUrl = (product: Item): string | null => {
     if (product.images && product.images.length > 0) {
@@ -759,6 +786,20 @@ const ProductsTable = ({
                     {totalPages || 1}
                   </strong>
                 </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap hidden sm:inline">Ir a:</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={totalPages || 1}
+                  value={pageInputValue}
+                  onChange={(e) => setPageInputValue(e.target.value)}
+                  onKeyDown={handlePageInputKeyDown}
+                  onBlur={handlePageNavigation}
+                  className="h-9 w-16 sm:w-20 px-2 text-xs sm:text-sm text-center border-gray-300 focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                  placeholder="Pág"
+                />
               </div>
               <Button
                 variant="outline"
