@@ -44,6 +44,8 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
     } else if (category?.attributes?.variant && category.attributes.variant.length > 0) {
       attributes = category.attributes.variant;
     }
+
+
     // Sort by order field (ascending) - Modelo should be first (order: 1)
     return attributes.sort((a, b) => (a.order || 0) - (b.order || 0));
   };
@@ -107,7 +109,7 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterOptions]);
+  }, [filterOptions, category]);
 
   // Calculate available options for a specific attribute based on current selections
   // Works with application attributes (for vehicle filtering) or variant attributes (for size/color)
