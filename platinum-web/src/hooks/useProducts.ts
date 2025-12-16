@@ -2,6 +2,42 @@ import { useState, useMemo, useCallback } from "react";
 import axiosClient from "../services/axiosInstance";
 import { Item } from "../models/item";
 
+// Cache configuration
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const productCache: Record<string, { data: any; timestamp: number }> = {};
+
+// Helper function to create cache key
+const createCacheKey = (
+  categoryId: string,
+  page: number,
+  pageSize: number,
+  search: string,
+  filters?: Record<string, any>
+): string => {
+  const filtersStr = filters ? JSON.stringify(filters) : '';
+  return `category_${categoryId}_page_${page}_size_${pageSize}_search_${search}_filters_${filtersStr}`;
+};
+
+// Helper function to check if cache is valid
+const isCacheValid = (timestamp: number): boolean => {
+  return Date.now() - timestamp < CACHE_DURATION;
+};
+
+// Function to clear expired cache entries
+const clearExpiredCache = () => {
+  const now = Date.now();
+  Object.keys(productCache).forEach(key => {
+    if (now - productCache[key].timestamp >= CACHE_DURATION) {
+      delete productCache[key];
+    }
+  });
+};
+
+// Function to clear all cache
+export const clearProductsCache = () => {
+  Object.keys(productCache).forEach(key => delete productCache[key]);
+};
+
 export const useProducts = () => {
   const client = useMemo(() => axiosClient(), []);
   const [product, setProduct] = useState(null);
@@ -21,20 +57,20 @@ export const useProducts = () => {
       const firstPage = await client.get("/products?type=&page=1&pageSize=100");
       const firstPageData = firstPage.data;
       const totalPages = firstPageData.totalPages || 1;
-      
+
       // If there are more pages, fetch them all
       if (totalPages > 1) {
         const allPages = [firstPageData.products || []];
-        
+
         // Fetch remaining pages
         for (let page = 2; page <= totalPages; page++) {
           const pageData = await client.get(`/products?type=&page=${page}&pageSize=100`);
           allPages.push(pageData.data.products || []);
         }
-        
+
         // Flatten all pages into a single array
         const allProducts = allPages.flat();
-        
+
         setProducts(allProducts);
         return allProducts;
       } else {
@@ -59,8 +95,29 @@ export const useProducts = () => {
     signal?: AbortSignal
   ) => {
     try {
+      // Clear expired cache entries periodically
+      clearExpiredCache();
+
+      // Create cache key
+      const cacheKey = createCacheKey(categoryId, page, pageSize, search, filters);
+
+      // Check cache first (only if signal is not aborted)
+      if (!signal?.aborted) {
+        const cached = productCache[cacheKey];
+        if (cached && isCacheValid(cached.timestamp)) {
+          // Return cached data immediately without loading state
+          setLoading(false);
+          setProducts(cached.data.products || []);
+          return {
+            products: cached.data.products || [],
+            total: cached.data.total || 0,
+            totalPages: cached.data.totalPages || 1
+          };
+        }
+      }
+
       setLoading(true);
-      
+
       let url = `/products/category/${categoryId}?type=single&page=${page}&pageSize=${pageSize}`;
       if (search) {
         url += `&search=${encodeURIComponent(search)}`;
@@ -72,10 +129,22 @@ export const useProducts = () => {
 
       const response = await client.get(url, { signal });
       const data = response.data;
-      
+
+      // Cache the response (only if not aborted)
+      if (!signal?.aborted) {
+        productCache[cacheKey] = {
+          data: {
+            products: data.products || [],
+            total: data.total || 0,
+            totalPages: data.totalPages || 1
+          },
+          timestamp: Date.now()
+        };
+      }
+
       // Expected response: { products: [], total: number, totalPages: number }
       setProducts(data.products || []);
-      
+
       return {
         products: data.products || [],
         total: data.total || 0,
@@ -101,10 +170,28 @@ export const useProducts = () => {
     }
   }, [client]);
 
-  const getProductById = useCallback(async (id: string) => {
+  const getProductById = useCallback(async (id: string, forceRefresh: boolean = false) => {
     try {
+      const cacheKey = `product_${id}`;
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        const cached = productCache[cacheKey];
+        if (cached && isCacheValid(cached.timestamp)) {
+          setProduct(cached.data);
+          return cached.data;
+        }
+      }
+
       setLoading(true);
       const { data } = await client.get(`/products/${id}`);
+
+      // Cache the response
+      productCache[cacheKey] = {
+        data,
+        timestamp: Date.now()
+      };
+
       setProduct(data);
       return data;
     } catch (error) {
@@ -121,5 +208,6 @@ export const useProducts = () => {
     loading,
     getProductsByCategory,
     refreshProducts: getProducts,
+    clearCache: clearProductsCache,
   };
 };
