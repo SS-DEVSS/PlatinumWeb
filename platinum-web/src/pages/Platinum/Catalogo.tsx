@@ -68,8 +68,6 @@ const Catalogo = () => {
   const [initialLoad, setInitialLoad] = useState<boolean>(false);
   // Add state to track product loading errors
   const [productsError, setProductsError] = useState<string | null>(null);
-  // Track if search is being debounced
-  const [isSearchDebouncing, setIsSearchDebouncing] = useState<boolean>(false);
 
   // State to track available categories based on selected brand
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
@@ -122,20 +120,17 @@ const Catalogo = () => {
   useEffect(() => {
     // Show loading immediately when user types
     if (form.filtro.numParte || form.filtro.referencia) {
-      setIsSearchDebouncing(true);
-      setLoadingProducts(true); // Also set loadingProducts to keep loading state
+      setLoadingProducts(true);
     }
 
     const timer = setTimeout(() => {
       // Only set page to 1 if it's not already 1 to avoid redundant effect triggers
       setPage(prev => prev !== 1 ? 1 : prev);
-      setIsSearchDebouncing(false);
       // loadingProducts will be set to false by the fetch effect when products are loaded
     }, 500);
 
     return () => {
       clearTimeout(timer);
-      setIsSearchDebouncing(false);
     };
   }, [form.filtro.numParte, form.filtro.referencia]);
 
