@@ -12,7 +12,7 @@ export const useCategories = () => {
   /**
    * Process category data from API
    */
-  const processCategories = useCallback((data: any) => {
+  const processCategories = useCallback((data: any, preserveCategory: boolean = false) => {
     if (!data) return;
 
     // Check if the data is an array (multiple categories)
@@ -27,7 +27,10 @@ export const useCategories = () => {
         attributes: cat.attributes || []
       }));
       setCategories(formattedCategories);
-      setCategory(null);
+      // Only reset category if not preserving it
+      if (!preserveCategory) {
+        setCategory(null);
+      }
     }
     // If it's a single category object
     else if (typeof data === 'object' && data !== null) {
@@ -56,11 +59,11 @@ export const useCategories = () => {
   /**
    * Fetch all categories
    */
-  const getAllCategories = useCallback(async () => {
+  const getAllCategories = useCallback(async (preserveCategory: boolean = false) => {
     try {
       setLoading(true);
       const response = await client.get("/categories");
-      processCategories(response.data);
+      processCategories(response.data, preserveCategory);
     } catch (error) {
       console.error("Error fetching categories:", error);
       setError(error instanceof Error ? error : new Error("Failed to fetch categories"));
@@ -94,7 +97,8 @@ export const useCategories = () => {
   }, [client, processCategories]);
 
   useEffect(() => {
-    getAllCategories();
+    // Preserve category state when fetching all categories on mount
+    getAllCategories(true);
   }, [getAllCategories]);
 
   /**
