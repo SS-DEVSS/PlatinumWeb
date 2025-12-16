@@ -62,8 +62,8 @@ const Catalogo = () => {
   // Convert brandsMap to array for rendering
   const brands = useMemo(() => Object.values(brandsMap || {}), [brandsMap]);
 
-  // Adding loading state for products table
-  const [loadingProducts, setLoadingProducts] = useState<boolean>(false);
+  // Adding loading state for products table (start as true for initial load)
+  const [loadingProducts, setLoadingProducts] = useState<boolean>(true);
   // Track if initial load has happened
   const [initialLoad, setInitialLoad] = useState<boolean>(false);
   // Add state to track product loading errors
@@ -396,6 +396,17 @@ const Catalogo = () => {
       form.filtro.vehiculo.selectedFilters.forEach(f => {
         filters![f.attributeId] = f.value;
       });
+    }
+
+    // Skip fetching if in Vehiculo mode but no filters selected yet
+    // This prevents fetching all products when user just switched to vehicle mode
+    if (form.filtroTipo === "Vehiculo" && (!filters || Object.keys(filters).length === 0)) {
+      lastProductsQueryRef.current = ''; // Reset query
+      fetchingProductsRef.current = ''; // Reset fetching
+      setLoadingProducts(false);
+      // Don't clear products - keep showing previous results or empty state
+      // ProductsTable will handle the empty state message
+      return () => controller.abort();
     }
 
     // Create a unique query key to prevent duplicate fetches
