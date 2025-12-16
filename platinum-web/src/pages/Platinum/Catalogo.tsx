@@ -11,7 +11,7 @@ import {
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useCategories } from "../../hooks/useCategories";
 import { useBrands } from "../../hooks/useBrands";
 import { useProducts, checkProductsCache } from "../../hooks/useProducts";
@@ -89,6 +89,13 @@ const Catalogo = () => {
 
   // State for view mode (cards/table)
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+
+  // Ref to track if category is being fetched to prevent duplicate fetches
+  const fetchingCategoryRef = useRef<string | null>(null);
+  // Ref to track the last successfully loaded category ID to prevent refetching
+  const loadedCategoryIdRef = useRef<string | null>(null);
+  // Ref to track the last products query to prevent duplicate product fetches
+  const lastProductsQueryRef = useRef<string>('');
 
   const [form, setForm] = useState<formState>({
     filtroTipo: "NumParte",
@@ -168,12 +175,17 @@ const Catalogo = () => {
   useEffect(() => {
     const controller = new AbortController();
 
-    if (!form.categoria) return;
+    if (!form.categoria) {
+      fetchingCategoryRef.current = null;
+      return;
+    }
 
     const categoryId = form.categoria.id;
+    const currentCategoryId = category?.id || loadedCategoryIdRef.current;
 
-    // Only fetch category if it's different from current or not loaded
-    if (!category || category.id !== categoryId) {
+    // Only fetch category if it's different from what we've loaded, and not already fetching
+    if (currentCategoryId !== categoryId && fetchingCategoryRef.current !== categoryId) {
+      fetchingCategoryRef.current = categoryId;
       setProductsError(null);
       // Reset filter options only when category actually changes
       setFilterOptions(undefined);
@@ -181,24 +193,43 @@ const Catalogo = () => {
       getCategoryById(categoryId)
         .then(() => {
           // Initial fetch of filters (no filters applied) for the base dropdowns
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            fetchingCategoryRef.current = null;
+            return;
+          }
+          loadedCategoryIdRef.current = categoryId; // Mark as loaded
           return getCategoryFilters(categoryId, undefined, controller.signal);
         })
         .then((options) => {
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            fetchingCategoryRef.current = null;
+            return;
+          }
           if (options) {
             setFilterOptions(options);
           }
+          fetchingCategoryRef.current = null;
         })
         .catch((err: Error) => {
+          fetchingCategoryRef.current = null;
           if (controller.signal.aborted) return;
           if (err.name !== 'CanceledError' && (err as any).code !== "ERR_CANCELED") {
             setProductsError(`Error al cargar categoría: ${err.message || 'Ocurrió un error inesperado'}`);
           }
         });
+    } else {
+      // Ensure ref is set even if category state was reset
+      if (currentCategoryId === categoryId && !loadedCategoryIdRef.current) {
+        loadedCategoryIdRef.current = categoryId;
+      }
     }
 
-    return () => controller.abort();
+    return () => {
+      if (fetchingCategoryRef.current === categoryId) {
+        fetchingCategoryRef.current = null;
+      }
+      controller.abort();
+    };
   }, [form.categoria?.id, category, getCategoryById, getCategoryFilters]); // Added category
 
   // Fetch filtered options when vehicle filters change
@@ -207,7 +238,9 @@ const Catalogo = () => {
 
     // Use category from form
     const currentCategory = form.categoria;
-    if (!currentCategory || form.filtroTipo !== "Vehiculo") return;
+    if (!currentCategory || form.filtroTipo !== "Vehiculo") {
+      return;
+    }
 
     const categoryId = currentCategory.id;
     const currentFilters = form.filtro.vehiculo.selectedFilters;
@@ -226,7 +259,9 @@ const Catalogo = () => {
             setFilterOptions(options);
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          // Silent fail
+        });
     } else {
       // If filters cleared, re-fetch base options
       getCategoryFilters(categoryId, undefined, controller.signal)
@@ -234,7 +269,9 @@ const Catalogo = () => {
           if (controller.signal.aborted) return;
           if (options) setFilterOptions(options);
         })
-        .catch(console.error);
+        .catch(() => {
+          // Silent fail
+        });
     }
 
     return () => controller.abort();
@@ -245,7 +282,10 @@ const Catalogo = () => {
     const controller = new AbortController();
 
     const currentCategory = form.categoria;
-    if (!currentCategory) return;
+    if (!currentCategory) {
+      lastProductsQueryRef.current = ''; // Reset on no category
+      return;
+    }
 
     const categoryId = currentCategory.id;
 
@@ -265,6 +305,16 @@ const Catalogo = () => {
         filters![f.attributeId] = f.value;
       });
     }
+
+    // Create a unique query key to prevent duplicate fetches
+    const queryKey = `${categoryId}_${page}_${pageSize}_${searchQuery}_${selectedFiltersHash}`;
+
+    // Skip if this is the same query we just processed (prevents duplicate runs in same render cycle)
+    if (lastProductsQueryRef.current === queryKey) {
+      return () => controller.abort();
+    }
+
+    lastProductsQueryRef.current = queryKey;
 
     // Check cache synchronously first
     const cachedData = checkProductsCache(categoryId, page, pageSize, searchQuery, filters);

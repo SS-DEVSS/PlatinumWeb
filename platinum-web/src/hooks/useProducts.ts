@@ -4,7 +4,48 @@ import { Item } from "../models/item";
 
 // Cache configuration
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const CACHE_STORAGE_KEY = 'platinum_products_cache';
 const productCache: Record<string, { data: any; timestamp: number }> = {};
+
+// Load cache from localStorage on initialization
+const loadCacheFromStorage = (): void => {
+  try {
+    const stored = localStorage.getItem(CACHE_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const now = Date.now();
+      // Only load valid (non-expired) cache entries
+      Object.keys(parsed).forEach(key => {
+        if (parsed[key] && parsed[key].timestamp && (now - parsed[key].timestamp < CACHE_DURATION)) {
+          productCache[key] = parsed[key];
+        }
+      });
+    }
+  } catch {
+    // Silent fail - cache loading is optional
+  }
+};
+
+// Save cache to localStorage
+const saveCacheToStorage = (): void => {
+  try {
+    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(productCache));
+  } catch {
+    // Silent fail - cache saving is optional
+  }
+};
+
+// Initialize cache from storage
+loadCacheFromStorage();
+
+// Listen for Ctrl+Shift+R to clear cache
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+      clearProductsCache();
+    }
+  });
+}
 
 // Helper function to create cache key
 const createCacheKey = (
@@ -26,16 +67,26 @@ const isCacheValid = (timestamp: number): boolean => {
 // Function to clear expired cache entries
 const clearExpiredCache = () => {
   const now = Date.now();
+  let hasChanges = false;
   Object.keys(productCache).forEach(key => {
     if (now - productCache[key].timestamp >= CACHE_DURATION) {
       delete productCache[key];
+      hasChanges = true;
     }
   });
+  if (hasChanges) {
+    saveCacheToStorage();
+  }
 };
 
 // Function to clear all cache
 export const clearProductsCache = () => {
   Object.keys(productCache).forEach(key => delete productCache[key]);
+  try {
+    localStorage.removeItem(CACHE_STORAGE_KEY);
+  } catch {
+    // Silent fail
+  }
 };
 
 // Synchronous cache check function (for components to check before setting loading state)
@@ -161,6 +212,7 @@ export const useProducts = () => {
           },
           timestamp: Date.now()
         };
+        saveCacheToStorage();
       }
 
       // Expected response: { products: [], total: number, totalPages: number }

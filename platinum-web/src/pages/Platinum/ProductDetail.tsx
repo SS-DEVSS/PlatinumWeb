@@ -59,31 +59,43 @@ const ProductDetail = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    let isMounted = true;
+
     const fetchData = async () => {
       if (itemId) {
         const data = await getProductById(itemId);
-        console.log('[ProductDetail] Product data:', data);
-        console.log('[ProductDetail] Images:', data?.images);
-        setItem(data);
-        // Set type from product data
-        if (data.type) {
-          setType(data.type);
-          localStorage.setItem("type", data.type);
+        if (isMounted && data) {
+          setItem(data);
+          // Set type from product data
+          if (data.type) {
+            setType(data.type);
+            localStorage.setItem("type", data.type);
+          }
         }
       }
     };
     fetchData();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [itemId, getProductById, setType]);
 
   useEffect(() => {
     if (item) {
+      let isMounted = true;
       const fetchCategory = async () => {
         const data = await getCategoryById(item?.category.id);
-        setCategory(data);
+        if (isMounted && data) {
+          setCategory(data);
+        }
       };
       fetchCategory();
+      return () => {
+        isMounted = false;
+      };
     }
-  }, [item]);
+  }, [item, getCategoryById]);
 
   // Components are now directly on the product, no need for complex fetching
 
