@@ -102,11 +102,11 @@ const ProductDetail = () => {
       ) : (
         <div className="bg-[#E4E4E4] px-6 xl:px-20 py-8">
           {/* Top Section: Header Actions */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center gap-4 mb-6">
             <Button
               onClick={() => navigate(`/Catalogo`)}
               variant={"ghost"}
-              className="flex gap-3 border border-[#20314f] text-[#20314f] rounded-full py-2 px-7"
+              className="flex gap-2 text-[#20314f] p-0 hover:underline hover:cursor-pointer hover:bg-transparent"
             >
               <MoveLeft />
               <p>Regresar</p>
@@ -114,9 +114,9 @@ const ProductDetail = () => {
             <Button
               variant={"ghost"}
               onClick={handleCopyLink}
-              className="flex gap-4 hover:underline hover:cursor-pointer"
+              className="flex gap-1 hover:underline hover:cursor-pointer p-0 hover:bg-transparent"
             >
-              <Share2 className="rotate-180 fill-[#20314f]" />
+              <Share2 className="rotate-180 fill-[#20314f] w-4 h-4" />
               <p className="text-[#20314f]">Compartir aplicación</p>
             </Button>
           </div>
@@ -180,25 +180,25 @@ const ProductDetail = () => {
             <section className="w-full lg:w-2/3 flex flex-col gap-4">
               {/* Product Info: Numero de Parte, Category, Referencias */}
               <div className="space-y-4 mb-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-bold text-md">Número de Parte</p>
+                <div className="flex flex-col lg:flex-row justify-between items-start">
+                  <div className='flez flex-col gap-0 mb-2'>
+                    <p className="font-bold text-sm">No. Parte:</p>
                     <h4 className="text-3xl font-semibold text-naranja py-1">
                       {item?.sku || item?.name}
                     </h4>
                   </div>
-                  <div className="text-[#20314f] px-8 flex flex-row justify-center gap-2">
-                    <span className="text-[#20314f]">
+                  <div className="flex flex-col justify-center gap-0">
+                    <span className="font-bold text-sm">
                       Categoría:
                     </span>
-                    <span className="text-[#20314f] font-semibold">
+                    <span className="text-[#20314f] text-xl font-semibold">
                       {item?.category.name}
                     </span>
                   </div>
                 </div>
 
-                <div>
-                  <p className="font-bold mb-2 text-md">Referencias</p>
+                <div className="flex flex-col gap-2">
+                  <p className="font-bold text-sm">Referencias: </p>
                   <div className="flex flex-wrap gap-2">
                     {item?.references && item.references.length > 0 ? (
                       item.references.map((reference, index) => {
@@ -206,7 +206,7 @@ const ProductDetail = () => {
                           return (
                             <div
                               key={`ref-string-${index}`}
-                              className="bg-[#20314f] text-white rounded-full px-8 py-1"
+                              className="bg-[#20314f] text-white rounded-lg px-4 py-1"
                             >
                               {reference}
                             </div>
@@ -215,7 +215,7 @@ const ProductDetail = () => {
                         return (
                           <button
                             key={reference.id || `ref-${index}`}
-                            className="bg-[#20314f] text-white rounded-full px-8 py-1 hover:bg-[#20314f]/80 cursor-pointer transition-colors"
+                            className="bg-[#20314f] text-white rounded-lg px-4 py-1 hover:bg-[#20314f]/80 cursor-pointer transition-colors"
                             onClick={() => {
                               setSelectedReference(reference);
                               setIsReferenceDialogOpen(true);

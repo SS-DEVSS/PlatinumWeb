@@ -11,8 +11,8 @@ const SkeletonProductsTable = () => {
         </div>
 
         {/* Cards Grid Skeleton (for card view) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {[1, 2, 3, 4, 5, 6].map((card) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((card) => (
             <div key={card} className="bg-white rounded-lg overflow-hidden border border-gray-200">
               <div className="w-full aspect-square bg-gray-100"></div>
               <div className="p-3 sm:p-4 bg-gray-50">
