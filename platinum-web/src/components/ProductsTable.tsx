@@ -42,6 +42,9 @@ const ProductsTable = ({
   pageCount = 0,
   totalItems = 0,
   onPaginationChange,
+  hideViewToggle = false,
+  viewMode: externalViewMode,
+  setViewMode: externalSetViewMode,
 }: {
   category: Category | null;
   data?: Item[] | null;
@@ -63,12 +66,19 @@ const ProductsTable = ({
   pageCount?: number;
   totalItems?: number;
   onPaginationChange?: (pageIndex: number, pageSize: number) => void;
+  hideViewToggle?: boolean;
+  viewMode?: "cards" | "table";
+  setViewMode?: (mode: "cards" | "table") => void;
 }) => {
   const [mappedData, setMappedData] = useState<Item[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
   const [showNoResults, setShowNoResults] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
+  const [internalViewMode, setInternalViewMode] = useState<"table" | "cards">("cards");
+
+  // Use external viewMode if provided, otherwise use internal
+  const currentViewMode = externalViewMode ?? internalViewMode;
+  const handleViewModeChange = externalSetViewMode ?? setInternalViewMode;
 
   const onLoadingChangeRef = useRef(onLoadingChange);
   const isFirstLoad = useRef(true);
@@ -508,31 +518,33 @@ const ProductsTable = ({
 
   return (
     <div className="mt-6 relative">
-      {/* View Toggle */}
-      <div className="flex justify-end items-center mb-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === "cards" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("cards")}
-            className="flex items-center gap-1 sm:gap-2"
-            title="Vista de tarjetas"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            <span className="hidden sm:inline">Tarjetas</span>
-          </Button>
-          <Button
-            variant={viewMode === "table" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("table")}
-            className="flex items-center gap-1 sm:gap-2"
-            title="Vista de tabla"
-          >
-            <Table2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Tabla</span>
-          </Button>
+      {/* View Toggle - Only show if not hidden */}
+      {!hideViewToggle && (
+        <div className="flex justify-end items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={currentViewMode === "cards" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleViewModeChange("cards")}
+              className="flex items-center gap-1 sm:gap-2"
+              title="Vista de tarjetas"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">Tarjetas</span>
+            </Button>
+            <Button
+              variant={currentViewMode === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleViewModeChange("table")}
+              className="flex items-center gap-1 sm:gap-2"
+              title="Vista de tabla"
+            >
+              <Table2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Tabla</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Loading Overlay */}
       {loading && (
@@ -545,7 +557,7 @@ const ProductsTable = ({
       )}
 
       <>
-        {viewMode === "table" ? (
+        {currentViewMode === "table" ? (
           <Card className={`border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="overflow-x-auto">
               <Table>

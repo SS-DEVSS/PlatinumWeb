@@ -33,7 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet";
-import { AlertCircle, Filter } from "lucide-react";
+import { AlertCircle, Filter, Search, LayoutGrid, Table2 } from "lucide-react";
 
 type formState = {
   filtroTipo: "NumParte" | "Vehiculo" | "Referencia";
@@ -86,6 +86,9 @@ const Catalogo = () => {
 
   // State for active vehicle filters (for mobile display)
   const [activeVehicleFilters, setActiveVehicleFilters] = useState<Array<{ attributeId: string, attributeName: string, value: string }>>([]);
+
+  // State for view mode (cards/table)
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
 
   const [form, setForm] = useState<formState>({
     filtroTipo: "NumParte",
@@ -375,42 +378,100 @@ const Catalogo = () => {
     switch (form.filtroTipo) {
       case "NumParte":
         return (
-          <div className="flex flex-col gap-4 mb-6">
-            <Label className="font-semibold text-sm sm:text-base">Número de Parte:</Label>
-            <Input
-              placeholder="Buscar por número de parte..."
-              value={form.filtro.numParte}
-              onChange={(e) =>
-                setForm((prevForm) => ({
-                  ...prevForm,
-                  filtro: {
-                    ...prevForm.filtro,
-                    numParte: e.target.value,
-                  },
-                }))
-              }
-              className="bg-white h-10 sm:h-12 text-sm sm:text-base"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+            <div className="flex-1">
+              <Label className="font-semibold text-sm sm:text-base mb-2 sm:mb-0 sm:hidden block">
+                Número de Parte:
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por número de parte (SKU)"
+                  value={form.filtro.numParte}
+                  onChange={(e) =>
+                    setForm((prevForm) => ({
+                      ...prevForm,
+                      filtro: {
+                        ...prevForm.filtro,
+                        numParte: e.target.value,
+                      },
+                    }))
+                  }
+                  className="bg-white h-10 sm:h-12 text-sm sm:text-base pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === "cards" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("cards")}
+                className="flex items-center gap-1 sm:gap-2 h-10 sm:h-12"
+                title="Vista de tarjetas"
+              >
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden sm:inline">Tarjetas</span>
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("table")}
+                className="flex items-center gap-1 sm:gap-2 h-10 sm:h-12"
+                title="Vista de tabla"
+              >
+                <Table2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Tabla</span>
+              </Button>
+            </div>
           </div>
         );
       case "Referencia":
         return (
-          <div className="flex flex-col gap-4 mb-6">
-            <Label className="font-semibold text-sm sm:text-base">Referencia:</Label>
-            <Input
-              placeholder="Buscar por referencia..."
-              value={form.filtro.referencia}
-              onChange={(e) =>
-                setForm((prevForm) => ({
-                  ...prevForm,
-                  filtro: {
-                    ...prevForm.filtro,
-                    referencia: e.target.value,
-                  },
-                }))
-              }
-              className="bg-white h-10 sm:h-12 text-sm sm:text-base"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+            <div className="flex-1">
+              <Label className="font-semibold text-sm sm:text-base mb-2 sm:mb-0 sm:hidden block">
+                Referencia:
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar por referencia"
+                  value={form.filtro.referencia}
+                  onChange={(e) =>
+                    setForm((prevForm) => ({
+                      ...prevForm,
+                      filtro: {
+                        ...prevForm.filtro,
+                        referencia: e.target.value,
+                      },
+                    }))
+                  }
+                  className="bg-white h-10 sm:h-12 text-sm sm:text-base pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === "cards" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("cards")}
+                className="flex items-center gap-1 sm:gap-2 h-10 sm:h-12"
+                title="Vista de tarjetas"
+              >
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden sm:inline">Tarjetas</span>
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("table")}
+                className="flex items-center gap-1 sm:gap-2 h-10 sm:h-12"
+                title="Vista de tabla"
+              >
+                <Table2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Tabla</span>
+              </Button>
+            </div>
           </div>
         );
       case "Vehiculo": {
@@ -507,11 +568,11 @@ const Catalogo = () => {
         <SkeletonCatalog />
       ) : (
         <>
-          <section className="bg-hero-catalog bg-cover px-4 sm:px-8 md:px-12 lg:px-20 pb-6 sm:pb-8 md:pb-10">
-            <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl pt-6 pb-4 sm:pb-5 md:pb-6 text-white">
+          <section className="bg-hero-catalog bg-cover px-4 sm:px-8 md:px-12 lg:px-20 flex flex-wrap xl:flex-nowrap justify-between items-center py-10">
+            <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl pt-6 pb-4 sm:pb-5 md:pb-6 text-white w-full xl:w-auto">
               Catálogo Electrónico
             </h2>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 flex-wrap items-end">
+            <div className="relative z-10 flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 flex-wrap items-end">
               <div className="flex flex-col flex-wrap w-full sm:w-auto flex-1 sm:flex-none">
                 <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-white">
                   Marca:
@@ -651,7 +712,7 @@ const Catalogo = () => {
                         : "text-black text-xs h-8 px-2 sm:px-3"
                     }
                   >
-                    <span className="hidden sm:inline">Número de </span>Parte
+                    Número de Parte
                   </Button>
                   <Button
                     type="button"
@@ -756,8 +817,12 @@ const Catalogo = () => {
 
               {/* Main Content */}
               <main className="flex-1 min-w-0">
-                {/* NumParte/Referencia filters - shown in main content */}
-                {form.filtroTipo !== "Vehiculo" && getFilterComponent()}
+                {/* NumParte/Referencia filters with inline view toggle */}
+                {form.filtroTipo !== "Vehiculo" && (
+                  <div className="mb-6">
+                    {getFilterComponent()}
+                  </div>
+                )}
 
                 {loadingProducts && !initialLoad ? (
                   <SkeletonProductsTable />
@@ -774,6 +839,9 @@ const Catalogo = () => {
                     pageCount={totalPages}
                     totalItems={totalItems}
                     onPaginationChange={handlePaginationChange}
+                    hideViewToggle={form.filtroTipo !== "Vehiculo"}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
                   />
                 )}
               </main>
@@ -796,8 +864,9 @@ const Catalogo = () => {
             )}
           </section>
         </>
-      )}
-    </PlatinumLayout>
+      )
+      }
+    </PlatinumLayout >
   );
 };
 
