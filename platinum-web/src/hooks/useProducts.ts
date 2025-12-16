@@ -38,6 +38,27 @@ export const clearProductsCache = () => {
   Object.keys(productCache).forEach(key => delete productCache[key]);
 };
 
+// Synchronous cache check function (for components to check before setting loading state)
+export const checkProductsCache = (
+  categoryId: string,
+  page: number,
+  pageSize: number,
+  search: string,
+  filters?: Record<string, any>
+): { products: any[], total: number, totalPages: number } | null => {
+  clearExpiredCache();
+  const cacheKey = createCacheKey(categoryId, page, pageSize, search, filters);
+  const cached = productCache[cacheKey];
+  if (cached && isCacheValid(cached.timestamp)) {
+    return {
+      products: cached.data.products || [],
+      total: cached.data.total || 0,
+      totalPages: cached.data.totalPages || 1
+    };
+  }
+  return null;
+};
+
 export const useProducts = () => {
   const client = useMemo(() => axiosClient(), []);
   const [product, setProduct] = useState(null);

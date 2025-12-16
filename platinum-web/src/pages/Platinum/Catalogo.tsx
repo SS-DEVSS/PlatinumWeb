@@ -14,7 +14,7 @@ import { Input } from "../../components/ui/input";
 import { useState, useEffect, useMemo } from "react";
 import { useCategories } from "../../hooks/useCategories";
 import { useBrands } from "../../hooks/useBrands";
-import { useProducts } from "../../hooks/useProducts";
+import { useProducts, checkProductsCache } from "../../hooks/useProducts";
 import FilterSection from "../../components/FilterSection";
 import ProductsTable from "../../components/ProductsTable";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
@@ -248,7 +248,6 @@ const Catalogo = () => {
     if (!currentCategory) return;
 
     const categoryId = currentCategory.id;
-    setLoadingProducts(true);
 
     // Determine search query
     let searchQuery = "";
@@ -266,6 +265,25 @@ const Catalogo = () => {
         filters![f.attributeId] = f.value;
       });
     }
+
+    // Check cache synchronously first
+    const cachedData = checkProductsCache(categoryId, page, pageSize, searchQuery, filters);
+    if (cachedData) {
+      // Cache hit - set data immediately without loading state
+      setTotalPages(cachedData.totalPages);
+      setTotalItems(cachedData.total);
+      setInitialLoad(true);
+      setLoadingProducts(false);
+      // Still call getProductsByCategory to update hook's products state (will use cache internally and return immediately)
+      getProductsByCategory(categoryId, page, pageSize, searchQuery, filters, controller.signal)
+        .catch(() => {
+          // Ignore errors if aborted
+        });
+      return () => controller.abort();
+    }
+
+    // No cache - show loading and fetch
+    setLoadingProducts(true);
 
     getProductsByCategory(categoryId, page, pageSize, searchQuery, filters, controller.signal)
       .then((result) => {
