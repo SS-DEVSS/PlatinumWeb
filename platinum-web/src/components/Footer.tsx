@@ -57,7 +57,7 @@ function Footer() {
         </section>
       </section>
       <h6 className="basis-1/3 text-gris_ligero text-center text-sm mt-8 nav:mt-0 md:px-10 xl:px-0 py-8">
-        @ 2024 Platinum Driveline All rights reserved
+        @ {new Date().getFullYear()} Platinum Driveline Mexico. Todos los derechos reservados.
       </h6>
     </main>
   );

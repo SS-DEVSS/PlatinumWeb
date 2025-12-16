@@ -24,7 +24,7 @@ import { Card, CardContent } from "./ui/card";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
-import { LayoutGrid, Table2 } from "lucide-react";
+import { LayoutGrid, Table2, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 const ProductsTable = ({
   category,
@@ -42,6 +42,9 @@ const ProductsTable = ({
   pageCount = 0,
   totalItems = 0,
   onPaginationChange,
+  hideViewToggle = false,
+  viewMode: externalViewMode,
+  setViewMode: externalSetViewMode,
 }: {
   category: Category | null;
   data?: Item[] | null;
@@ -63,12 +66,19 @@ const ProductsTable = ({
   pageCount?: number;
   totalItems?: number;
   onPaginationChange?: (pageIndex: number, pageSize: number) => void;
+  hideViewToggle?: boolean;
+  viewMode?: "cards" | "table";
+  setViewMode?: (mode: "cards" | "table") => void;
 }) => {
   const [mappedData, setMappedData] = useState<Item[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
   const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
   const [showNoResults, setShowNoResults] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
+  const [internalViewMode, setInternalViewMode] = useState<"table" | "cards">("cards");
+
+  // Use external viewMode if provided, otherwise use internal
+  const currentViewMode = externalViewMode ?? internalViewMode;
+  const handleViewModeChange = externalSetViewMode ?? setInternalViewMode;
 
   const onLoadingChangeRef = useRef(onLoadingChange);
   const isFirstLoad = useRef(true);
@@ -508,29 +518,33 @@ const ProductsTable = ({
 
   return (
     <div className="mt-6 relative">
-      {/* View Toggle */}
-      <div className="flex justify-end items-center mb-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === "cards" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("cards")}
-            className="flex items-center gap-2"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            <span>Tarjetas</span>
-          </Button>
-          <Button
-            variant={viewMode === "table" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("table")}
-            className="flex items-center gap-2"
-          >
-            <Table2 className="h-4 w-4" />
-            <span>Tabla</span>
-          </Button>
+      {/* View Toggle - Only show if not hidden */}
+      {!hideViewToggle && (
+        <div className="flex justify-end items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={currentViewMode === "cards" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleViewModeChange("cards")}
+              className="flex items-center gap-1 sm:gap-2"
+              title="Vista de tarjetas"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">Tarjetas</span>
+            </Button>
+            <Button
+              variant={currentViewMode === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleViewModeChange("table")}
+              className="flex items-center gap-1 sm:gap-2"
+              title="Vista de tabla"
+            >
+              <Table2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Tabla</span>
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Loading Overlay */}
       {loading && (
@@ -543,75 +557,77 @@ const ProductsTable = ({
       )}
 
       <>
-        {viewMode === "table" ? (
+        {currentViewMode === "table" ? (
           <Card className={`border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead
-                        className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
-                        key={header.id}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {isProcessingComplete && mappedData.length > 0 ? (
-                  currentPageItems.map((row, index) => {
-                    const isLastRow = index === currentPageItems.length - 1;
-                    return (
-                      <TableRow
-                        key={row.id}
-                        data-state={row.getIsSelected() && "selected"}
-                        onClick={() => handleClick(row)}
-                        className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
-                        style={{
-                          backgroundColor:
-                            itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
-                          borderBottomLeftRadius: isLastRow
-                            ? "12px !important"
-                            : "0",
-                          borderBottomRightRadius: isLastRow
-                            ? "12px !important"
-                            : "0",
-                        }}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          className="bg-[#333333] text-[#C4C4C4] first:rounded-tl-lg last:rounded-tr-lg"
+                          key={header.id}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
                             )}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    );
-                  })
-                ) : isProcessingComplete && showNoResults ? (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center">
-                      No se encontraron resultados
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center">
-                      Cargando...
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {isProcessingComplete && mappedData.length > 0 ? (
+                    currentPageItems.map((row, index) => {
+                      const isLastRow = index === currentPageItems.length - 1;
+                      return (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
+                          onClick={() => handleClick(row)}
+                          className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
+                          style={{
+                            backgroundColor:
+                              itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
+                            borderBottomLeftRadius: isLastRow
+                              ? "12px !important"
+                              : "0",
+                            borderBottomRightRadius: isLastRow
+                              ? "12px !important"
+                              : "0",
+                          }}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })
+                  ) : isProcessingComplete && showNoResults ? (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center">
+                        No se encontraron resultados
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center">
+                        Cargando...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
         ) : (
           /* Card Grid View */
@@ -709,48 +725,58 @@ const ProductsTable = ({
           </div>
         )}
         {isProcessingComplete && mappedData.length > 0 && (
-          <div className="flex items-center justify-between space-x-2 py-4">
-            <div className="text-sm text-gray-500">
-              Mostrando {startItem} - {endItem} de {totalItems} resultados
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:space-x-4 py-4 sm:py-6 bg-gray-50 rounded-lg px-3 sm:px-4 border border-gray-200 mt-6">
+            <div className="text-xs sm:text-sm font-medium text-gray-700 text-center sm:text-left">
+              Mostrando <span className="font-semibold text-gray-900">{startItem}</span> - <span className="font-semibold text-gray-900">{endItem}</span> de <span className="font-semibold text-gray-900">{totalItems}</span> resultados
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:space-x-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &lt;&lt;
+                <ChevronsLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &lt;
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm">
-                Página{" "}
-                <strong>
-                  {table.getState().pagination.pageIndex + 1} de {totalPages || 1}
-                </strong>
-              </span>
+              <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
+                <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
+                  Página{" "}
+                  <strong className="text-gray-900 font-semibold">
+                    {table.getState().pagination.pageIndex + 1}
+                  </strong>{" "}
+                  de{" "}
+                  <strong className="text-gray-900 font-semibold">
+                    {totalPages || 1}
+                  </strong>
+                </span>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &gt;
+                <ChevronRight className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => table.setPageIndex(totalPages - 1)}
                 disabled={!table.getCanNextPage()}
+                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
               >
-                &gt;&gt;
+                <ChevronsRight className="h-4 w-4" />
               </Button>
               <select
                 value={pageSize}
@@ -761,9 +787,9 @@ const ProductsTable = ({
                     onPaginationChange(0, newPageSize); // Reset to first page
                   }
                 }}
-                className="border rounded px-2 py-1 text-sm"
+                className="h-9 px-2 sm:px-3 pr-6 sm:pr-8 text-xs sm:text-sm border border-gray-300 rounded-md bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow cursor-pointer font-medium text-gray-700"
               >
-                {[10, 20, 30, 50].map(pageSize => (
+                {[8, 12, 16, 20, 24].map(pageSize => (
                   <option key={pageSize} value={pageSize}>
                     Mostrar {pageSize}
                   </option>
