@@ -471,7 +471,7 @@ const ProductsTable = ({
       const loadingJustFinished = previousLoadingRef.current === true && loading === false;
 
       // Check if this hash has actual product data (not just empty array)
-      const hashHasProducts = (products?.length || 0) > 0;
+      // const hashHasProducts = (products?.length || 0) > 0;
 
       // Only mark as processing complete if:
       // 1. We have data (filteredProducts.length > 0), OR
