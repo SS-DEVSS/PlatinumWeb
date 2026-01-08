@@ -15,7 +15,7 @@ import {
 } from "./ui/table";
 import { Button } from "./ui/button";
 import { useMemo, useState, useRef, useEffect } from "react";
-import { Attribute, Category } from "../models/category";
+import { Attribute, Category, CategoryAttributesTypes } from "../models/category";
 import { AttributeValue } from "../models/item";
 import { Application } from "../models/application";
 import { Info, ChevronLeft, ChevronRight } from "lucide-react";
@@ -23,6 +23,24 @@ import { Info, ChevronLeft, ChevronRight } from "lucide-react";
 type ApplicationsTableProps = {
   category: Category | null;
   applications: Application[];
+};
+
+const extractYearFromDate = (dateValue: Date | string | null | undefined): number | null => {
+  if (!dateValue) return null;
+  try {
+    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+    if (!isNaN(date.getTime())) {
+      return date.getFullYear();
+    }
+  } catch {
+    // Error extracting year from date
+  }
+  return null;
+};
+
+const formatDateValue = (dateValue: Date | string | null | undefined): string => {
+  const year = extractYearFromDate(dateValue);
+  return year !== null ? year.toString() : 'N/A';
 };
 
 const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) => {
@@ -36,7 +54,9 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
 
   // Group applications by year ranges (same logic as mobile)
   const groupedApplications = useMemo(() => {
-    if (!applications || !attributes?.application) return applications;
+    if (!applications || !attributes?.application) {
+      return applications;
+    }
 
     const appAttrs = [...attributes.application].sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -81,8 +101,22 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
           const yearAttr = appAttrs[yearAttrIndex];
           const yearA = a.attributeValues.find(av => av.idAttribute === yearAttr.id);
           const yearB = b.attributeValues.find(av => av.idAttribute === yearAttr.id);
-          const numA = Number(yearA?.valueNumber || yearA?.valueString) || 0;
-          const numB = Number(yearB?.valueNumber || yearB?.valueString) || 0;
+
+          let numA = 0;
+          let numB = 0;
+
+          if (yearAttr.type === CategoryAttributesTypes.DATE) {
+            if (yearA?.valueDate) {
+              numA = new Date(yearA.valueDate).getFullYear();
+            }
+            if (yearB?.valueDate) {
+              numB = new Date(yearB.valueDate).getFullYear();
+            }
+          } else {
+            numA = Number(yearA?.valueNumber || yearA?.valueString) || 0;
+            numB = Number(yearB?.valueNumber || yearB?.valueString) || 0;
+          }
+
           return numA - numB;
         });
 
@@ -90,10 +124,20 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
         let currentGroup: Application[] = [sortedApps[0]];
 
         for (let i = 1; i < sortedApps.length; i++) {
-          const prevYearAttr = sortedApps[i - 1].attributeValues.find(av => av.idAttribute === appAttrs[yearAttrIndex].id);
-          const currYearAttr = sortedApps[i].attributeValues.find(av => av.idAttribute === appAttrs[yearAttrIndex].id);
-          const prevYear = Number(prevYearAttr?.valueNumber || prevYearAttr?.valueString) || 0;
-          const currYear = Number(currYearAttr?.valueNumber || currYearAttr?.valueString) || 0;
+          const yearAttr = appAttrs[yearAttrIndex];
+          const prevYearAttr = sortedApps[i - 1].attributeValues.find(av => av.idAttribute === yearAttr.id);
+          const currYearAttr = sortedApps[i].attributeValues.find(av => av.idAttribute === yearAttr.id);
+
+          let prevYear = 0;
+          let currYear = 0;
+
+          if (yearAttr.type === CategoryAttributesTypes.DATE) {
+            prevYear = extractYearFromDate(prevYearAttr?.valueDate) ?? 0;
+            currYear = extractYearFromDate(currYearAttr?.valueDate) ?? 0;
+          } else {
+            prevYear = Number(prevYearAttr?.valueNumber || prevYearAttr?.valueString) || 0;
+            currYear = Number(currYearAttr?.valueNumber || currYearAttr?.valueString) || 0;
+          }
 
           // Check if all other values are the same
           const sameValues = appAttrs.every((attr, idx) => {
@@ -110,10 +154,23 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
           } else {
             // Finalize current group
             if (currentGroup.length > 1) {
-              const firstYearAttr = currentGroup[0].attributeValues.find(av => av.idAttribute === appAttrs[yearAttrIndex].id);
-              const lastYearAttr = currentGroup[currentGroup.length - 1].attributeValues.find(av => av.idAttribute === appAttrs[yearAttrIndex].id);
-              const firstYear = firstYearAttr?.valueNumber?.toString() || firstYearAttr?.valueString || '';
-              const lastYear = lastYearAttr?.valueNumber?.toString() || lastYearAttr?.valueString || '';
+              const yearAttr = appAttrs[yearAttrIndex];
+              const firstYearAttr = currentGroup[0].attributeValues.find(av => av.idAttribute === yearAttr.id);
+              const lastYearAttr = currentGroup[currentGroup.length - 1].attributeValues.find(av => av.idAttribute === yearAttr.id);
+
+              let firstYear = '';
+              let lastYear = '';
+
+              if (yearAttr.type === CategoryAttributesTypes.DATE) {
+                const firstYearNum = extractYearFromDate(firstYearAttr?.valueDate);
+                const lastYearNum = extractYearFromDate(lastYearAttr?.valueDate);
+                firstYear = firstYearNum?.toString() || '';
+                lastYear = lastYearNum?.toString() || '';
+              } else {
+                firstYear = firstYearAttr?.valueNumber?.toString() || firstYearAttr?.valueString || '';
+                lastYear = lastYearAttr?.valueNumber?.toString() || lastYearAttr?.valueString || '';
+              }
+
               const rangeValue = firstYear === lastYear ? firstYear : `${firstYear}-${lastYear}`;
 
               // Create a new application with the year range
@@ -140,10 +197,23 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
 
         // Finalize last group
         if (currentGroup.length > 1) {
-          const firstYearAttr = currentGroup[0].attributeValues.find(av => av.idAttribute === appAttrs[yearAttrIndex].id);
-          const lastYearAttr = currentGroup[currentGroup.length - 1].attributeValues.find(av => av.idAttribute === appAttrs[yearAttrIndex].id);
-          const firstYear = firstYearAttr?.valueNumber?.toString() || firstYearAttr?.valueString || '';
-          const lastYear = lastYearAttr?.valueNumber?.toString() || lastYearAttr?.valueString || '';
+          const yearAttr = appAttrs[yearAttrIndex];
+          const firstYearAttr = currentGroup[0].attributeValues.find(av => av.idAttribute === yearAttr.id);
+          const lastYearAttr = currentGroup[currentGroup.length - 1].attributeValues.find(av => av.idAttribute === yearAttr.id);
+
+          let firstYear = '';
+          let lastYear = '';
+
+          if (yearAttr.type === CategoryAttributesTypes.DATE) {
+            const firstYearNum = extractYearFromDate(firstYearAttr?.valueDate);
+            const lastYearNum = extractYearFromDate(lastYearAttr?.valueDate);
+            firstYear = firstYearNum?.toString() || '';
+            lastYear = lastYearNum?.toString() || '';
+          } else {
+            firstYear = firstYearAttr?.valueNumber?.toString() || firstYearAttr?.valueString || '';
+            lastYear = lastYearAttr?.valueNumber?.toString() || lastYearAttr?.valueString || '';
+          }
+
           const rangeValue = firstYear === lastYear ? firstYear : `${firstYear}-${lastYear}`;
 
           const groupedApp: Application = {
@@ -165,6 +235,67 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
         }
       }
     });
+
+    // Sort by first 5 attributes in descending order
+    if (attributes?.application && groupedApps.length > 0) {
+      const appAttrs = [...attributes.application].sort((a, b) => (a.order || 0) - (b.order || 0));
+      const first5Attrs = appAttrs.slice(0, 5);
+
+      groupedApps.sort((a, b) => {
+        for (const attr of first5Attrs) {
+          const attrValueA = a.attributeValues.find(av => av.idAttribute === attr.id);
+          const attrValueB = b.attributeValues.find(av => av.idAttribute === attr.id);
+
+          const isDateAttribute = attr.type === CategoryAttributesTypes.DATE ||
+            attr.name.toLowerCase().includes('año') ||
+            attr.name.toLowerCase().includes('year') ||
+            (attr.displayName && (attr.displayName.toLowerCase().includes('año') || attr.displayName.toLowerCase().includes('year')));
+
+          let valueA: string | number = '';
+          let valueB: string | number = '';
+
+          if (isDateAttribute) {
+            let yearA = extractYearFromDate(attrValueA?.valueDate);
+            let yearB = extractYearFromDate(attrValueB?.valueDate);
+
+            if (yearA === null && attrValueA?.valueString) {
+              const dateFromString = new Date(attrValueA.valueString);
+              if (!isNaN(dateFromString.getTime())) {
+                yearA = dateFromString.getFullYear();
+              }
+            }
+            if (yearB === null && attrValueB?.valueString) {
+              const dateFromString = new Date(attrValueB.valueString);
+              if (!isNaN(dateFromString.getTime())) {
+                yearB = dateFromString.getFullYear();
+              }
+            }
+
+            valueA = yearA ?? 0;
+            valueB = yearB ?? 0;
+            if (valueB !== valueA) {
+              return valueA - valueB;
+            }
+          } else if (attr.type === CategoryAttributesTypes.NUMERIC) {
+            valueA = attrValueA?.valueNumber ?? (attrValueA?.valueString ? parseFloat(attrValueA.valueString) : 0) ?? 0;
+            valueB = attrValueB?.valueNumber ?? (attrValueB?.valueString ? parseFloat(attrValueB.valueString) : 0) ?? 0;
+            if (valueB !== valueA) {
+              return valueB - valueA;
+            }
+          } else {
+            valueA = attrValueA?.valueString ?? attrValueA?.valueNumber?.toString() ?? attrValueA?.valueBoolean?.toString() ?? '';
+            valueB = attrValueB?.valueString ?? attrValueB?.valueNumber?.toString() ?? attrValueB?.valueBoolean?.toString() ?? '';
+            const strA = String(valueA).toLowerCase();
+            const strB = String(valueB).toLowerCase();
+            if (strB !== strA) {
+              const comparison = strA.localeCompare(strB);
+              return comparison;
+            }
+          }
+        }
+        return 0;
+      });
+    }
 
     return groupedApps;
   }, [applications, attributes]);
@@ -225,12 +356,30 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
             (av: AttributeValue) => av.idAttribute === attribute.id
           );
 
-          const fullValue =
-            attrValue?.valueString ||
-            attrValue?.valueNumber?.toString() ||
-            attrValue?.valueBoolean?.toString() ||
-            attrValue?.valueDate?.toString() ||
-            "N/A";
+          let fullValue: string;
+
+          const isDateAttribute = attribute.type === CategoryAttributesTypes.DATE ||
+            attribute.name.toLowerCase().includes('año') ||
+            attribute.name.toLowerCase().includes('year') ||
+            (attribute.displayName && (attribute.displayName.toLowerCase().includes('año') || attribute.displayName.toLowerCase().includes('year')));
+
+          if (isDateAttribute && attrValue?.valueDate) {
+            fullValue = formatDateValue(attrValue.valueDate);
+          } else if (isDateAttribute && attrValue?.valueString) {
+            const dateFromString = new Date(attrValue.valueString);
+            if (!isNaN(dateFromString.getTime())) {
+              fullValue = dateFromString.getFullYear().toString();
+            } else {
+              fullValue = attrValue.valueString;
+            }
+          } else {
+            fullValue =
+              attrValue?.valueString ||
+              attrValue?.valueNumber?.toString() ||
+              attrValue?.valueBoolean?.toString() ||
+              (attrValue?.valueDate ? formatDateValue(attrValue.valueDate) : null) ||
+              "N/A";
+          }
 
           const valueStr = String(fullValue);
           const displayValue = valueStr.length > 30 ? `${valueStr.substring(0, 30)}...` : valueStr;

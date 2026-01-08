@@ -57,7 +57,7 @@ const Catalogo = () => {
     getCategoryFilters,
     error: categoriesError
   } = useCategories();
-  const { getProductsByCategory, products: categoryProducts } = useProducts();
+  const { getProductsByCategory, products: categoryProducts, loading: loadingInitialProducts } = useProducts();
 
   // Convert brandsMap to array for rendering
   const brands = useMemo(() => Object.values(brandsMap || {}), [brandsMap]);
@@ -102,6 +102,21 @@ const Catalogo = () => {
   const categoryHasVehicleFiltersRef = useRef<Record<string, boolean>>({});
   // Ref to track which categories we've fetched filter options for
   const fetchedFilterOptionsRef = useRef<Record<string, boolean>>({});
+  // Ref to track if we've restored saved selections (prevents auto-selection on mount)
+  const hasRestoredSelectionsRef = useRef<boolean>(false);
+  // Ref to track last brand ID to detect manual changes
+  const lastBrandIdRef = useRef<string | null>(null);
+
+  // Restore saved selections from localStorage on mount
+  const getSavedSelections = () => {
+    try {
+      const savedMarca = localStorage.getItem('catalogo-selected-marca');
+      const savedCategoriaId = localStorage.getItem('catalogo-selected-categoria');
+      return { savedMarca, savedCategoriaId };
+    } catch {
+      return { savedMarca: null, savedCategoriaId: null };
+    }
+  };
 
   const [form, setForm] = useState<formState>({
     filtroTipo: "NumParte",
@@ -147,42 +162,85 @@ const Catalogo = () => {
     if (selectedBrand) {
       setAvailableCategories(selectedBrand.categories || []);
 
-      // If brand has categories, select the first one
+      // Detect if brand actually changed (manual change vs restore)
+      const brandChanged = lastBrandIdRef.current !== null && lastBrandIdRef.current !== form.marca;
+      lastBrandIdRef.current = form.marca;
+
+      // Check if there's a saved category for this brand
+      const savedCategoriaId = localStorage.getItem('catalogo-selected-categoria');
+      const savedCategory = savedCategoriaId && selectedBrand.categories
+        ? selectedBrand.categories.find(cat => cat.id === savedCategoriaId)
+        : null;
+
+      // If brand has categories, select saved category or first one
       if (selectedBrand.categories && selectedBrand.categories.length > 0) {
-        setForm(prevForm => ({
-          ...prevForm,
-          categoria: selectedBrand.categories![0],
-          // Reset vehicle filters when changing brand
-          filtro: {
-            ...prevForm.filtro,
-            vehiculo: {
-              selectedFilters: []
+        // Priority: saved category (if exists and not restored yet) > current category > first category
+        let categoryToSelect: Category | null = null;
+
+        if (savedCategory && !hasRestoredSelectionsRef.current) {
+          // Restore saved category on first load
+          categoryToSelect = savedCategory;
+          hasRestoredSelectionsRef.current = true;
+        } else if (form.categoria && selectedBrand.categories.some(cat => cat.id === form.categoria!.id)) {
+          // Keep current category if it belongs to this brand
+          categoryToSelect = form.categoria;
+        } else {
+          // Default to first category
+          categoryToSelect = selectedBrand.categories[0];
+        }
+
+        // Only update if category is different from current
+        if (!form.categoria || form.categoria.id !== categoryToSelect.id) {
+          setForm(prevForm => ({
+            ...prevForm,
+            categoria: categoryToSelect,
+            // Reset vehicle filters only when brand actually changed (not on restore)
+            filtro: {
+              ...prevForm.filtro,
+              vehiculo: {
+                selectedFilters: brandChanged ? [] : prevForm.filtro.vehiculo.selectedFilters
+              }
             }
-          }
-        }));
+          }));
+
+          // Save to localStorage
+          localStorage.setItem('catalogo-selected-categoria', categoryToSelect.id);
+        } else if (savedCategory && form.categoria.id === savedCategory.id) {
+          // Mark as restored if we already have the saved category
+          hasRestoredSelectionsRef.current = true;
+        }
       } else {
         // If brand has no categories, clear category selection
         setForm(prevForm => ({
           ...prevForm,
           categoria: null
         }));
+        localStorage.removeItem('catalogo-selected-categoria');
       }
     }
-  }, [form.marca, brandsMap, brands]);
+  }, [form.marca, brandsMap, brands, form.categoria]);
 
-  // Handle initial brand selection
+  // Handle initial brand selection (restore saved or select first)
   useEffect(() => {
     if (brands && brands.length > 0 && !form.marca) {
-      // Select first brand by default
-      const firstBrand = brands[0];
-      if (firstBrand) {
+      const { savedMarca } = getSavedSelections();
+
+      // Try to restore saved brand if it exists
+      const brandToSelect = savedMarca && brandsMap[savedMarca]
+        ? savedMarca
+        : brands[0]?.id;
+
+      if (brandToSelect) {
         setForm(prevForm => ({
           ...prevForm,
-          marca: firstBrand.id
+          marca: brandToSelect
         }));
+
+        // Save to localStorage
+        localStorage.setItem('catalogo-selected-marca', brandToSelect);
       }
     }
-  }, [brands, form.marca]);
+  }, [brands, form.marca, brandsMap]);
 
   const selectedFiltersHash = JSON.stringify(form.filtro.vehiculo.selectedFilters);
 
@@ -244,7 +302,7 @@ const Catalogo = () => {
           }
         });
     } else {
-      // Ensure ref is set even if category state was reset
+      // Ensure ref is set even if category state was resetCargando...
       if (currentCategoryId === categoryId && !loadedCategoryIdRef.current) {
         loadedCategoryIdRef.current = categoryId;
       }
@@ -530,6 +588,9 @@ const Catalogo = () => {
   const handleBrandChange = (brandId: string) => {
     if (form.marca === brandId) return;
 
+    // Reset restoration flag when brand changes manually
+    hasRestoredSelectionsRef.current = false;
+
     setForm(prevForm => ({
       ...prevForm,
       marca: brandId,
@@ -542,6 +603,11 @@ const Catalogo = () => {
         }
       }
     }));
+
+    // Save to localStorage
+    localStorage.setItem('catalogo-selected-marca', brandId);
+    // Clear saved category when brand changes (will be set by the brand change effect)
+    localStorage.removeItem('catalogo-selected-categoria');
   };
 
   const handleCategoryChange = (categoryId: string) => {
@@ -561,6 +627,9 @@ const Catalogo = () => {
           }
         }
       }));
+
+      // Save to localStorage
+      localStorage.setItem('catalogo-selected-categoria', categoryId);
 
       // Explicitly trigger loading and fetch for category change
       setProductsError(null);
@@ -804,7 +873,7 @@ const Catalogo = () => {
             <div className="relative z-10 flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 flex-wrap items-end">
               <div className="flex flex-col flex-wrap w-full sm:w-auto flex-1 sm:flex-none">
                 <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-white">
-                  Marca:
+                  Línea de producto:
                 </Label>
                 <Select onValueChange={handleBrandChange} value={form.marca || ''}>
                   <SelectTrigger className="h-9 sm:h-10 w-full sm:w-[200px] md:w-[220px]">
@@ -1062,7 +1131,7 @@ const Catalogo = () => {
                     filtroTipo={form.filtroTipo}
                     onLoadingChange={setLoadingProducts}
                     products={categoryProducts} // Pass fetched products
-                    loading={loadingProducts} // Pass loading state
+                    loading={loadingInitialProducts} // Pass loading state
                     pageIndex={page - 1} // 0-indexed for table
                     pageSize={pageSize}
                     pageCount={totalPages}

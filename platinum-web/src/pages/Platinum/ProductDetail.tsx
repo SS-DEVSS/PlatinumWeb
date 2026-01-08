@@ -116,7 +116,7 @@ const ProductDetail = () => {
           {/* Top Section: Header Actions */}
           <div className="flex justify-between items-center gap-4 mb-6">
             <Button
-              onClick={() => navigate(`/Catalogo`)}
+              onClick={() => navigate(`/catalogo`)}
               variant={"ghost"}
               className="flex gap-2 text-[#20314f] p-0 hover:underline hover:cursor-pointer hover:bg-transparent"
             >

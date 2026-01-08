@@ -114,7 +114,7 @@ export const useProducts = () => {
   const client = useMemo(() => axiosClient(), []);
   const [product, setProduct] = useState(null);
   const [products, setProducts] = useState<Item[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   //   const [error, setError] = useState<string | null>(null);
 
   // Remove auto-fetch to prevent infinite loops and duplicate calls
