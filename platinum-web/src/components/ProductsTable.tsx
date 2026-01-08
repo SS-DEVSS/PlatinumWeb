@@ -81,6 +81,10 @@ const ProductsTable = ({
 
   // Track if we've ever received products with data (to distinguish initial empty state from "loaded but empty")
   const hasEverReceivedDataRef = useRef<boolean>(false);
+  // Track last category ID to detect category changes
+  const lastCategoryIdRef = useRef<string | null>(null);
+  // Track if category changed in this effect run (preserve across the effect)
+  const categoryChangedInThisRunRef = useRef<boolean>(false);
 
   // Use external viewMode if provided, otherwise use internal
   const currentViewMode = externalViewMode ?? internalViewMode;
@@ -91,6 +95,7 @@ const ProductsTable = ({
   const lastProcessedProductsRef = useRef<string>('');
   const isProcessingRef = useRef(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const previousLoadingRef = useRef<boolean | undefined>(undefined);
 
   // Keep ref updated
   useEffect(() => {
@@ -304,15 +309,64 @@ const ProductsTable = ({
 
   // Process and set data
   useEffect(() => {
-    // Create a hash of current products + filters to detect actual changes
+    const currentCategoryId = category?.id || null;
+    const categoryChanged = lastCategoryIdRef.current !== null && lastCategoryIdRef.current !== currentCategoryId;
+
+    // If category changed, reset hasEverReceivedDataRef for the new category
+    if (categoryChanged) {
+      hasEverReceivedDataRef.current = false;
+      categoryChangedInThisRunRef.current = true; // Preserve this flag for the completion check
+      lastCategoryIdRef.current = currentCategoryId;
+    } else {
+      categoryChangedInThisRunRef.current = false; // Reset flag if category didn't change
+      if (lastCategoryIdRef.current === null) {
+        // First time setting category
+        lastCategoryIdRef.current = currentCategoryId;
+      }
+    }
+
+    // Create a hash of current products + filters + pageIndex to detect actual changes
     const productsHash = JSON.stringify({
       productIds: products?.map(p => p.id) || [],
       categoryId: category?.id || '',
+      pageIndex, // Include pageIndex in hash to detect pagination changes
       filtroTipo,
       referencia: filtroInfo?.referencia || '',
       numParte: filtroInfo?.numParte || '',
       vehiculoFilters: filtroInfo?.vehiculo?.selectedFilters || []
     });
+
+    // Detect category change from hash comparison (more reliable than ref comparison)
+    // This catches cases where the category changes but the ref-based detection didn't catch it
+    let categoryChangedFromHash = false;
+    if (lastProcessedProductsRef.current) {
+      try {
+        const lastHash = JSON.parse(lastProcessedProductsRef.current);
+        const currentHash = JSON.parse(productsHash);
+        categoryChangedFromHash = lastHash.categoryId !== currentHash.categoryId && lastHash.categoryId !== '';
+      } catch {
+        // If parsing fails, fall back to ref-based detection
+        categoryChangedFromHash = categoryChanged;
+      }
+    }
+
+    // Use hash-based detection if available, otherwise use ref-based
+    // Hash-based detection is more reliable because it compares the actual categoryId in the hash
+    const finalCategoryChanged = categoryChangedFromHash || categoryChanged;
+    if (finalCategoryChanged) {
+      // Always set the flag if category changed (either method detected it)
+      if (!categoryChangedInThisRunRef.current) {
+        hasEverReceivedDataRef.current = false;
+        categoryChangedInThisRunRef.current = true;
+        // Update ref to current category
+        if (categoryChangedFromHash || categoryChanged) {
+          lastCategoryIdRef.current = currentCategoryId;
+        }
+      }
+    } else {
+      // Reset flag if category didn't change
+      categoryChangedInThisRunRef.current = false;
+    }
 
     // Skip if we're already processing the same data
     if (lastProcessedProductsRef.current === productsHash) {
@@ -320,10 +374,16 @@ const ProductsTable = ({
       if (isProcessingComplete && mappedData.length === 0 && !showNoResults) {
         setShowNoResults(true);
       }
+      // IMPORTANT: If loading is false and we have data, ensure processing is complete
+      if (!loading && mappedData.length > 0 && !isProcessingComplete) {
+        setIsProcessingComplete(true);
+        setShowNoResults(false);
+      }
       return;
     }
 
     // Mark as processing and store hash
+    // Store the OLD hash before updating, so we can check if data actually changed
     lastProcessedProductsRef.current = productsHash;
     isProcessingRef.current = true;
 
@@ -407,11 +467,31 @@ const ProductsTable = ({
       setMappedData(filteredProducts);
       setIsDataLoaded(true);
 
+      // Track loading transition: true -> false means data just finished loading
+      const loadingJustFinished = previousLoadingRef.current === true && loading === false;
+
+      // Check if this hash has actual product data (not just empty array)
+      const hashHasProducts = (products?.length || 0) > 0;
+
       // Only mark as processing complete if:
-      // 1. loading is false (data has finished loading), AND
-      // 2. Either we have data OR we've received data before (to distinguish "initial empty" from "loaded but empty")
-      // This prevents showing "No results" when data is still loading
-      const shouldMarkComplete = !loading && (filteredProducts.length > 0 || hasEverReceivedDataRef.current);
+      // 1. We have data (filteredProducts.length > 0), OR
+      // 2. Loading just finished (transitioned from true to false) - this means a load completed, OR
+      // 3. We've received data before (hasEverReceivedDataRef) - means we've seen data for this category/page before, OR
+      // 4. Category changed in this run AND loading is false - when category changes, if loading is false, the data we have is the final state, OR
+      // 5. Loading is false AND we've processed the data - if parent says loading is done, we should mark complete
+      //    (either empty or populated, but it's what we got for that category)
+      // IMPORTANT: If loading is false, it means the fetch completed (even if empty), so we should mark complete
+      const categoryChangedInThisRun = categoryChangedInThisRunRef.current;
+      const shouldMarkComplete = (
+        filteredProducts.length > 0 ||
+        loadingJustFinished ||
+        hasEverReceivedDataRef.current ||
+        (categoryChangedInThisRun && !loading) || // Category changed and loading is done = valid final state
+        !loading // If loading is false, the fetch is complete (even if empty)
+      );
+
+      // Update previous loading ref after checking transition
+      previousLoadingRef.current = loading;
 
       if (shouldMarkComplete) {
         setIsProcessingComplete(true);
@@ -451,9 +531,12 @@ const ProductsTable = ({
     data,
     isInDetailsPage,
     filtroTipo,
-    filtroInfo, // Added filtroInfo
+    filtroInfo,
     category,
-    loading
+    loading,
+    pageIndex,
+    // isDataLoaded, isProcessingComplete, mappedData.length, and showNoResults are intentionally excluded
+    // to prevent infinite loops since they are set within this effect
   ]);
 
   useEffect(() => {
@@ -503,12 +586,34 @@ const ProductsTable = ({
   }, [products, isDataLoaded, category, setValuesAttributes]); // Added setValuesAttributes
 
 
-  // Reset showNoResults when loading starts
+  // Reset showNoResults when loading starts and fix state when loading stops
   useEffect(() => {
     if (loading) {
       setShowNoResults(false);
+      previousLoadingRef.current = loading;
+    } else {
+      // Update previous loading ref
+      previousLoadingRef.current = loading;
+
+      // When loading is false and processing is not complete, we should mark it complete
+      // This handles both transitions (loadingJustFinished) and cases where loading was already false
+      if (!isProcessingComplete) {
+        if (mappedData.length > 0) {
+          setIsProcessingComplete(true);
+          setShowNoResults(false);
+          hasEverReceivedDataRef.current = true;
+
+        } else if (hasEverReceivedDataRef.current) {
+          setIsProcessingComplete(true);
+          setShowNoResults(true);
+        } else if (products && products.length === 0) {
+          // Loading is false and empty products array = valid empty state (fetch completed with no results)
+          setIsProcessingComplete(true);
+          setShowNoResults(true);
+        }
+      }
     }
-  }, [loading]);
+  }, [loading, pageIndex, category?.id, isProcessingComplete, mappedData.length, products]);
 
   // Calculate page info
   const totalPages = pageCount;
@@ -562,16 +667,16 @@ const ProductsTable = ({
     }).filter(Boolean) as string[];
   };
 
-  if (loading) {
-    return (
-      <div className="mt-6 relative">
-        <div className="flex flex-col items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-naranja"></div>
-          <span className="mt-2 text-sm text-gray-600 font-medium">Cargando...</span>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="mt-6 relative">
+  //       <div className="flex flex-col items-center justify-center h-full">
+  //         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-naranja"></div>
+  //         <span className="mt-2 text-sm text-gray-600 font-medium">Cargando...</span>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="mt-6 relative">
@@ -604,14 +709,14 @@ const ProductsTable = ({
       )}
 
       {/* Loading Overlay */}
-      {loading && (
+      {/* {loading && (
         <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-lg">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-naranja"></div>
             <span className="mt-2 text-sm text-gray-600 font-medium">Cargando...</span>
           </div>
         </div>
-      )}
+      )} */}
 
       <>
         {currentViewMode === "table" ? (
@@ -693,7 +798,7 @@ const ProductsTable = ({
                     return (
                       <TableRow>
                         <TableCell colSpan={columns.length} className="text-center">
-                          No se encontraron resultados
+                          No se encontraron resultados.
                         </TableCell>
                       </TableRow>
                     );
@@ -804,7 +909,7 @@ const ProductsTable = ({
               // 3. No data and processing complete - show empty message
               return (
                 <div className="col-span-full text-center py-8 text-gray-500">
-                  No se encontraron resultados
+                  {showNoResults ? 'No se encontraron resultados.' : 'Cargando...'}
                 </div>
               );
             })()}
