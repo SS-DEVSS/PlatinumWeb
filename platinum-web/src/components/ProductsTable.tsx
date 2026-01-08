@@ -26,6 +26,7 @@ import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
 import { LayoutGrid, Table2, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
+import ProductCardSkeleton from "./ProductCardSkeleton";
 
 const ProductsTable = ({
   category,
@@ -78,6 +79,9 @@ const ProductsTable = ({
   const [internalViewMode, setInternalViewMode] = useState<"table" | "cards">("cards");
   const [pageInputValue, setPageInputValue] = useState<string>("");
 
+  // Track if we've ever received products with data (to distinguish initial empty state from "loaded but empty")
+  const hasEverReceivedDataRef = useRef<boolean>(false);
+
   // Use external viewMode if provided, otherwise use internal
   const currentViewMode = externalViewMode ?? internalViewMode;
   const handleViewModeChange = externalSetViewMode ?? setInternalViewMode;
@@ -86,6 +90,7 @@ const ProductsTable = ({
   const isFirstLoad = useRef(true);
   const lastProcessedProductsRef = useRef<string>('');
   const isProcessingRef = useRef(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep ref updated
   useEffect(() => {
@@ -311,6 +316,10 @@ const ProductsTable = ({
 
     // Skip if we're already processing the same data
     if (lastProcessedProductsRef.current === productsHash) {
+      // Still need to check if we should show no results if processing is complete and data is empty
+      if (isProcessingComplete && mappedData.length === 0 && !showNoResults) {
+        setShowNoResults(true);
+      }
       return;
     }
 
@@ -322,6 +331,9 @@ const ProductsTable = ({
     setIsProcessingComplete(false);
     setShowNoResults(false);
 
+    // Don't reset hasEverReceivedDataRef - we want to remember if we've seen data before
+    // This helps distinguish "initial empty state" from "loaded but empty after filtering"
+
     // Only reset to first page if it's not the first load or if data source has changed
     // Note: With server-side pagination, the parent controls pageIndex, so we don't reset it here.
     // But we might want to notify parent to reset if filters changed? 
@@ -329,7 +341,11 @@ const ProductsTable = ({
 
     isFirstLoad.current = false;
 
-    let timer: NodeJS.Timeout;
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
 
     if (isInDetailsPage && data) {
       // In detail page, use provided data (compatibility variants)
@@ -338,35 +354,17 @@ const ProductsTable = ({
       setIsProcessingComplete(true);
 
       if (data.length === 0) {
-        timer = setTimeout(() => setShowNoResults(true), 200);
+        setShowNoResults(true);
       } else {
         setShowNoResults(false);
       }
 
-      // Notify parent that processing is complete
-      // if (onLoadingChangeRef.current) {
-      //   setTimeout(() => {
-      //     onLoadingChangeRef.current?.(false);
-      //     isProcessingRef.current = false;
-      //   }, 150);
-      // } else {
       isProcessingRef.current = false;
-      // }
     } else {
-      // Make sure products is not undefined or empty before proceeding
-      if (!products) {
-        setMappedData([]);
-        setIsDataLoaded(true);
-        setIsProcessingComplete(true);
-
-        // if (onLoadingChangeRef.current) {
-        //   setTimeout(() => {
-        //     onLoadingChangeRef.current?.(false);
-        //     isProcessingRef.current = false;
-        //   }, 150);
-        // } else {
+      // Make sure products is not undefined before proceeding
+      if (products === undefined || products === null) {
+        // Don't mark as complete if products is undefined - data hasn't loaded yet
         isProcessingRef.current = false;
-        // }
         return;
       }
 
@@ -401,17 +399,35 @@ const ProductsTable = ({
         }
       }
 
+      // Track if we've ever received data (products with length > 0)
+      if (filteredProducts.length > 0) {
+        hasEverReceivedDataRef.current = true;
+      }
+
       setMappedData(filteredProducts);
       setIsDataLoaded(true);
-      setIsProcessingComplete(true);
 
-      if (filteredProducts.length === 0) {
-        if (!loading) {
-          timer = setTimeout(() => setShowNoResults(true), 200);
+      // Only mark as processing complete if:
+      // 1. loading is false (data has finished loading), AND
+      // 2. Either we have data OR we've received data before (to distinguish "initial empty" from "loaded but empty")
+      // This prevents showing "No results" when data is still loading
+      const shouldMarkComplete = !loading && (filteredProducts.length > 0 || hasEverReceivedDataRef.current);
+
+      if (shouldMarkComplete) {
+        setIsProcessingComplete(true);
+
+        if (filteredProducts.length === 0) {
+          setShowNoResults(true);
+        } else {
+          setShowNoResults(false);
         }
       } else {
+        // Keep isProcessingComplete as false while loading or if this is initial empty state
+        setIsProcessingComplete(false);
         setShowNoResults(false);
       }
+
+      isProcessingRef.current = false;
     }
 
     // Notify parent that processing is complete
@@ -425,7 +441,10 @@ const ProductsTable = ({
     // }
 
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [
     products,
@@ -543,6 +562,17 @@ const ProductsTable = ({
     }).filter(Boolean) as string[];
   };
 
+  if (loading) {
+    return (
+      <div className="mt-6 relative">
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-naranja"></div>
+          <span className="mt-2 text-sm text-gray-600 font-medium">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 relative">
       {/* View Toggle - Only show if not hidden */}
@@ -608,50 +638,66 @@ const ProductsTable = ({
                   ))}
                 </TableHeader>
                 <TableBody>
-                  {isProcessingComplete && mappedData.length > 0 ? (
-                    currentPageItems.map((row, index) => {
-                      const isLastRow = index === currentPageItems.length - 1;
-                      return (
-                        <TableRow
-                          key={row.id}
-                          data-state={row.getIsSelected() && "selected"}
-                          onClick={() => handleClick(row)}
-                          className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
-                          style={{
-                            backgroundColor:
-                              itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
-                            borderBottomLeftRadius: isLastRow
-                              ? "12px !important"
-                              : "0",
-                            borderBottomRightRadius: isLastRow
-                              ? "12px !important"
-                              : "0",
-                          }}
-                        >
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext()
-                              )}
+                  {(() => {
+                    // 1. Check if loading (prop OR processing not complete)
+                    if (loading || !isProcessingComplete) {
+                      // Show multiple skeleton rows for table view
+                      return Array.from({ length: pageSize }).map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          {columns.map((_, colIndex) => (
+                            <TableCell key={`skeleton-${index}-${colIndex}`} className="py-0.5" style={{ height: '60px' }}>
+                              <div className="animate-pulse">
+                                <div className="bg-gray-200 h-4 w-3/4 rounded"></div>
+                              </div>
                             </TableCell>
                           ))}
                         </TableRow>
-                      );
-                    })
-                  ) : isProcessingComplete && showNoResults ? (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="text-center">
-                        No se encontraron resultados
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="text-center">
-                        Cargando...
-                      </TableCell>
-                    </TableRow>
-                  )}
+                      ));
+                    }
+
+                    // 2. Check if there's data - show data
+                    if (mappedData.length > 0) {
+                      return currentPageItems.map((row, index) => {
+                        const isLastRow = index === currentPageItems.length - 1;
+                        return (
+                          <TableRow
+                            key={row.id}
+                            data-state={row.getIsSelected() && "selected"}
+                            onClick={() => handleClick(row)}
+                            className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
+                            style={{
+                              backgroundColor:
+                                itemVariant && row.original.id === itemVariant.id ? "#d87e2e" : "",
+                              borderBottomLeftRadius: isLastRow
+                                ? "12px !important"
+                                : "0",
+                              borderBottomRightRadius: isLastRow
+                                ? "12px !important"
+                                : "0",
+                            }}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id} className="py-0.5" style={{ height: '60px' }}>
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext()
+                                )}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        );
+                      });
+                    }
+
+                    // 3. No data and processing complete - show empty message
+                    return (
+                      <TableRow>
+                        <TableCell colSpan={columns.length} className="text-center">
+                          No se encontraron resultados
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })()}
                 </TableBody>
               </Table>
             </div>
@@ -659,96 +705,109 @@ const ProductsTable = ({
         ) : (
           /* Card Grid View */
           <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-            {isProcessingComplete && mappedData.length > 0 ? (
-              currentPageItems.map((row) => {
-                const product: Item = row.original;
-                const imageUrl = getProductImageUrl(product);
-                const references = formatReferences(product);
-                const isSelected = itemVariant && product.id === itemVariant.id;
-
+            {(() => {
+              // 1. Check if loading (prop OR processing not complete)
+              if (loading || !isProcessingComplete) {
                 return (
-                  <Card
-                    key={product.id}
-                    className={`cursor-pointer hover:shadow-lg transition-shadow overflow-hidden ${isSelected ? 'ring-2 ring-naranja' : ''
-                      }`}
-                    onClick={() => handleClick(row)}
-                  >
-                    {/* Product Image */}
-                    <div className="w-full aspect-square bg-white flex items-center justify-center p-4">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={product.name}
-                          className="w-full h-full object-contain"
-                          loading="lazy"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
+                  <>
+                    {Array.from({ length: pageSize }).map((_, index) => (
+                      <ProductCardSkeleton key={`skeleton-${index}`} />
+                    ))}
+                  </>
+                );
+              }
+
+              // 2. Check if there's data - show data
+              if (mappedData.length > 0) {
+                return currentPageItems.map((row) => {
+                  const product: Item = row.original;
+                  const imageUrl = getProductImageUrl(product);
+                  const references = formatReferences(product);
+                  const isSelected = itemVariant && product.id === itemVariant.id;
+
+                  return (
+                    <Card
+                      key={product.id}
+                      className={`cursor-pointer hover:shadow-lg transition-shadow overflow-hidden ${isSelected ? 'ring-2 ring-naranja' : ''
+                        }`}
+                      onClick={() => handleClick(row)}
+                    >
+                      {/* Product Image */}
+                      <div className="w-full aspect-square bg-white flex items-center justify-center p-4">
+                        {imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={product.name}
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `
                                 <div class="flex flex-col items-center justify-center text-gray-400">
                                   <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                   </svg>
                                 </div>
                               `;
-                            }
-                          }}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-gray-400">
-                          <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Product Details */}
-                    <CardContent className="p-4 bg-gray-50">
-                      {/* SKU */}
-                      <div className="mb-2">
-                        <span className="text-xs text-gray-600 font-medium">No. Parte: </span>
-                        <span className="text-sm font-semibold text-naranja">{product.sku || 'N/A'}</span>
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-gray-400">
+                            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Product Name */}
-                      <h3 className="text-sm font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[2.5rem]">
-                        {product.name}
-                      </h3>
-
-                      {/* References */}
-                      {references.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-xs text-gray-600 font-medium">Referencias: </span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {references.slice(0, 2).map((ref: string, index: number) => (
-                              <span key={index} className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                                {ref}
-                              </span>
-                            ))}
-                            {references.length > 2 && (
-                              <span className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                                +{references.length - 2} más
-                              </span>
-                            )}
-                          </div>
+                      {/* Product Details */}
+                      <CardContent className="p-4 bg-gray-50">
+                        {/* SKU */}
+                        <div className="mb-2">
+                          <span className="text-xs text-gray-600 font-medium">No. Parte: </span>
+                          <span className="text-sm font-semibold text-naranja">{product.sku || 'N/A'}</span>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })
-            ) : isProcessingComplete && showNoResults ? (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                No se encontraron resultados
-              </div>
-            ) : (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                Cargando...
-              </div>
-            )}
+
+                        {/* Product Name */}
+                        <h3 className="text-sm font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[2.5rem]">
+                          {product.name}
+                        </h3>
+
+                        {/* References */}
+                        {references.length > 0 && (
+                          <div className="mt-2">
+                            <span className="text-xs text-gray-600 font-medium">Referencias: </span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {references.slice(0, 2).map((ref: string, index: number) => (
+                                <span key={index} className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
+                                  {ref}
+                                </span>
+                              ))}
+                              {references.length > 2 && (
+                                <span className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
+                                  +{references.length - 2} más
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                });
+              }
+
+              // 3. No data and processing complete - show empty message
+              return (
+                <div className="col-span-full text-center py-8 text-gray-500">
+                  No se encontraron resultados
+                </div>
+              );
+            })()}
           </div>
         )}
         {isProcessingComplete && mappedData.length > 0 && (

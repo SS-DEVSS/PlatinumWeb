@@ -244,7 +244,7 @@ const Catalogo = () => {
           }
         });
     } else {
-      // Ensure ref is set even if category state was reset
+      // Ensure ref is set even if category state was resetCargando...
       if (currentCategoryId === categoryId && !loadedCategoryIdRef.current) {
         loadedCategoryIdRef.current = categoryId;
       }
@@ -804,7 +804,7 @@ const Catalogo = () => {
             <div className="relative z-10 flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 flex-wrap items-end">
               <div className="flex flex-col flex-wrap w-full sm:w-auto flex-1 sm:flex-none">
                 <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-white">
-                  Marca:
+                  Línea de producto:
                 </Label>
                 <Select onValueChange={handleBrandChange} value={form.marca || ''}>
                   <SelectTrigger className="h-9 sm:h-10 w-full sm:w-[200px] md:w-[220px]">
