@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./index.css";
@@ -17,6 +18,8 @@ import Catalogo from "./pages/Platinum/Catalogo";
 import ProductDetail from "./pages/Platinum/ProductDetail";
 import { ItemContextProvider } from "./context/Item-context";
 import { Toaster } from "./components/ui/toaster";
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -80,7 +83,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ItemContextProvider>
-      <RouterProvider router={router} />
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
       <Toaster />
     </ItemContextProvider>
   </StrictMode>

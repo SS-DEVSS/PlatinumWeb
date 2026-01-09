@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -25,95 +25,45 @@ import { Input } from "./ui/input";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
-import { LayoutGrid, Table2, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 
 const ProductsTable = ({
   category,
-  data,
   itemVariant,
   setItemVariant,
-  filtroInfo,
-  filtroTipo,
-  onLoadingChange,
   products,
   loading = false,
-  // Pagination props
   pageIndex = 0,
   pageSize = 10,
   pageCount = 0,
   totalItems = 0,
   onPaginationChange,
-  hideViewToggle = false,
-  viewMode: externalViewMode,
-  setViewMode: externalSetViewMode,
+  viewMode: externalViewMode = "cards",
 }: {
   category: Category | null;
-  data?: Item[] | null;
   products?: Item[];
   itemVariant?: Item | null;
   setItemVariant?: React.Dispatch<React.SetStateAction<Item | null>>;
-  filtroInfo?: {
-    numParte: string;
-    referencia: string;
-    vehiculo?: {
-      selectedFilters?: Array<{ attributeId: string, value: string }>;
-    }
-  };
-  filtroTipo?: "NumParte" | "Vehiculo" | "Referencia";
-  onLoadingChange?: (isLoading: boolean) => void;
   loading?: boolean;
   pageIndex?: number;
   pageSize?: number;
   pageCount?: number;
   totalItems?: number;
   onPaginationChange?: (pageIndex: number, pageSize: number) => void;
-  hideViewToggle?: boolean;
   viewMode?: "cards" | "table";
-  setViewMode?: (mode: "cards" | "table") => void;
 }) => {
-  const [mappedData, setMappedData] = useState<Item[]>([]);
-  const [isDataLoaded, setIsDataLoaded] = useState<boolean>(false);
-  const [isProcessingComplete, setIsProcessingComplete] = useState<boolean>(false);
-  const [showNoResults, setShowNoResults] = useState<boolean>(false);
-  const [internalViewMode, setInternalViewMode] = useState<"table" | "cards">("cards");
   const [pageInputValue, setPageInputValue] = useState<string>("");
 
-  // Track if we've ever received products with data (to distinguish initial empty state from "loaded but empty")
-  const hasEverReceivedDataRef = useRef<boolean>(false);
-  // Track last category ID to detect category changes
-  const lastCategoryIdRef = useRef<string | null>(null);
-  // Track if category changed in this effect run (preserve across the effect)
-  const categoryChangedInThisRunRef = useRef<boolean>(false);
+  const currentViewMode = externalViewMode;
 
-  // Use external viewMode if provided, otherwise use internal
-  const currentViewMode = externalViewMode ?? internalViewMode;
-  const handleViewModeChange = externalSetViewMode ?? setInternalViewMode;
-
-  const onLoadingChangeRef = useRef(onLoadingChange);
-  const isFirstLoad = useRef(true);
-  const lastProcessedProductsRef = useRef<string>('');
-  const isProcessingRef = useRef(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const previousLoadingRef = useRef<boolean | undefined>(undefined);
-
-  // Keep ref updated
-  useEffect(() => {
-    onLoadingChangeRef.current = onLoadingChange;
-  }, [onLoadingChange]);
+  const mappedData = products || [];
 
   const { attributes } = category || {};
 
-  const location = useLocation();
   const navigate = useNavigate();
-  const { setType, setVariant, setValuesAttributes } = useItemContext();
-
-  const isInDetailsPage = useMemo(
-    () =>
-      location.pathname.includes("producto") ||
-      location.pathname.includes("kit"),
-    [location]
-  );
+  const location = useLocation();
+  const { setType, setVariant } = useItemContext();
 
   const handleClick = (row: Row<Item>) => {
     const product: Item = row.original;
@@ -307,313 +257,6 @@ const ProductsTable = ({
     },
   });
 
-  // Process and set data
-  useEffect(() => {
-    const currentCategoryId = category?.id || null;
-    const categoryChanged = lastCategoryIdRef.current !== null && lastCategoryIdRef.current !== currentCategoryId;
-
-    // If category changed, reset hasEverReceivedDataRef for the new category
-    if (categoryChanged) {
-      hasEverReceivedDataRef.current = false;
-      categoryChangedInThisRunRef.current = true; // Preserve this flag for the completion check
-      lastCategoryIdRef.current = currentCategoryId;
-    } else {
-      categoryChangedInThisRunRef.current = false; // Reset flag if category didn't change
-      if (lastCategoryIdRef.current === null) {
-        // First time setting category
-        lastCategoryIdRef.current = currentCategoryId;
-      }
-    }
-
-    // Create a hash of current products + filters + pageIndex to detect actual changes
-    const productsHash = JSON.stringify({
-      productIds: products?.map(p => p.id) || [],
-      categoryId: category?.id || '',
-      pageIndex, // Include pageIndex in hash to detect pagination changes
-      filtroTipo,
-      referencia: filtroInfo?.referencia || '',
-      numParte: filtroInfo?.numParte || '',
-      vehiculoFilters: filtroInfo?.vehiculo?.selectedFilters || []
-    });
-
-    // Detect category change from hash comparison (more reliable than ref comparison)
-    // This catches cases where the category changes but the ref-based detection didn't catch it
-    let categoryChangedFromHash = false;
-    if (lastProcessedProductsRef.current) {
-      try {
-        const lastHash = JSON.parse(lastProcessedProductsRef.current);
-        const currentHash = JSON.parse(productsHash);
-        categoryChangedFromHash = lastHash.categoryId !== currentHash.categoryId && lastHash.categoryId !== '';
-      } catch {
-        // If parsing fails, fall back to ref-based detection
-        categoryChangedFromHash = categoryChanged;
-      }
-    }
-
-    // Use hash-based detection if available, otherwise use ref-based
-    // Hash-based detection is more reliable because it compares the actual categoryId in the hash
-    const finalCategoryChanged = categoryChangedFromHash || categoryChanged;
-    if (finalCategoryChanged) {
-      // Always set the flag if category changed (either method detected it)
-      if (!categoryChangedInThisRunRef.current) {
-        hasEverReceivedDataRef.current = false;
-        categoryChangedInThisRunRef.current = true;
-        // Update ref to current category
-        if (categoryChangedFromHash || categoryChanged) {
-          lastCategoryIdRef.current = currentCategoryId;
-        }
-      }
-    } else {
-      // Reset flag if category didn't change
-      categoryChangedInThisRunRef.current = false;
-    }
-
-    // Skip if we're already processing the same data
-    if (lastProcessedProductsRef.current === productsHash) {
-      // Still need to check if we should show no results if processing is complete and data is empty
-      if (isProcessingComplete && mappedData.length === 0 && !showNoResults) {
-        setShowNoResults(true);
-      }
-      // IMPORTANT: If loading is false and we have data, ensure processing is complete
-      if (!loading && mappedData.length > 0 && !isProcessingComplete) {
-        setIsProcessingComplete(true);
-        setShowNoResults(false);
-      }
-      return;
-    }
-
-    // Mark as processing and store hash
-    // Store the OLD hash before updating, so we can check if data actually changed
-    lastProcessedProductsRef.current = productsHash;
-    isProcessingRef.current = true;
-
-    setIsDataLoaded(false);
-    setIsProcessingComplete(false);
-    setShowNoResults(false);
-
-    // Don't reset hasEverReceivedDataRef - we want to remember if we've seen data before
-    // This helps distinguish "initial empty state" from "loaded but empty after filtering"
-
-    // Only reset to first page if it's not the first load or if data source has changed
-    // Note: With server-side pagination, the parent controls pageIndex, so we don't reset it here.
-    // But we might want to notify parent to reset if filters changed? 
-    // The parent (Catalogo) should handle reset when filters change.
-
-    isFirstLoad.current = false;
-
-    // Clear any existing timer
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-
-    if (isInDetailsPage && data) {
-      // In detail page, use provided data (compatibility variants)
-      setMappedData(data);
-      setIsDataLoaded(true);
-      setIsProcessingComplete(true);
-
-      if (data.length === 0) {
-        setShowNoResults(true);
-      } else {
-        setShowNoResults(false);
-      }
-
-      isProcessingRef.current = false;
-    } else {
-      // Make sure products is not undefined before proceeding
-      if (products === undefined || products === null) {
-        // Don't mark as complete if products is undefined - data hasn't loaded yet
-        isProcessingRef.current = false;
-        return;
-      }
-
-      // Since we are doing server-side pagination, 'products' contains only the current page's items.
-      // We don't need to do complex filtering here anymore for basic view, 
-      // BUT for 'Vehiculo' filter which is client-side, we might still need to filter the *current page*.
-      // However, if the user expects 'Vehiculo' filter to work across ALL products, we have a problem.
-      // For now, we assume the parent passes the correct filtered/paginated products.
-
-      let filteredProducts = products;
-
-      // Apply client-side filtering for 'Vehiculo' on the current page
-      // This is a limitation of current backend, but better than no filter or slow load.
-      if (filtroTipo === "Vehiculo" && filtroInfo?.vehiculo?.selectedFilters && filtroInfo.vehiculo.selectedFilters.length > 0) {
-        const usingApplicationAttributes = category?.attributes?.application && category.attributes.application.length > 0;
-
-        if (usingApplicationAttributes) {
-          filteredProducts = filteredProducts.filter((product: Item) => {
-            if (!product.applications || product.applications.length === 0) return false;
-
-            return product.applications.some(application => {
-              return filtroInfo!.vehiculo!.selectedFilters!.every(filter => {
-                const attrValue = application.attributeValues.find(av => av.idAttribute === filter.attributeId);
-                const value = attrValue?.valueString ||
-                  attrValue?.valueNumber?.toString() ||
-                  attrValue?.valueBoolean?.toString() ||
-                  attrValue?.valueDate?.toString();
-                return value === filter.value;
-              });
-            });
-          });
-        }
-      }
-
-      // Track if we've ever received data (products with length > 0)
-      if (filteredProducts.length > 0) {
-        hasEverReceivedDataRef.current = true;
-      }
-
-      setMappedData(filteredProducts);
-      setIsDataLoaded(true);
-
-      // Track loading transition: true -> false means data just finished loading
-      const loadingJustFinished = previousLoadingRef.current === true && loading === false;
-
-      // Check if this hash has actual product data (not just empty array)
-      // const hashHasProducts = (products?.length || 0) > 0;
-
-      // Only mark as processing complete if:
-      // 1. We have data (filteredProducts.length > 0), OR
-      // 2. Loading just finished (transitioned from true to false) - this means a load completed, OR
-      // 3. We've received data before (hasEverReceivedDataRef) - means we've seen data for this category/page before, OR
-      // 4. Category changed in this run AND loading is false - when category changes, if loading is false, the data we have is the final state, OR
-      // 5. Loading is false AND we've processed the data - if parent says loading is done, we should mark complete
-      //    (either empty or populated, but it's what we got for that category)
-      // IMPORTANT: If loading is false, it means the fetch completed (even if empty), so we should mark complete
-      const categoryChangedInThisRun = categoryChangedInThisRunRef.current;
-      const shouldMarkComplete = (
-        filteredProducts.length > 0 ||
-        loadingJustFinished ||
-        hasEverReceivedDataRef.current ||
-        (categoryChangedInThisRun && !loading) || // Category changed and loading is done = valid final state
-        !loading // If loading is false, the fetch is complete (even if empty)
-      );
-
-      // Update previous loading ref after checking transition
-      previousLoadingRef.current = loading;
-
-      if (shouldMarkComplete) {
-        setIsProcessingComplete(true);
-
-        if (filteredProducts.length === 0) {
-          setShowNoResults(true);
-        } else {
-          setShowNoResults(false);
-        }
-      } else {
-        // Keep isProcessingComplete as false while loading or if this is initial empty state
-        setIsProcessingComplete(false);
-        setShowNoResults(false);
-      }
-
-      isProcessingRef.current = false;
-    }
-
-    // Notify parent that processing is complete
-    // if (onLoadingChangeRef.current) {
-    //   setTimeout(() => {
-    //     onLoadingChangeRef.current?.(false);
-    //     isProcessingRef.current = false;
-    //   }, 150);
-    // } else {
-    isProcessingRef.current = false;
-    // }
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [
-    products,
-    data,
-    isInDetailsPage,
-    filtroTipo,
-    filtroInfo,
-    category,
-    loading,
-    pageIndex,
-    // isDataLoaded, isProcessingComplete, mappedData.length, and showNoResults are intentionally excluded
-    // to prevent infinite loops since they are set within this effect
-  ]);
-
-  useEffect(() => {
-    if (!isDataLoaded || !products || products.length === 0) return;
-
-    // Use application attributes for hierarchical filtering
-    const filterAttributes = category?.attributes?.application || [];
-
-    if (!filterAttributes || filterAttributes.length === 0) {
-      setValuesAttributes([]);
-      return;
-    }
-
-    // Extract attribute values from applications for hierarchical filtering
-    const getAttributeValues = (attributeId: string) => {
-      // Get values from applications
-      const allApplications = products.flatMap((product: Item) =>
-        product.applications || []
-      );
-
-      return allApplications
-        .filter((application) =>
-          application.attributeValues.some((attribute: AttributeValue) => {
-            return attribute.idAttribute === attributeId;
-          })
-        )
-        .map((application) =>
-          application.attributeValues.filter((attribute) =>
-            attribute.idAttribute === attributeId
-          )
-        );
-    };
-
-    const attributeIdList = filterAttributes.map(
-      (attribute: Attribute) => attribute.id
-    );
-
-    const valuesMapped = attributeIdList.map((attributeId: string) => {
-      const values = getAttributeValues(attributeId);
-      return {
-        attributeId,
-        values,
-      };
-    });
-
-    setValuesAttributes(valuesMapped);
-  }, [products, isDataLoaded, category, setValuesAttributes]); // Added setValuesAttributes
-
-
-  // Reset showNoResults when loading starts and fix state when loading stops
-  useEffect(() => {
-    if (loading) {
-      setShowNoResults(false);
-      previousLoadingRef.current = loading;
-    } else {
-      // Update previous loading ref
-      previousLoadingRef.current = loading;
-
-      // When loading is false and processing is not complete, we should mark it complete
-      // This handles both transitions (loadingJustFinished) and cases where loading was already false
-      if (!isProcessingComplete) {
-        if (mappedData.length > 0) {
-          setIsProcessingComplete(true);
-          setShowNoResults(false);
-          hasEverReceivedDataRef.current = true;
-
-        } else if (hasEverReceivedDataRef.current) {
-          setIsProcessingComplete(true);
-          setShowNoResults(true);
-        } else if (products && products.length === 0) {
-          // Loading is false and empty products array = valid empty state (fetch completed with no results)
-          setIsProcessingComplete(true);
-          setShowNoResults(true);
-        }
-      }
-    }
-  }, [loading, pageIndex, category?.id, isProcessingComplete, mappedData.length, products]);
 
   // Calculate page info
   const totalPages = pageCount;
@@ -681,7 +324,7 @@ const ProductsTable = ({
   return (
     <div className="mt-6 relative">
       {/* View Toggle - Only show if not hidden */}
-      {!hideViewToggle && (
+      {/* {!hideViewToggle && (
         <div className="flex justify-end items-center mb-4">
           <div className="flex items-center gap-2">
             <Button
@@ -706,7 +349,7 @@ const ProductsTable = ({
             </Button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Loading Overlay */}
       {/* {loading && (
@@ -744,9 +387,7 @@ const ProductsTable = ({
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    // 1. Check if loading (prop OR processing not complete)
-                    if (loading || !isProcessingComplete) {
-                      // Show multiple skeleton rows for table view
+                    if (loading) {
                       return Array.from({ length: pageSize }).map((_, index) => (
                         <TableRow key={`skeleton-${index}`}>
                           {columns.map((_, colIndex) => (
@@ -760,7 +401,6 @@ const ProductsTable = ({
                       ));
                     }
 
-                    // 2. Check if there's data - show data
                     if (mappedData.length > 0) {
                       return currentPageItems.map((row, index) => {
                         const isLastRow = index === currentPageItems.length - 1;
@@ -794,7 +434,6 @@ const ProductsTable = ({
                       });
                     }
 
-                    // 3. No data and processing complete - show empty message
                     return (
                       <TableRow>
                         <TableCell colSpan={columns.length} className="text-center">
@@ -811,8 +450,7 @@ const ProductsTable = ({
           /* Card Grid View */
           <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
             {(() => {
-              // 1. Check if loading (prop OR processing not complete)
-              if (loading || !isProcessingComplete) {
+              if (loading) {
                 return (
                   <>
                     {Array.from({ length: pageSize }).map((_, index) => (
@@ -822,7 +460,6 @@ const ProductsTable = ({
                 );
               }
 
-              // 2. Check if there's data - show data
               if (mappedData.length > 0) {
                 return currentPageItems.map((row) => {
                   const product: Item = row.original;
@@ -837,7 +474,6 @@ const ProductsTable = ({
                         }`}
                       onClick={() => handleClick(row)}
                     >
-                      {/* Product Image */}
                       <div className="w-full aspect-square bg-white flex items-center justify-center p-4">
                         {imageUrl ? (
                           <img
@@ -869,20 +505,16 @@ const ProductsTable = ({
                         )}
                       </div>
 
-                      {/* Product Details */}
                       <CardContent className="p-4 bg-gray-50">
-                        {/* SKU */}
                         <div className="mb-2">
                           <span className="text-xs text-gray-600 font-medium">No. Parte: </span>
                           <span className="text-sm font-semibold text-naranja">{product.sku || 'N/A'}</span>
                         </div>
 
-                        {/* Product Name */}
                         <h3 className="text-sm font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[2.5rem]">
                           {product.name}
                         </h3>
 
-                        {/* References */}
                         {references.length > 0 && (
                           <div className="mt-2">
                             <span className="text-xs text-gray-600 font-medium">Referencias: </span>
@@ -906,16 +538,15 @@ const ProductsTable = ({
                 });
               }
 
-              // 3. No data and processing complete - show empty message
               return (
                 <div className="col-span-full text-center py-8 text-gray-500">
-                  {showNoResults ? 'No se encontraron resultados.' : 'Cargando...'}
+                  No se encontraron resultados.
                 </div>
               );
             })()}
           </div>
         )}
-        {isProcessingComplete && mappedData.length > 0 && (
+        {!loading && mappedData.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:space-x-4 py-4 sm:py-6 bg-gray-50 rounded-lg px-3 sm:px-4 border border-gray-200 mt-6">
             <div className="text-xs sm:text-sm font-medium text-gray-700 text-center sm:text-left">
               Mostrando <span className="font-semibold text-gray-900">{startItem}</span> - <span className="font-semibold text-gray-900">{endItem}</span> de <span className="font-semibold text-gray-900">{totalItems}</span> resultados
