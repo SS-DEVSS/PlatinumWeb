@@ -7,6 +7,7 @@ import PlatinumLayout from "./Layouts/PlatinumLayout";
 
 function page() {
   return (
+
     <PlatinumLayout>
       <Carousel />
       <Marcas />
@@ -115,6 +116,7 @@ function page() {
 
       <ContactButton />
     </PlatinumLayout>
+
   );
 }
 

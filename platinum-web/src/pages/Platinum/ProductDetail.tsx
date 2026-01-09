@@ -23,7 +23,7 @@ import {
 } from "../../components/ui/tabs";
 import ApplicationsTable from "../../components/ApplicationsTable";
 import { useEffect, useState } from "react";
-import { useProducts } from "../../hooks/useProducts";
+import { useProducts } from "../../hooks/useProducts[deprecated]";
 import { Item } from "../../models/item";
 import { Component } from "../../models/component";
 import { Image } from "../../models/image";
