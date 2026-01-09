@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Category } from "../models/category";
 import axiosClient from "../services/axiosInstance";
 
@@ -22,7 +22,7 @@ const normalizeCategory = (data: any): Category => ({
  * Hook
  * ---------------------------------- */
 export const useCategories = () => {
-  const client = axiosClient();
+  const client = useMemo(() => axiosClient(), []);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
