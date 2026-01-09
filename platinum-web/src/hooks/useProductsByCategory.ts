@@ -1,5 +1,5 @@
 // hooks/useProductsByCategory.ts
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { fetchProductsByCategory } from "../services/products.api";
 
 export const useProductsByCategory = (
@@ -7,7 +7,7 @@ export const useProductsByCategory = (
   page = 1,
   pageSize = 10,
   search = "",
-  filters?: Record<string, any>
+  filters?: Record<string, string | number | boolean>
 ) => {
   return useQuery({
     queryKey: ["products", "category", categoryId, page, pageSize, search, filters],
@@ -22,6 +22,6 @@ export const useProductsByCategory = (
       ),
     enabled: !!categoryId,
     staleTime: 15 * 60 * 1000,
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData) => previousData,
   });
 };

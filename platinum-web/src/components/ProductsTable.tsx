@@ -18,14 +18,14 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/Item-context";
-import { LayoutGrid, Table2, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 
 const ProductsTable = ({
@@ -34,15 +34,12 @@ const ProductsTable = ({
   setItemVariant,
   products,
   loading = false,
-  // Pagination props
   pageIndex = 0,
   pageSize = 10,
   pageCount = 0,
   totalItems = 0,
   onPaginationChange,
-  hideViewToggle = false,
-  viewMode: externalViewMode,
-  setViewMode: externalSetViewMode,
+  viewMode: externalViewMode = "cards",
 }: {
   category: Category | null;
   products?: Item[];
@@ -54,23 +51,18 @@ const ProductsTable = ({
   pageCount?: number;
   totalItems?: number;
   onPaginationChange?: (pageIndex: number, pageSize: number) => void;
-  hideViewToggle?: boolean;
   viewMode?: "cards" | "table";
-  setViewMode?: (mode: "cards" | "table") => void;
 }) => {
-  const [internalViewMode, setInternalViewMode] = useState<"table" | "cards">("cards");
   const [pageInputValue, setPageInputValue] = useState<string>("");
 
-  // Use external viewMode if provided, otherwise use internal
-  const currentViewMode = externalViewMode ?? internalViewMode;
-  const handleViewModeChange = externalSetViewMode ?? setInternalViewMode;
+  const currentViewMode = externalViewMode;
 
-  // Use products directly from props
   const mappedData = products || [];
 
   const { attributes } = category || {};
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { setType, setVariant } = useItemContext();
 
   const handleClick = (row: Row<Item>) => {

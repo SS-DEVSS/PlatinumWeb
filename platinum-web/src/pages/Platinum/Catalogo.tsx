@@ -33,7 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet";
-import { AlertCircle, Filter, Search, LayoutGrid, Table2 } from "lucide-react";
+import { AlertCircle, Filter, Search } from "lucide-react";
 import { Brand } from "../../models/brand";
 
 type FiltroTipo = "NumParte" | "Vehiculo" | "Referencia";
@@ -63,7 +63,7 @@ const Catalogo = () => {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [viewMode] = useState<"cards" | "table">("cards");
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [activeVehicleFilters, setActiveVehicleFilters] = useState<
     Array<{ attributeId: string; attributeName: string; value: string }>
@@ -769,9 +769,7 @@ const Catalogo = () => {
               pageCount={totalPages}
               totalItems={totalItems}
               onPaginationChange={handlePaginationChange}
-              hideViewToggle={filtroTipo !== "Vehiculo"}
               viewMode={viewMode}
-              setViewMode={setViewMode}
             />
           </main>
         </div>

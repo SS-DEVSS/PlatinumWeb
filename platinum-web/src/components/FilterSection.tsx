@@ -13,34 +13,32 @@ type FilterSectionProps = {
       selectedFilters?: Array<{ attributeId: string, value: string }>;
     };
   };
-  filterOptions?: Record<string, any[]>; // Server-side filter options
+  filterOptions?: Record<string, Array<string | number | boolean | Date>>; // Server-side filter options
   onFilterChange?: (filters: Array<{ attributeId: string, value: string }>) => void;
   onActiveFiltersChange?: (filters: Array<{ attributeId: string, attributeName: string, value: string }>) => void;
 };
 
 const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, onActiveFiltersChange }: FilterSectionProps) => {
-
   const [attributeStates, setAttributeStates] = useState<{
     [key: string]: { open: boolean; selectedValue: string; disabled: boolean };
   }>({});
 
+  // filtroInfo is used by FilterComponent, selectedFilters inside it is optional and may not be accessed directly here
+
   // Determine which attributes to use for filtering (application first, then variant as fallback)
-  const getFilterAttributes = () => {
+  const filterAttributes = useMemo(() => {
     let attributes: Attribute[] = [];
     if (category?.attributes?.application && category.attributes.application.length > 0) {
       attributes = category.attributes.application;
     } else if (category?.attributes?.variant && category.attributes.variant.length > 0) {
       attributes = category.attributes.variant;
     }
-
-
     // Sort by order field (ascending) - Modelo should be first (order: 1)
     return attributes.sort((a, b) => (a.order || 0) - (b.order || 0));
-  };
+  }, [category?.attributes?.application, category?.attributes?.variant]);
 
   useEffect(() => {
     // Use flexible attribute structure - application attributes for vehicle filtering, variant for size/color
-    const filterAttributes = getFilterAttributes();
 
     if (filterAttributes.length > 0) {
       const initialStates = filterAttributes.reduce(
@@ -64,20 +62,21 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, on
     } else {
       setAttributeStates({});
     }
-  }, [category?.id]);
-
+  }, [category?.id, filterAttributes]);
 
   // Use server-provided options
-  const getOptionsForAttribute = (attributeId: string) => {
-    if (filterOptions && filterOptions[attributeId]) {
-      return filterOptions[attributeId];
-    }
-    return [];
-  };
+  const getOptionsForAttribute = useMemo(() => {
+    return (attributeId: string): string[] => {
+      if (filterOptions && filterOptions[attributeId]) {
+        // Convert all values to strings for FilterComponent compatibility
+        return filterOptions[attributeId].map(v => String(v));
+      }
+      return [];
+    };
+  }, [filterOptions]);
 
   const handleSelect = (attributeId: string, name: string) => {
     setAttributeStates(prevState => {
-      const filterAttributes = getFilterAttributes();
       const attributeOrder = filterAttributes.map(attr => attr.id);
       const currentIndex = attributeOrder.indexOf(attributeId);
       const updatedState = { ...prevState };
@@ -155,8 +154,6 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, on
     state => state.selectedValue !== ""
   ).length;
 
-  const filterAttributes = getFilterAttributes();
-
   // Get active filters with attribute names for display
   const activeFilters = useMemo(() => {
     return filterAttributes
@@ -177,7 +174,6 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, on
 
   // Clear all filters
   const clearAllFilters = () => {
-    const filterAttributes = getFilterAttributes();
     if (filterAttributes.length > 0) {
       // Reset all attribute states
       const resetStates = filterAttributes.reduce(
