@@ -12,8 +12,8 @@ export const useBrands = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const processBrands = useCallback((data: any[]) => {
-    const brandsMap = data.reduce((acc: Record<string, Brand>, brand: any) => {
+  const processBrands = useCallback((data: Brand[]) => {
+    const brandsMap = data.reduce((acc: Record<string, Brand>, brand: Brand) => {
       acc[brand.id] = {
         id: brand.id,
         name: brand.name,

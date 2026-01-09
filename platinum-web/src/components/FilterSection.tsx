@@ -1,12 +1,8 @@
 import { Category, Attribute } from "../models/category";
 import { useEffect, useState, useMemo } from "react";
 import FilterComponent from "./FilterComponent";
-import { useItemContext } from "../context/Item-context";
-// import { useProducts } from "../hooks/useProducts";
 import { Button } from "./ui/button";
 import { X } from "lucide-react";
-import { Item } from "../models/item";
-import { AttributeValue } from "../models/item";
 
 type FilterSectionProps = {
   category: Category | null;
@@ -17,42 +13,32 @@ type FilterSectionProps = {
       selectedFilters?: Array<{ attributeId: string, value: string }>;
     };
   };
-  products?: Item[]; // Products for filtering logic (legacy/fallback)
-  filterOptions?: Record<string, any[]>; // New server-side filter options
+  filterOptions?: Record<string, Array<string | number | boolean | Date>>; // Server-side filter options
   onFilterChange?: (filters: Array<{ attributeId: string, value: string }>) => void;
   onActiveFiltersChange?: (filters: Array<{ attributeId: string, attributeName: string, value: string }>) => void;
 };
 
-const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], filterOptions, onActiveFiltersChange }: FilterSectionProps) => {
-  const { setSelectedFilters } = useItemContext();
-  // const { products } = useProducts(); // Removed internal hook usage
-
+const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, onActiveFiltersChange }: FilterSectionProps) => {
   const [attributeStates, setAttributeStates] = useState<{
     [key: string]: { open: boolean; selectedValue: string; disabled: boolean };
   }>({});
 
-  // Store available options for each attribute
-  const [availableOptions, setAvailableOptions] = useState<{
-    [key: string]: string[];
-  }>({});
+  // filtroInfo is used by FilterComponent, selectedFilters inside it is optional and may not be accessed directly here
 
   // Determine which attributes to use for filtering (application first, then variant as fallback)
-  const getFilterAttributes = () => {
+  const filterAttributes = useMemo(() => {
     let attributes: Attribute[] = [];
     if (category?.attributes?.application && category.attributes.application.length > 0) {
       attributes = category.attributes.application;
     } else if (category?.attributes?.variant && category.attributes.variant.length > 0) {
       attributes = category.attributes.variant;
     }
-
-
     // Sort by order field (ascending) - Modelo should be first (order: 1)
     return attributes.sort((a, b) => (a.order || 0) - (b.order || 0));
-  };
+  }, [category?.attributes?.application, category?.attributes?.variant]);
 
   useEffect(() => {
     // Use flexible attribute structure - application attributes for vehicle filtering, variant for size/color
-    const filterAttributes = getFilterAttributes();
 
     if (filterAttributes.length > 0) {
       const initialStates = filterAttributes.reduce(
@@ -73,161 +59,24 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
         }
       );
       setAttributeStates(initialStates);
-
-      // Reset filters when category changes
-      setSelectedFilters([]);
     } else {
       setAttributeStates({});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category?.id]); // Only re-run if category ID changes to prevent loops
+  }, [category?.id, filterAttributes]);
 
-  useEffect(() => {
-    // Initialize with empty filters
-    setSelectedFilters([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Update available options when filterOptions change
-  useEffect(() => {
-    if (filterOptions) {
-      const newOptions: { [key: string]: string[] } = {};
-      const filterAttributes = getFilterAttributes();
-
-      filterAttributes.forEach(attribute => {
-        if (filterOptions[attribute.id]) {
-          newOptions[attribute.id] = filterOptions[attribute.id];
-        }
-      });
-
-      // Only update if options actually changed to avoid loops
-      setAvailableOptions(prev => {
-        const hasChanges = Object.keys(newOptions).some(key =>
-          JSON.stringify(newOptions[key]) !== JSON.stringify(prev[key])
-        );
-        return hasChanges ? { ...prev, ...newOptions } : prev;
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterOptions, category]);
-
-  // Calculate available options for a specific attribute based on current selections
-  // Works with application attributes (for vehicle filtering) or variant attributes (for size/color)
-  const calculateAvailableOptions = (attributeId: string, currentFilters: Array<{ attributeId: string, value: string }>) => {
-    const filterAttributes = getFilterAttributes();
-    if (!filterAttributes.length || !products.length) return [];
-
-    // Determine if we're using application or variant attributes
-    const usingApplicationAttributes = category?.attributes?.application && category.attributes.application.length > 0;
-
-    // Get attribute values from either applications or variants
-    let allAttributeSources: Array<{ id: string; attributeValues: AttributeValue[] }> = [];
-
-    if (usingApplicationAttributes) {
-      // Get all applications from all products
-      allAttributeSources = products.flatMap((product: Item) =>
-        product.applications?.map((application) => ({
-          id: application.id,
-          attributeValues: application.attributeValues || []
-        })) || []
-      );
-    } else {
-      // Get all variants from all products
-      allAttributeSources = products.flatMap((product: Item) =>
-        product.variants?.map((variant) => ({
-          id: variant.id,
-          attributeValues: variant.attributeValues || []
-        })) || []
-      );
-    }
-
-    // Get selected attribute indices for ordering
-    const attributeOrder = filterAttributes.map(attr => attr.id);
-    const currentAttributeIndex = attributeOrder.indexOf(attributeId);
-
-    // Only consider filters for attributes that come before the current one
-    const relevantFilters = currentFilters.filter(filter => {
-      const filterIndex = attributeOrder.indexOf(filter.attributeId);
-      return filterIndex < currentAttributeIndex;
-    });
-
-    // If no relevant filters, return all possible values for this attribute
-    if (relevantFilters.length === 0) {
-      const allValues = new Set<string>();
-
-      allAttributeSources.forEach((source) => {
-        const attrValue = source.attributeValues.find((av: AttributeValue) => av.idAttribute === attributeId);
-        const value = attrValue?.valueString ||
-          attrValue?.valueNumber?.toString() ||
-          attrValue?.valueBoolean?.toString() ||
-          attrValue?.valueDate?.toString();
-        if (value) {
-          allValues.add(value);
-        }
-      });
-
-      return Array.from(allValues).sort();
-    }
-
-    // Filter sources that match all selected filters
-    const matchingSources = allAttributeSources.filter((source) =>
-      relevantFilters.every((filter) => {
-        const matchingValue = source.attributeValues.find((av: AttributeValue) =>
-          av.idAttribute === filter.attributeId
-        );
-        const value = matchingValue?.valueString ||
-          matchingValue?.valueNumber?.toString() ||
-          matchingValue?.valueBoolean?.toString() ||
-          matchingValue?.valueDate?.toString();
-
-        return value === filter.value;
-      })
-    );
-
-    // Get all possible values for the current attribute from matching sources
-    const validValues = new Set<string>();
-
-    matchingSources.forEach((source) => {
-      const attrValue = source.attributeValues.find((av: AttributeValue) => av.idAttribute === attributeId);
-      const value = attrValue?.valueString ||
-        attrValue?.valueNumber?.toString() ||
-        attrValue?.valueBoolean?.toString() ||
-        attrValue?.valueDate?.toString();
-      if (value) {
-        validValues.add(value);
+  // Use server-provided options
+  const getOptionsForAttribute = useMemo(() => {
+    return (attributeId: string): string[] => {
+      if (filterOptions && filterOptions[attributeId]) {
+        // Convert all values to strings for FilterComponent compatibility
+        return filterOptions[attributeId].map(v => String(v));
       }
-    });
-
-    return Array.from(validValues).sort();
-  };
-
-  // Use server-provided options if available, otherwise fallback to client-side calculation
-  const getOptionsForAttribute = (attributeId: string, currentFilters: Array<{ attributeId: string, value: string }>) => {
-    if (filterOptions && filterOptions[attributeId]) {
-      return filterOptions[attributeId];
-    }
-
-    // Fallback to legacy client-side calculation
-    return calculateAvailableOptions(attributeId, currentFilters);
-  };
-
-  // Update available options for all attributes
-  const updateAllAvailableOptions = (currentFilters: Array<{ attributeId: string, value: string }>) => {
-    const filterAttributes = getFilterAttributes();
-    if (!filterAttributes.length) return;
-
-    const newOptions: { [key: string]: string[] } = {};
-
-    filterAttributes.forEach(attribute => {
-      newOptions[attribute.id] = getOptionsForAttribute(attribute.id, currentFilters);
-    });
-
-    setAvailableOptions(newOptions);
-  };
+      return [];
+    };
+  }, [filterOptions]);
 
   const handleSelect = (attributeId: string, name: string) => {
     setAttributeStates(prevState => {
-      const filterAttributes = getFilterAttributes();
       const attributeOrder = filterAttributes.map(attr => attr.id);
       const currentIndex = attributeOrder.indexOf(attributeId);
       const updatedState = { ...prevState };
@@ -261,37 +110,35 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
         }
       }
 
-      return updatedState;
-    });
-
-    setSelectedFilters(prevFilters => {
-      let newFilters;
+      // Build filters from updated state (inside callback so we can access updatedState)
+      let newFilters: Array<{ attributeId: string; value: string }>;
 
       if (!name) {
         // Remove this filter and all subsequent ones
-        const filterAttributes = getFilterAttributes();
-        const attributeOrder = filterAttributes.map(attr => attr.id);
-        const currentIndex = attributeOrder.indexOf(attributeId);
-
-        newFilters = prevFilters.filter(filter => {
-          const filterIndex = attributeOrder.indexOf(filter.attributeId);
-          return filterIndex < currentIndex;
-        });
+        newFilters = attributeOrder
+          .slice(0, currentIndex)
+          .map(attrId => ({
+            attributeId: attrId,
+            value: updatedState[attrId]?.selectedValue || ""
+          }))
+          .filter(filter => filter.value !== "");
       } else {
-        // Remove any existing filter with this attribute ID and add the new one
-        const withoutCurrent = prevFilters.filter(filter => filter.attributeId !== attributeId);
-        newFilters = [...withoutCurrent, { attributeId, value: name }];
+        // Build filters up to and including current selection
+        newFilters = attributeOrder
+          .slice(0, currentIndex + 1)
+          .map(attrId => ({
+            attributeId: attrId,
+            value: attrId === attributeId ? name : (updatedState[attrId]?.selectedValue || prevState[attrId]?.selectedValue || "")
+          }))
+          .filter(filter => filter.value !== "");
       }
 
-      // Update available options based on new filters
-      updateAllAvailableOptions(newFilters);
-
-      // Call the callback
+      // Call the callback immediately with the new filters
       if (onFilterChange) {
         onFilterChange(newFilters);
       }
 
-      return newFilters;
+      return updatedState;
     });
   };
 
@@ -306,8 +153,6 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
   const activeFiltersCount = Object.values(attributeStates).filter(
     state => state.selectedValue !== ""
   ).length;
-
-  const filterAttributes = getFilterAttributes();
 
   // Get active filters with attribute names for display
   const activeFilters = useMemo(() => {
@@ -329,7 +174,6 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
 
   // Clear all filters
   const clearAllFilters = () => {
-    const filterAttributes = getFilterAttributes();
     if (filterAttributes.length > 0) {
       // Reset all attribute states
       const resetStates = filterAttributes.reduce(
@@ -350,9 +194,6 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
         }
       );
       setAttributeStates(resetStates);
-
-      // Clear selected filters
-      setSelectedFilters([]);
 
       // Call the callback with empty filters
       if (onFilterChange) {
@@ -375,7 +216,7 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, products = [], fi
                 open={attributeStates[attribute.id]?.open || false}
                 selectedValue={attributeStates[attribute.id]?.selectedValue || ""}
                 enabled={!attributeStates[attribute.id]?.disabled}
-                availableOptions={availableOptions[attribute.id] || []}
+                availableOptions={getOptionsForAttribute(attribute.id)}
                 onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
                 onSelect={(name: string) => handleSelect(attribute.id, name)}
               />
