@@ -381,7 +381,7 @@ const Catalogo = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Button
                 variant={viewMode === "cards" ? "default" : "outline"}
                 size="sm"
@@ -402,7 +402,7 @@ const Catalogo = () => {
                 <Table2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Tabla</span>
               </Button>
-            </div>
+            </div> */}
           </div>
         );
       case "Referencia":
@@ -427,7 +427,7 @@ const Catalogo = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Button
                 variant={viewMode === "cards" ? "default" : "outline"}
                 size="sm"
@@ -448,7 +448,7 @@ const Catalogo = () => {
                 <Table2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Tabla</span>
               </Button>
-            </div>
+            </div> */}
           </div>
         );
       case "Vehiculo": {

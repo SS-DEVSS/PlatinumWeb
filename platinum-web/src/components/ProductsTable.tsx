@@ -332,7 +332,7 @@ const ProductsTable = ({
   return (
     <div className="mt-6 relative">
       {/* View Toggle - Only show if not hidden */}
-      {!hideViewToggle && (
+      {/* {!hideViewToggle && (
         <div className="flex justify-end items-center mb-4">
           <div className="flex items-center gap-2">
             <Button
@@ -357,7 +357,7 @@ const ProductsTable = ({
             </Button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Loading Overlay */}
       {/* {loading && (
