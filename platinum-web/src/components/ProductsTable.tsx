@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
@@ -30,12 +30,8 @@ import ProductCardSkeleton from "./ProductCardSkeleton";
 
 const ProductsTable = ({
   category,
-  data,
   itemVariant,
   setItemVariant,
-  filtroInfo,
-  filtroTipo,
-  onLoadingChange,
   products,
   loading = false,
   // Pagination props
@@ -49,19 +45,9 @@ const ProductsTable = ({
   setViewMode: externalSetViewMode,
 }: {
   category: Category | null;
-  data?: Item[] | null;
   products?: Item[];
   itemVariant?: Item | null;
   setItemVariant?: React.Dispatch<React.SetStateAction<Item | null>>;
-  filtroInfo?: {
-    numParte: string;
-    referencia: string;
-    vehiculo?: {
-      selectedFilters?: Array<{ attributeId: string, value: string }>;
-    }
-  };
-  filtroTipo?: "NumParte" | "Vehiculo" | "Referencia";
-  onLoadingChange?: (isLoading: boolean) => void;
   loading?: boolean;
   pageIndex?: number;
   pageSize?: number;
@@ -84,16 +70,8 @@ const ProductsTable = ({
 
   const { attributes } = category || {};
 
-  const location = useLocation();
   const navigate = useNavigate();
   const { setType, setVariant } = useItemContext();
-
-  const isInDetailsPage = useMemo(
-    () =>
-      location.pathname.includes("producto") ||
-      location.pathname.includes("kit"),
-    [location]
-  );
 
   const handleClick = (row: Row<Item>) => {
     const product: Item = row.original;

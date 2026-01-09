@@ -762,8 +762,6 @@ const Catalogo = () => {
 
             <ProductsTable
               category={categoryData}
-              filtroInfo={filtro}
-              filtroTipo={filtroTipo}
               products={products}
               loading={isLoading}
               pageIndex={page - 1}

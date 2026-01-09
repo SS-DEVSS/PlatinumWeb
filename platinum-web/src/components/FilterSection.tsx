@@ -24,8 +24,6 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, on
     [key: string]: { open: boolean; selectedValue: string; disabled: boolean };
   }>({});
 
-  const [selectedFilters, setSelectedFilters] = useState<Array<{ attributeId: string; value: string }>>([]);
-
   // Determine which attributes to use for filtering (application first, then variant as fallback)
   const getFilterAttributes = () => {
     let attributes: Attribute[] = [];
@@ -68,10 +66,6 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, on
     }
   }, [category?.id]);
 
-  // Reset selected filters when category changes
-  useEffect(() => {
-    setSelectedFilters([]);
-  }, [category?.id]);
 
   // Use server-provided options
   const getOptionsForAttribute = (attributeId: string) => {
@@ -117,34 +111,35 @@ const FilterSection = ({ category, filtroInfo, onFilterChange, filterOptions, on
         }
       }
 
-      return updatedState;
-    });
-
-    setSelectedFilters(prevFilters => {
-      let newFilters;
+      // Build filters from updated state (inside callback so we can access updatedState)
+      let newFilters: Array<{ attributeId: string; value: string }>;
 
       if (!name) {
         // Remove this filter and all subsequent ones
-        const filterAttributes = getFilterAttributes();
-        const attributeOrder = filterAttributes.map(attr => attr.id);
-        const currentIndex = attributeOrder.indexOf(attributeId);
-
-        newFilters = prevFilters.filter(filter => {
-          const filterIndex = attributeOrder.indexOf(filter.attributeId);
-          return filterIndex < currentIndex;
-        });
+        newFilters = attributeOrder
+          .slice(0, currentIndex)
+          .map(attrId => ({
+            attributeId: attrId,
+            value: updatedState[attrId]?.selectedValue || ""
+          }))
+          .filter(filter => filter.value !== "");
       } else {
-        // Remove any existing filter with this attribute ID and add the new one
-        const withoutCurrent = prevFilters.filter(filter => filter.attributeId !== attributeId);
-        newFilters = [...withoutCurrent, { attributeId, value: name }];
+        // Build filters up to and including current selection
+        newFilters = attributeOrder
+          .slice(0, currentIndex + 1)
+          .map(attrId => ({
+            attributeId: attrId,
+            value: attrId === attributeId ? name : (updatedState[attrId]?.selectedValue || prevState[attrId]?.selectedValue || "")
+          }))
+          .filter(filter => filter.value !== "");
       }
 
-      // Call the callback
+      // Call the callback immediately with the new filters
       if (onFilterChange) {
         onFilterChange(newFilters);
       }
 
-      return newFilters;
+      return updatedState;
     });
   };
 
