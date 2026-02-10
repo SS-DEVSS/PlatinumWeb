@@ -144,7 +144,7 @@ const ProductsTable = ({
         header: "SKU",
         cell: ({ row }: { row: Row<Item> }) => {
           const product: Item = row.original;
-          return <div>{product.sku || "N/A"}</div>;
+          return <div>{product.sku || "-"}</div>;
         },
       },
       {
@@ -189,7 +189,7 @@ const ProductsTable = ({
               attrValue?.valueNumber?.toString() ||
               attrValue?.valueBoolean?.toString() ||
               attrValue?.valueDate?.toDateString() ||
-              "N/A";
+              "-";
 
             const valueStr = String(fullValue);
             const displayValue = valueStr.length > 30 ? `${valueStr.substring(0, 30)}...` : valueStr;
@@ -508,7 +508,7 @@ const ProductsTable = ({
                       <CardContent className="p-4 bg-gray-50">
                         <div className="mb-2">
                           <span className="text-xs text-gray-600 font-medium">No. Parte: </span>
-                          <span className="text-sm font-semibold text-naranja">{product.sku || 'N/A'}</span>
+                          <span className="text-sm font-semibold text-naranja">{product.sku || '-'}</span>
                         </div>
 
                         <h3 className="text-sm font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[2.5rem]">
