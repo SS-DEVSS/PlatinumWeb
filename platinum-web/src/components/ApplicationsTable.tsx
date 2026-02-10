@@ -40,7 +40,7 @@ const extractYearFromDate = (dateValue: Date | string | null | undefined): numbe
 
 const formatDateValue = (dateValue: Date | string | null | undefined): string => {
   const year = extractYearFromDate(dateValue);
-  return year !== null ? year.toString() : 'N/A';
+  return year !== null ? year.toString() : '-';
 };
 
 const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) => {
@@ -307,7 +307,7 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
         header: "Origen",
         cell: ({ row }: { row: { original: Application } }) => {
           const application: Application = row.original;
-          const value = application.origin || "N/A";
+          const value = application.origin || "-";
           const valueStr = String(value);
           const displayValue = valueStr.length > 30 ? `${valueStr.substring(0, 30)}...` : valueStr;
           const hasTooltip = valueStr.length > 30;
@@ -378,7 +378,7 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
               attrValue?.valueNumber?.toString() ||
               attrValue?.valueBoolean?.toString() ||
               (attrValue?.valueDate ? formatDateValue(attrValue.valueDate) : null) ||
-              "N/A";
+              "-";
           }
 
           const valueStr = String(fullValue);

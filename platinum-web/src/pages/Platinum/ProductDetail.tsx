@@ -308,7 +308,7 @@ const ProductDetail = () => {
                               attrValue.valueNumber?.toString() ||
                               attrValue.valueBoolean?.toString() ||
                               attrValue.valueDate?.toString() ||
-                              "N/A";
+                              "-";
                             return (
                               <div key={attrValue.id} className="flex gap-2">
                                 <span className="font-medium">{attribute.name}:</span>
