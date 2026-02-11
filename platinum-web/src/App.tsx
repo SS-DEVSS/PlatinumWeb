@@ -1,9 +1,9 @@
 import CardDownload from "./components/CardDownload";
-import CardProduct from "./components/CardProduct";
 import Carousel from "./components/Carousel/Carousel";
 import ContactButton from "./components/ContactButton";
 import Marcas from "./components/Marcas";
 import PlatinumLayout from "./Layouts/PlatinumLayout";
+import FeaturedProductsSection from "./components/FeaturedProductsSection";
 
 function page() {
   return (
@@ -12,70 +12,7 @@ function page() {
       <Carousel />
       <Marcas />
 
-      <h1 className="py-6 lg:py-9">Nuevas Integraciones</h1>
-
-      <section className="grid grid-cols-1 sm:grid-cols-2 nav:grid-cols-3 gap-5 px-6 sm:px-5 xl:px-24 2xl:px-40">
-        <CardProduct
-          image={"TY07.png"}
-          title={"TY07-275HCE-01"}
-          texto={[
-            "Toyota Hiace",
-            "V6, 3.5 LTS. 24 V",
-            "GASOLINA 227 HP 2019-2023",
-            "Con CSC",
-          ]}
-        />
-        <CardProduct
-          image={"MB00-03.png"}
-          title={"MB00-240SPR-03"}
-          texto={[
-            "MERCEDES BENZ Sprinter",
-            "L4. 2.1, 16 VALV.",
-            "Con CSC",
-            "240 MM | 26D",
-          ]}
-        />
-        <CardProduct
-          image={"HON03.png"}
-          title={"HON03-200FIT-01"}
-          texto={[
-            "FIT L4 1.5 LTS. DOHC 130HP. 15-20",
-            "CITY 11-19 SOHC 1.5",
-            "FIT 09-19 SOHC 1.5",
-            "FIT 4 CIL 1.5L 5 VEL 2009",
-          ]}
-        />
-        <CardProduct
-          image={"HIN04.png"}
-          title={"HIN04-300414-01"}
-          texto={[
-            "414 - 614",
-            "L4 4.0 Litros",
-            "TURBO DIESEL",
-            "5 VEL 2009 A 2019",
-          ]}
-        />
-        <CardProduct
-          image={"MB04.png"}
-          title={"MB04-430OM460-01"}
-          texto={[
-            "MULTEGO OC 500",
-            "OM457 L6 12L 428HP",
-            "L6 12.8L 420HP",
-            "MBGO21OM",
-          ]}
-        />
-        <CardProduct
-          image={"MB05.jpg"}
-          title={"MB05-BUS457-01"}
-          texto={[
-            "AUTOBUS MB 447-457",
-            "OM447",
-            "OM457 Transmisión ZF S6105",
-            "430 MM, 10D",
-          ]}
-        />
-      </section>
+      <FeaturedProductsSection />
 
       <section className="px-6 lg:px-10 xl:px-40 bg-gris_ligero mt-20 py-12">
         <h1 className="text-white">Accede a Nuestro Contenido</h1>

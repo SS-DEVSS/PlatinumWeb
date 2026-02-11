@@ -46,3 +46,50 @@ export const fetchProductById = async (
   const { data } = await client.get(`/products/${id}`, { signal });
   return data;
 };
+
+export type FeaturedProduct = {
+  id: string;
+  name: string;
+  sku: string;
+  description: string;
+  isFeatured: boolean;
+  featuredApplicationId: string | null;
+  featuredApplication?: {
+    id: string;
+    sku: string;
+    origin: string | null;
+    attributeValues?: Array<{
+      id: string;
+      idAttribute: string;
+      valueString?: string | null;
+      valueNumber?: number | null;
+      valueBoolean?: boolean | null;
+      valueDate?: string | null;
+      attribute?: {
+        id: string;
+        name: string;
+        displayName?: string;
+        order: number;
+      };
+    }>;
+  };
+  images?: Array<{
+    id: string;
+    path: string;
+    url?: string;
+    order: number;
+  }>;
+};
+
+export type FeaturedProductsResponse = {
+  products: FeaturedProduct[];
+};
+
+export const fetchFeaturedProducts = async (
+  signal?: AbortSignal
+): Promise<FeaturedProductsResponse> => {
+  const { data } = await client.get(`/products/featured`, { signal });
+  return {
+    products: data.products || [],
+  };
+};
