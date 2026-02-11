@@ -52,6 +52,7 @@ export type FeaturedProduct = {
   name: string;
   sku: string;
   description: string;
+  type?: string;
   isFeatured: boolean;
   featuredApplicationId: string | null;
   featuredApplication?: {

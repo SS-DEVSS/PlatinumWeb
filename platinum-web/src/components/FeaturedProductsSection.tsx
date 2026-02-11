@@ -97,16 +97,25 @@ const FeaturedProductsSection = () => {
     return '/images/aplicaciones/default.png';
   };
 
+  const getProductLink = (product: FeaturedProduct): string => {
+    const productType = product.type || 'SINGLE';
+    if (productType === 'KIT') {
+      return `/kit/${product.id}`;
+    }
+    return `/producto/${product.id}`;
+  };
+
   return (
     <>
       <h1 className="py-6 lg:py-9">Nuevas Integraciones</h1>
-      <section className="grid grid-cols-1 sm:grid-cols-2 nav:grid-cols-3 gap-5 px-6 sm:px-5 xl:px-24 2xl:px-40">
+      <section className="grid grid-cols-1 sm:grid-cols-2 nav:grid-cols-3 gap-5 px-6 sm:px-5 xl:px-24 2xl:px-40 items-stretch">
         {featuredProducts.map((product) => (
           <CardProduct
             key={product.id}
             image={getProductImage(product)}
             title={product.sku}
             texto={formatApplicationText(product)}
+            href={getProductLink(product)}
           />
         ))}
       </section>
