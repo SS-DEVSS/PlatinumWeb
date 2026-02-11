@@ -14,7 +14,7 @@ const FeaturedProductsSection = () => {
         setError(null);
         const response = await fetchFeaturedProducts();
         setFeaturedProducts(response.products);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error loading featured products:', err);
         setError('Error al cargar productos destacados');
       } finally {
@@ -36,41 +36,50 @@ const FeaturedProductsSection = () => {
   const formatApplicationText = (product: FeaturedProduct): string[] => {
     const texto: string[] = [];
     const app = product.featuredApplication;
-    
-    if (!app || !app.attributeValues) {
+
+    if (!app || !app.attributeValues || app.attributeValues.length === 0) {
       return texto;
     }
 
-    const getAttributeValue = (attrName: string) => {
-      const attr = app.attributeValues?.find((av: any) =>
-        av.attribute?.name === attrName ||
-        av.attribute?.name?.toLowerCase() === attrName.toLowerCase()
-      );
-      if (!attr) return null;
-      return attr.valueString || attr.valueNumber || attr.valueBoolean || attr.valueDate;
-    };
+    // Filter attributes that have values, then sort by attribute order and take first 5
+    const sortedAttributes = [...app.attributeValues]
+      .filter((av) => {
+        // Only include attributes that have a non-null value
+        return av.valueString ||
+          (av.valueNumber !== null && av.valueNumber !== undefined) ||
+          (av.valueBoolean !== null && av.valueBoolean !== undefined) ||
+          av.valueDate;
+      })
+      .sort((a, b) => {
+        // Sort by attribute order, with attributes without order going to the end
+        const orderA = a.attribute?.order ?? 9999;
+        const orderB = b.attribute?.order ?? 9999;
+        return orderA - orderB;
+      })
+      .slice(0, 5); // Take first 5
 
-    const modelo = getAttributeValue('Modelo');
-    const submodelo = getAttributeValue('Submodelo');
-    const año = getAttributeValue('Año');
-    const litrosMotor = getAttributeValue('Litros_Motor');
-    const ccMotor = getAttributeValue('CC_Motor');
-    const cidMotor = getAttributeValue('CID_Motor');
-    const cilindrosMotor = getAttributeValue('Cilindros_Motor');
-    const bloqueMotor = getAttributeValue('Bloque_Motor');
-    const motorDescripcion = getAttributeValue('Motor_Descripcion');
-    const transmision = getAttributeValue('Transmisión') || getAttributeValue('Transmision');
+    sortedAttributes.forEach((attr) => {
+      let value: string | null = null;
 
-    if (modelo) texto.push(String(modelo));
-    if (submodelo) texto.push(String(submodelo));
-    if (año) texto.push(String(año));
-    if (litrosMotor) texto.push(`${litrosMotor} LTS`);
-    if (ccMotor) texto.push(`CC: ${ccMotor}`);
-    if (cidMotor) texto.push(`CID: ${cidMotor}`);
-    if (cilindrosMotor) texto.push(`${cilindrosMotor} CIL`);
-    if (bloqueMotor) texto.push(String(bloqueMotor));
-    if (motorDescripcion) texto.push(String(motorDescripcion));
-    if (transmision) texto.push(String(transmision));
+      // Handle date values - extract year only
+      if (attr.valueDate) {
+        const date = new Date(attr.valueDate);
+        if (!isNaN(date.getTime())) {
+          value = date.getFullYear().toString();
+        }
+      } else if (attr.valueString) {
+        value = String(attr.valueString);
+      } else if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
+        value = String(attr.valueNumber);
+      } else if (attr.valueBoolean !== null && attr.valueBoolean !== undefined) {
+        value = String(attr.valueBoolean);
+      }
+
+      if (value) {
+        // Display the value as-is, without custom formatting
+        texto.push(value);
+      }
+    });
 
     return texto;
   };
