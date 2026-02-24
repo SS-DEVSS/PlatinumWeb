@@ -18,7 +18,7 @@ export const fetchCategoryById = async (
 
 export const fetchCategoryFilters = async (
   id: string,
-  filters?: Record<string, any>,
+  filters?: Record<string, string | number | boolean>,
   signal?: AbortSignal
 ): Promise<Record<string, string[]>> => {
   const params = filters ? { filters: JSON.stringify(filters) } : undefined;
@@ -29,7 +29,18 @@ export const fetchCategoryFilters = async (
   return data;
 };
 
-const normalizeCategory = (data: any): Category => ({
+const normalizeCategory = (data: {
+  id: string;
+  name: string;
+  description?: string;
+  imgUrl: string;
+  attributes?: {
+    product?: unknown[];
+    variant?: unknown[];
+    reference?: unknown[];
+    application?: unknown[];
+  };
+}): Category => ({
   id: data.id,
   name: data.name,
   description: data.description || "",
