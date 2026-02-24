@@ -1,5 +1,5 @@
 import axiosClient from "./axiosInstance";
-import { Category } from "../models/category";
+import { Category, Attribute } from "../models/category";
 
 const client = axiosClient();
 
@@ -35,10 +35,10 @@ const normalizeCategory = (data: {
   description?: string;
   imgUrl: string;
   attributes?: {
-    product?: unknown[];
-    variant?: unknown[];
-    reference?: unknown[];
-    application?: unknown[];
+    product?: Attribute[];
+    variant?: Attribute[];
+    reference?: Attribute[];
+    application?: Attribute[];
   };
 }): Category => ({
   id: data.id,
