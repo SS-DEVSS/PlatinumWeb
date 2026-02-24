@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { Category } from "../models/category";
 import {
   fetchAllCategories,
@@ -15,7 +16,7 @@ export const useCategories = () => {
     staleTime: 30 * 60 * 1000,
   });
 
-  const getCategoryById = async (id?: Category["id"]) => {
+  const getCategoryById = useCallback(async (id?: Category["id"]) => {
     if (!id) return null;
 
     const queryKey = ["category", id];
@@ -27,21 +28,21 @@ export const useCategories = () => {
       queryClient.setQueryData(queryKey, category);
     }
     return category;
-  };
+  }, [queryClient]);
 
-  const getCategoryFilters = async (
+  const getCategoryFilters = useCallback(async (
     id: string,
-    filters?: Record<string, any>,
+    filters?: Record<string, string | number | boolean>,
     signal?: AbortSignal
   ) => {
     try {
       return await fetchCategoryFilters(id, filters, signal);
-    } catch (err: any) {
-      if (err.code === "ERR_CANCELED") throw err;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err && err.code === "ERR_CANCELED") throw err;
       console.error("Failed to fetch category filters:", err);
       return {};
     }
-  };
+  }, []);
 
   return {
     categories,
