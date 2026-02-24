@@ -1,19 +1,18 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { fetchBrands } from "../services/brands.api";
 import { Brand } from "../models/brand";
-import axiosClient from "../services/axiosInstance";
+import { useMemo } from "react";
 
-/**
- * Custom hook to fetch and manage brand data
- * Based on mobile implementation
- */
 export const useBrands = () => {
-  const client = useMemo(() => axiosClient(), []);
-  const [brands, setBrands] = useState<Record<string, Brand>>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["brands"],
+    queryFn: ({ signal }) => fetchBrands(signal),
+    staleTime: 30 * 60 * 1000,
+  });
 
-  const processBrands = useCallback((data: Brand[]) => {
-    const brandsMap = data.reduce((acc: Record<string, Brand>, brand: Brand) => {
+  const brands = useMemo(() => {
+    if (!data) return {};
+    return data.reduce((acc: Record<string, Brand>, brand: Brand) => {
       acc[brand.id] = {
         id: brand.id,
         name: brand.name,
@@ -22,31 +21,11 @@ export const useBrands = () => {
       };
       return acc;
     }, {});
-    setBrands(brandsMap);
-  }, []);
-
-  const getBrands = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await client.get("/brands");
-      processBrands(response.data);
-    } catch (error) {
-      console.error("Error fetching brands:", error);
-      setError(error instanceof Error ? error : new Error("Failed to fetch brands"));
-      setBrands({});
-    } finally {
-      setLoading(false);
-    }
-  }, [client, processBrands]);
-
-  useEffect(() => {
-    getBrands();
-  }, [getBrands]);
+  }, [data]);
 
   return {
     brands,
-    loading,
-    error,
-    refreshBrands: getBrands
+    loading: isLoading,
+    error: error instanceof Error ? error : null,
   };
 };

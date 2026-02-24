@@ -19,7 +19,17 @@ import ProductDetail from "./pages/Platinum/ProductDetail";
 import { ItemContextProvider } from "./context/Item-context";
 import { Toaster } from "./components/ui/toaster";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      retry: 1,
+    },
+  },
+});
 
 const router = createBrowserRouter([
   {
