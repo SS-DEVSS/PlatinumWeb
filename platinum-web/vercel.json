@@ -7,16 +7,7 @@
   ],
   "headers": [
     {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=300, stale-while-revalidate=600"
-        }
-      ]
-    },
-    {
-      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))",
+      "source": "/assets/:path*",
       "headers": [
         {
           "key": "Cache-Control",
@@ -26,4 +17,3 @@
     }
   ]
 }
-
