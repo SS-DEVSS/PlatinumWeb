@@ -22,6 +22,5 @@ export const useProductsByCategory = (
       ),
     enabled: !!categoryId,
     staleTime: 15 * 60 * 1000,
-    placeholderData: (previousData) => previousData,
   });
 };
