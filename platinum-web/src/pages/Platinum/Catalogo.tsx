@@ -386,22 +386,6 @@ const Catalogo = () => {
     setPage(1);
   };
 
-  const handleCategoryChange = (categoryId: string) => {
-    if (!selectedBrand?.categories) return;
-    const category = selectedBrand.categories.find((c) => c.id === categoryId) || null;
-    setSelectedCategory(category);
-    setSelectedSubcategoryId(null);
-    setViewLevel("subcategories");
-    if (category) {
-      localStorage.setItem("catalogo-selected-categoria", categoryId);
-    }
-    setFiltro((prev) => ({
-      ...prev,
-      vehiculo: { selectedFilters: [] },
-    }));
-    setPage(1);
-  };
-
   const handleCategoryCardClick = (category: Category) => {
     setSelectedCategory(category);
     setSelectedSubcategoryId(null);
@@ -800,7 +784,6 @@ const Catalogo = () => {
                   className="w-[280px] p-0"
                   align="start"
                   onCloseAutoFocus={(e) => e.preventDefault()}
-                  modal={false}
                 >
                   <div
                     className="p-2 border-b"
