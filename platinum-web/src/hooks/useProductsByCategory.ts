@@ -7,10 +7,11 @@ export const useProductsByCategory = (
   page = 1,
   pageSize = 10,
   search = "",
-  filters?: Record<string, string | number | boolean>
+  filters?: Record<string, string | number | boolean>,
+  idSubcategory?: string | null
 ) => {
   return useQuery({
-    queryKey: ["products", "category", categoryId, page, pageSize, search, filters],
+    queryKey: ["products", "category", categoryId, page, pageSize, search, filters, idSubcategory],
     queryFn: ({ signal }) =>
       fetchProductsByCategory(
         categoryId!,
@@ -18,7 +19,8 @@ export const useProductsByCategory = (
         pageSize,
         search,
         filters,
-        signal
+        signal,
+        idSubcategory
       ),
     enabled: !!categoryId,
     staleTime: 15 * 60 * 1000,
