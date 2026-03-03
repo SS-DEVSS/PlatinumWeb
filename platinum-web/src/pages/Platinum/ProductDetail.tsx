@@ -92,6 +92,12 @@ const ProductDetail = () => {
     });
   };
 
+  // Volver siempre al catálogo; el propio catálogo se encarga de restaurar
+  // la marca/categoría/nivel usando el estado persistido en localStorage.
+  const handleBack = () => {
+    navigate("/catalogo");
+  };
+
   if (isLoading) {
     return (
       <PlatinumLayout>
@@ -108,7 +114,7 @@ const ProductDetail = () => {
             <p className="text-lg text-gray-600 mb-4">
               {error ? "Error al cargar el producto" : "Producto no encontrado"}
             </p>
-            <Button onClick={() => navigate("/catalogo")} variant="default">
+            <Button onClick={handleBack} variant="default">
               Volver al catálogo
             </Button>
           </div>
@@ -123,7 +129,7 @@ const ProductDetail = () => {
         {/* Top Section: Header Actions */}
         <div className="flex justify-between items-center gap-4 mb-6">
           <Button
-            onClick={() => navigate(`/catalogo`)}
+            onClick={handleBack}
             variant={"ghost"}
             className="flex gap-2 text-[#20314f] p-0 hover:underline hover:cursor-pointer hover:bg-transparent"
           >

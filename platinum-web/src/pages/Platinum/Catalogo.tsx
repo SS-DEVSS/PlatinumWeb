@@ -1,14 +1,6 @@
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
 import { Label } from "../../components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
@@ -35,7 +27,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet";
-import { AlertCircle, ArrowLeft, ChevronDown, ChevronRight, Filter, Search } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, ChevronUp, Filter, Search } from "lucide-react";
 import { Brand } from "../../models/brand";
 import { Subcategory } from "../../models/subcategory";
 import { fetchSubcategoriesByCategory } from "../../services/subcategories.api";
@@ -50,15 +42,78 @@ import {
 type FiltroTipo = "NumParte" | "Vehiculo" | "Referencia";
 type CatalogViewLevel = "categories" | "subcategories" | "products";
 
-/** Flatten tree of subcategories so all levels (root, children, grandchildren, ...) appear in one list. */
-function flattenSubcategoryTree(nodes: Subcategory[]): Subcategory[] {
-  const result: Subcategory[] = [];
-  function visit(node: Subcategory) {
-    result.push(node);
-    (node.children || []).forEach(visit);
+/** Find a subcategory node by id in the tree. */
+function findSubcategoryInTree(nodes: Subcategory[], id: string): Subcategory | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    if (node.children?.length) {
+      const found = findSubcategoryInTree(node.children, id);
+      if (found) return found;
+    }
   }
-  nodes.forEach(visit);
+  return null;
+}
+
+/** Path of nodes from root to the node with targetId (inclusive). Uses tree traversal. */
+function findSubcategoryPathInTree(
+  nodes: Subcategory[],
+  targetId: string,
+  path: Subcategory[] = []
+): Subcategory[] | null {
+  for (const node of nodes) {
+    const currentPath = [...path, node];
+    if (node.id === targetId) return currentPath;
+    if (node.children?.length) {
+      const found = findSubcategoryPathInTree(node.children, targetId, currentPath);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/** Flatten a tree to a list, assigning parentId from traversal. Root-level subcategories get parentId null. */
+function flattenTreeWithParents(
+  nodes: Subcategory[],
+  parentId: string | null = null
+): Subcategory[] {
+  const result: Subcategory[] = [];
+  for (const node of nodes) {
+    result.push({ ...node, parentId });
+    if (node.children?.length) {
+      result.push(...flattenTreeWithParents(node.children, node.id));
+    }
+  }
   return result;
+}
+
+/** Collect all subcategory ids in the subtree rooted at rootId (including the root itself). */
+function collectSubtreeIds(nodes: Subcategory[], rootId: string): string[] {
+  const root = findSubcategoryInTree(nodes, rootId);
+  if (!root) return [rootId];
+  const ids: string[] = [];
+  const visit = (node: Subcategory | undefined | null) => {
+    if (!node || !node.id) return;
+    ids.push(node.id);
+    (node.children ?? []).forEach((child) => visit(child));
+  };
+  visit(root);
+  return ids;
+}
+
+/** Build path from target to root using the parentId chain (no dependency on nested structure). */
+function findSubcategoryPathByParentId(
+  tree: Subcategory[],
+  targetId: string
+): Subcategory[] | null {
+  const flat = flattenTreeWithParents(tree);
+  const byId = new Map(flat.map((n) => [n.id, n]));
+  const path: Subcategory[] = [];
+  let cur = byId.get(targetId) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = cur.parentId ? byId.get(cur.parentId) ?? null : null;
+  }
+  return path.length > 0 ? path : null;
 }
 
 type DrillLevel =
@@ -104,6 +159,7 @@ const Catalogo = () => {
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string | null>(null);
+  const [drillParentSubcategoryId, setDrillParentSubcategoryId] = useState<string | null>(null);
   const [viewLevel, setViewLevel] = useState<CatalogViewLevel>("categories");
   const [categoryData, setCategoryData] = useState<Category | null>(null);
   const [filterOptions, setFilterOptions] = useState<Record<string, string[]> | undefined>(undefined);
@@ -121,14 +177,13 @@ const Catalogo = () => {
   const [pageSize, setPageSize] = useState(12);
   const [viewMode] = useState<"cards" | "table">("cards");
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+  const [subcategoriesExpanded, setSubcategoriesExpanded] = useState(true);
   const [activeVehicleFilters, setActiveVehicleFilters] = useState<
     Array<{ attributeId: string; attributeName: string; value: string }>
   >([]);
 
   const [debouncedNumParte, setDebouncedNumParte] = useState("");
   const [debouncedReferencia, setDebouncedReferencia] = useState("");
-  const [productSearch, setProductSearch] = useState("");
-  const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
 
   const [subcategoryTreeByCategory, setSubcategoryTreeByCategory] = useState<
     Record<string, Subcategory[]>
@@ -137,17 +192,18 @@ const Catalogo = () => {
   const [filterMenuSearch, setFilterMenuSearch] = useState("");
   const filterMenuSearchDeferred = useDeferredValue(filterMenuSearch);
   const [drillStack, setDrillStack] = useState<DrillLevel[]>([]);
+  /** Cache breadcrumb paths by subcategoryId so levels are not lost across re-renders. */
+  const [breadcrumbPathCache, setBreadcrumbPathCache] = useState<Record<string, Subcategory[]>>({});
 
   const fetchingCategoryRef = useRef<string | null>(null);
   const fetchingFiltersRef = useRef<string | null>(null);
   const hasRestoredSelectionsRef = useRef(false);
 
   const searchQuery = useMemo(() => {
-    if (viewLevel === "products") return debouncedProductSearch;
     if (filtroTipo === "NumParte") return debouncedNumParte;
     if (filtroTipo === "Referencia") return debouncedReferencia;
     return "";
-  }, [viewLevel, debouncedProductSearch, filtroTipo, debouncedNumParte, debouncedReferencia]);
+  }, [filtroTipo, debouncedNumParte, debouncedReferencia]);
 
   const filtersDict = useMemo(() => {
     if (filtroTipo === "Vehiculo" && filtro.vehiculo.selectedFilters.length > 0) {
@@ -161,21 +217,66 @@ const Catalogo = () => {
   }, [filtroTipo, filtro.vehiculo.selectedFilters]);
 
   const { data: subcategoriesData, isLoading: loadingSubcategories } = useSubcategoriesByCategory(
-    viewLevel === "subcategories" ? selectedCategory?.id : undefined
+    selectedCategory?.id
   );
   const subcategoriesTree = subcategoriesData ?? [];
-  const subcategoriesFlat = useMemo(
-    () => flattenSubcategoryTree(subcategoriesTree),
-    [subcategoriesTree]
+  /** Tree used for breadcrumb path: ONLY hook data so the structure is always consistent (dropdown cache may differ). */
+  const treeForBreadcrumbPath = subcategoriesTree.length > 0 ? subcategoriesTree : [];
+  /** Subcategories to show at the current drill level: roots or children of the drill parent. */
+  const currentLevelSubcategories = useMemo(() => {
+    if (!drillParentSubcategoryId) return subcategoriesTree;
+    const parent = findSubcategoryInTree(subcategoriesTree, drillParentSubcategoryId);
+    return parent?.children ?? [];
+  }, [subcategoriesTree, drillParentSubcategoryId]);
+  const drillParentSubcategory = useMemo(
+    () =>
+      drillParentSubcategoryId
+        ? findSubcategoryInTree(subcategoriesTree, drillParentSubcategoryId)
+        : null,
+    [subcategoriesTree, drillParentSubcategoryId]
   );
 
+  /** Path computed from the tree for the current subcategory (products view). */
+  const computedBreadcrumbPath = useMemo((): Subcategory[] | null => {
+    if (viewLevel !== "products" || !selectedSubcategoryId || treeForBreadcrumbPath.length === 0)
+      return null;
+    const byParent =
+      findSubcategoryPathByParentId(treeForBreadcrumbPath, selectedSubcategoryId);
+    const byTree = findSubcategoryPathInTree(treeForBreadcrumbPath, selectedSubcategoryId);
+    return byParent ?? byTree;
+  }, [viewLevel, selectedSubcategoryId, treeForBreadcrumbPath]);
+
+  /** Cache the path when we have a complete one; never replace it with a shorter path. */
+  useEffect(() => {
+    if (
+      viewLevel !== "products" ||
+      !selectedSubcategoryId ||
+      !computedBreadcrumbPath?.length
+    )
+      return;
+    setBreadcrumbPathCache((prev) => {
+      const cached = prev[selectedSubcategoryId];
+      if (cached && cached.length >= computedBreadcrumbPath.length) return prev;
+      return { ...prev, [selectedSubcategoryId]: computedBreadcrumbPath };
+    });
+  }, [viewLevel, selectedSubcategoryId, computedBreadcrumbPath]);
+
+  const showProducts = viewLevel === "subcategories" || viewLevel === "products";
+  let subcategoryFilterForProducts: string | string[] | null = null;
+  if (viewLevel === "products" && selectedSubcategoryId) {
+    subcategoryFilterForProducts = selectedSubcategoryId;
+  } else if (viewLevel === "subcategories" && drillParentSubcategoryId) {
+    const subtreeIds = collectSubtreeIds(subcategoriesTree, drillParentSubcategoryId);
+    if (subtreeIds.length === 1) subcategoryFilterForProducts = subtreeIds[0];
+    else if (subtreeIds.length > 1) subcategoryFilterForProducts = subtreeIds;
+  }
   const { data, isLoading, error: productsError } = useProductsByCategory(
-    viewLevel === "products" ? selectedCategory?.id : undefined,
+    showProducts ? selectedCategory?.id : undefined,
     page,
     pageSize,
     searchQuery,
     filtersDict,
-    viewLevel === "products" ? selectedSubcategoryId : undefined
+    subcategoryFilterForProducts
   );
 
   const products = (data as ProductsResponse | undefined)?.products ?? [];
@@ -186,21 +287,87 @@ const Catalogo = () => {
     return selectedBrand?.categories || [];
   }, [selectedBrand]);
 
+  // Restore catalog state (brand, category, level, subcategories) on mount.
   useEffect(() => {
-    if (brands.length > 0 && !selectedBrand) {
-      const savedMarca = localStorage.getItem("catalogo-selected-marca");
-      const brandToSelect = savedMarca && brandsMap[savedMarca]
-        ? brandsMap[savedMarca]
-        : brands[0];
+    if (brands.length > 0 && !selectedBrand && !hasRestoredSelectionsRef.current) {
+      const savedStateRaw = localStorage.getItem("catalogo-last-state");
+      let restoredFromLastState = false;
 
-      if (brandToSelect) {
-        setSelectedBrand(brandToSelect);
-        localStorage.setItem("catalogo-selected-marca", brandToSelect.id);
-        setViewLevel("categories");
-        hasRestoredSelectionsRef.current = true;
+      if (savedStateRaw) {
+        try {
+          const parsed = JSON.parse(savedStateRaw) as {
+            brandId: string | null;
+            categoryId: string | null;
+            viewLevel: CatalogViewLevel;
+            selectedSubcategoryId: string | null;
+            drillParentSubcategoryId: string | null;
+          };
+
+          const brandFromState =
+            parsed.brandId && brandsMap[parsed.brandId]
+              ? brandsMap[parsed.brandId]
+              : null;
+
+          if (brandFromState) {
+            setSelectedBrand(brandFromState);
+            localStorage.setItem("catalogo-selected-marca", brandFromState.id);
+
+            const categoryFromState =
+              parsed.categoryId &&
+              brandFromState.categories?.find((c) => c.id === parsed.categoryId);
+
+            if (categoryFromState) {
+              setSelectedCategory(categoryFromState);
+              localStorage.setItem("catalogo-selected-categoria", categoryFromState.id);
+              setViewLevel(parsed.viewLevel ?? "subcategories");
+              setSelectedSubcategoryId(parsed.selectedSubcategoryId ?? null);
+              setDrillParentSubcategoryId(parsed.drillParentSubcategoryId ?? null);
+            } else {
+              setViewLevel("categories");
+            }
+
+            hasRestoredSelectionsRef.current = true;
+            restoredFromLastState = true;
+          }
+        } catch {
+          // Si falla el parseo, seguimos con el flujo normal.
+        }
+      }
+
+      // Fallback: lógica anterior basada solo en marca guardada.
+      if (!restoredFromLastState) {
+        const savedMarca = localStorage.getItem("catalogo-selected-marca");
+        const brandToSelect = savedMarca && brandsMap[savedMarca]
+          ? brandsMap[savedMarca]
+          : brands[0];
+
+        if (brandToSelect) {
+          setSelectedBrand(brandToSelect);
+          localStorage.setItem("catalogo-selected-marca", brandToSelect.id);
+          setViewLevel("categories");
+          hasRestoredSelectionsRef.current = true;
+        }
       }
     }
   }, [brands, brandsMap, selectedBrand]);
+
+  // Persist the last catalog state so it can be restored when returning from product detail.
+  useEffect(() => {
+    const snapshot = {
+      brandId: selectedBrand?.id ?? null,
+      categoryId: selectedCategory?.id ?? null,
+      viewLevel,
+      selectedSubcategoryId,
+      drillParentSubcategoryId,
+    };
+    localStorage.setItem("catalogo-last-state", JSON.stringify(snapshot));
+  }, [
+    selectedBrand?.id,
+    selectedCategory?.id,
+    viewLevel,
+    selectedSubcategoryId,
+    drillParentSubcategoryId,
+  ]);
 
   useEffect(() => {
     if (selectedBrand && selectedCategory && viewLevel !== "categories") {
@@ -327,11 +494,6 @@ const Catalogo = () => {
     return () => clearTimeout(timer);
   }, [filtro.referencia]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedProductSearch(productSearch), 500);
-    return () => clearTimeout(timer);
-  }, [productSearch]);
-
   // Cargar árbol de subcategorías por categoría para el dropdown (vista productos)
   useEffect(() => {
     const categories = selectedBrand?.categories ?? [];
@@ -389,26 +551,49 @@ const Catalogo = () => {
   const handleCategoryCardClick = (category: Category) => {
     setSelectedCategory(category);
     setSelectedSubcategoryId(null);
+    setDrillParentSubcategoryId(null);
+    setBreadcrumbPathCache({});
     setViewLevel("subcategories");
     localStorage.setItem("catalogo-selected-categoria", category.id);
     setPage(1);
   };
 
-  const handleSubcategoryCardClick = (subcategoryId: string | null) => {
-    setSelectedSubcategoryId(subcategoryId);
-    setViewLevel("products");
+  const handleSubcategoryCardClick = (sub: Subcategory) => {
+    if (sub.children?.length) {
+      setDrillParentSubcategoryId(sub.id);
+      setPage(1);
+    } else {
+      const path =
+        treeForBreadcrumbPath.length > 0
+          ? findSubcategoryPathByParentId(treeForBreadcrumbPath, sub.id) ??
+            findSubcategoryPathInTree(treeForBreadcrumbPath, sub.id)
+          : null;
+      if (path?.length) {
+        setBreadcrumbPathCache((prev) => ({ ...prev, [sub.id]: path }));
+      }
+      setSelectedSubcategoryId(sub.id);
+      setViewLevel("products");
+      setPage(1);
+    }
+  };
+
+  const handleBackFromDrill = () => {
+    setDrillParentSubcategoryId(null);
     setPage(1);
   };
 
   const handleBackToCategories = () => {
     setSelectedCategory(null);
     setSelectedSubcategoryId(null);
+    setDrillParentSubcategoryId(null);
+    setBreadcrumbPathCache({});
     setViewLevel("categories");
     setPage(1);
   };
 
   const handleBackToSubcategories = () => {
     setSelectedSubcategoryId(null);
+    setDrillParentSubcategoryId(null);
     setViewLevel("subcategories");
     setPage(1);
   };
@@ -475,6 +660,101 @@ const Catalogo = () => {
     if (!path) return selectedCategory.name ?? "";
     return `${selectedCategory.name} › ${path.join(" › ")}`;
   };
+
+  type BreadcrumbItem = { key: string; label: string; onClick?: () => void };
+  const catalogBreadcrumb = useMemo((): BreadcrumbItem[] => {
+    if (!selectedCategory) return [];
+    const catId = selectedCategory.id ?? "";
+    if (viewLevel === "subcategories") {
+      const items: BreadcrumbItem[] = [
+        { key: "breadcrumb-root", label: "Todas las categorías", onClick: handleBackToCategories },
+        {
+          key: `breadcrumb-cat-${catId}`,
+          label: selectedCategory.name ?? "",
+          onClick: drillParentSubcategoryId ? handleBackFromDrill : undefined,
+        },
+      ];
+
+      let drillPath: Subcategory[] | null = null;
+      if (drillParentSubcategoryId && treeForBreadcrumbPath.length > 0) {
+        drillPath =
+          findSubcategoryPathByParentId(treeForBreadcrumbPath, drillParentSubcategoryId) ??
+          findSubcategoryPathInTree(treeForBreadcrumbPath, drillParentSubcategoryId);
+      }
+
+      if (drillPath?.length) {
+        drillPath.forEach((node, i) => {
+          const isLast = i === drillPath!.length - 1;
+          items.push({
+            key: `breadcrumb-sub-${node.id}`,
+            label: node.name,
+            onClick: isLast
+              ? undefined
+              : () => {
+                  setDrillParentSubcategoryId(node.id);
+                  setSelectedSubcategoryId(null);
+                  setPage(1);
+                },
+          });
+        });
+      } else if (drillParentSubcategoryId && drillParentSubcategory) {
+        // Fallback a comportamiento anterior si por alguna razón no obtenemos un path completo
+        items.push({ key: `breadcrumb-sub-${drillParentSubcategoryId}`, label: drillParentSubcategory.name });
+      }
+
+      return items;
+    }
+    if (viewLevel === "products" && selectedSubcategoryId) {
+      // Preferir path en caché (evita que un re-render con árbol distinto quite niveles); si no hay o es más corto, usar el calculado.
+      const pathNodes =
+        breadcrumbPathCache[selectedSubcategoryId] ?? computedBreadcrumbPath ?? null;
+      const items: BreadcrumbItem[] = [
+        { key: "breadcrumb-root", label: "Todas las categorías", onClick: handleBackToCategories },
+        { key: `breadcrumb-cat-${catId}`, label: selectedCategory.name ?? "", onClick: handleBackToSubcategories },
+      ];
+      if (pathNodes?.length) {
+        pathNodes.forEach((node, i) => {
+          const isLast = i === pathNodes.length - 1;
+          items.push({
+            key: `breadcrumb-sub-${node.id}`,
+            label: node.name,
+            onClick: isLast
+              ? undefined
+              : () => {
+                  const pathUpToHere = pathNodes.slice(0, i + 1);
+                  setBreadcrumbPathCache((prev) => ({ ...prev, [node.id]: pathUpToHere }));
+                  if (node.children?.length) {
+                    setViewLevel("subcategories");
+                    setDrillParentSubcategoryId(node.id);
+                    setSelectedSubcategoryId(null);
+                    setPage(1);
+                  } else {
+                    setSelectedSubcategoryId(node.id);
+                    setPage(1);
+                  }
+                },
+          });
+        });
+      }
+      return items;
+    }
+    if (viewLevel === "products") {
+      return [
+        { key: "breadcrumb-root", label: "Todas las categorías", onClick: handleBackToCategories },
+        { key: `breadcrumb-cat-${catId}`, label: selectedCategory.name ?? "", onClick: handleBackToSubcategories },
+      ];
+    }
+    return [];
+  }, [
+    viewLevel,
+    selectedCategory,
+    drillParentSubcategoryId,
+    drillParentSubcategory,
+    selectedSubcategoryId,
+    breadcrumbPathCache,
+    computedBreadcrumbPath,
+    treeForBreadcrumbPath,
+  ]);
 
   const handleFilterTypeChange = (type: FiltroTipo) => {
     setFiltroTipo(type);
@@ -1001,7 +1281,7 @@ const Catalogo = () => {
               </DropdownMenu>
             </div>
           )}
-          {viewLevel === "products" && (
+          {(viewLevel === "subcategories" || viewLevel === "products") && (
             <div className="flex flex-col w-full sm:w-auto flex-1 sm:flex-none">
               <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-white">
                 Filtrar Por:
@@ -1054,18 +1334,27 @@ const Catalogo = () => {
 
       <section className="px-4 sm:px-6 md:px-12 lg:px-20 py-6 sm:py-8 bg-[#E4E4E4]">
         {viewLevel === "categories" && selectedBrand && (
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Seleccione una categoría
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="mb-6">
+            <div className="mb-6 text-center space-y-2">
+              <h3 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
+                Seleccione una categoría
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
+                Elija una categoría para ver los productos relacionados del catálogo.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4">
               {availableCategories.map((category) => (
-                <CatalogCard
+                <div
                   key={category.id}
-                  title={category.name}
-                  imageUrl={category.imgUrl}
-                  onClick={() => handleCategoryCardClick(category)}
-                />
+                  className="w-full max-w-xs sm:w-1/2 md:w-1/3 lg:w-1/4"
+                >
+                  <CatalogCard
+                    title={category.name}
+                    imageUrl={category.imgUrl}
+                    onClick={() => handleCategoryCardClick(category)}
+                  />
+                </div>
               ))}
             </div>
             {availableCategories.length === 0 && (
@@ -1078,53 +1367,159 @@ const Catalogo = () => {
 
         {viewLevel === "subcategories" && selectedCategory && (
           <div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToCategories}
-              className="mb-4 text-gray-700 hover:text-gray-900 flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Todas las categorías
-            </Button>
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              {selectedCategory.name}
-            </h3>
-            {loadingSubcategories ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="rounded-lg border bg-white overflow-hidden animate-pulse">
-                    <div className="aspect-square bg-gray-200" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
-                      <div className="h-3 bg-gray-100 rounded w-1/2" />
+            {catalogBreadcrumb.length > 0 && (
+              <nav className="mb-4 flex flex-wrap items-center gap-1 text-sm" aria-label="Navegación">
+                {catalogBreadcrumb.map((item, i) => (
+                  <span key={item.key} className="flex items-center gap-1">
+                    {i > 0 && <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />}
+                    {item.onClick ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={item.onClick}
+                        className="h-auto py-1 px-2 text-gray-700 hover:text-gray-900 font-medium"
+                      >
+                        {item.label}
+                      </Button>
+                    ) : (
+                      <span className="text-gray-900 font-semibold py-1 px-2">{item.label}</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+            )}
+
+            <div className="mb-4">
+              {filtroTipo === "Vehiculo" && (
+                <div className="lg:hidden space-y-3 mb-3">
+                  <Button
+                    onClick={() => setIsFilterDrawerOpen(true)}
+                    variant="outline"
+                    className="w-full sm:w-auto justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      <span>Filtros</span>
+                      {activeVehicleFilters.length > 0 && (
+                        <span className="bg-naranja text-white rounded-full px-2 py-0.5 text-xs font-semibold">
+                          {activeVehicleFilters.length}
+                        </span>
+                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <CatalogCard
-                  key="all"
-                  title="Todos los productos"
-                  countLabel="ver todos"
-                  onClick={() => handleSubcategoryCardClick(null)}
-                />
-                {subcategoriesFlat.map((sub) => (
-                  <CatalogCard
-                    key={sub.id}
-                    title={sub.name}
-                    count={sub.productCount}
-                    countLabel="artículos"
-                    onClick={() => handleSubcategoryCardClick(sub.id)}
-                  />
-                ))}
+                  </Button>
+                  {activeVehicleFilters.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {activeVehicleFilters.map((filter) => (
+                        <div
+                          key={filter.attributeId}
+                          className="flex items-center gap-1.5 bg-naranja text-white px-3 py-1.5 rounded-full text-xs"
+                        >
+                          <span className="font-medium">{filter.attributeName}:</span>
+                          <span>{filter.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {filtroTipo !== "Vehiculo" && getFilterComponent()}
+            </div>
+
+            <h3 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-5 tracking-tight">
+              {drillParentSubcategory?.name ?? selectedCategory.name}
+            </h3>
+
+            {(loadingSubcategories || currentLevelSubcategories.length > 0) && (
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={() => setSubcategoriesExpanded((v) => !v)}
+                  className="flex items-center gap-2 w-full text-left text-xl sm:text-2xl font-semibold text-gray-800 mb-3 hover:text-gray-900"
+                >
+                  {subcategoriesExpanded ? (
+                    <ChevronUp className="h-5 w-5 shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 shrink-0" />
+                  )}
+                  Subcategorías
+                </button>
+                {subcategoriesExpanded && (
+                  <>
+                    {loadingSubcategories ? (
+                      <div className="flex flex-wrap justify-center gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className="w-full max-w-xs sm:w-1/2 md:w-1/3 lg:w-1/4"
+                          >
+                            <div className="rounded-lg border bg-white overflow-hidden animate-pulse">
+                              <div className="aspect-square bg-gray-200" />
+                              <div className="p-4 space-y-2">
+                                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                                <div className="h-3 bg-gray-100 rounded w-1/2" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap justify-center gap-4">
+                        {currentLevelSubcategories.map((sub) => (
+                          <div
+                            key={sub.id}
+                            className="w-full max-w-xs sm:w-1/2 md:w-1/3 lg:w-1/4"
+                          >
+                            <CatalogCard
+                              title={sub.name}
+                              onClick={() => handleSubcategoryCardClick(sub)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
-            {!loadingSubcategories && subcategoriesFlat.length === 0 && (
-              <p className="text-gray-600 text-center py-4">
-                No hay subcategorías. Use &quot;Todos los productos&quot; para ver el listado.
-              </p>
+
+            <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3">Productos</h3>
+            <div className="mt-2 flex gap-6">
+                {filtroTipo === "Vehiculo" && (
+                  <aside className="hidden lg:block w-80 flex-shrink-0">
+                    <div className="bg-white rounded-lg p-4 shadow-sm sticky top-4">
+                      <h3 className="font-semibold text-lg mb-4 text-gray-900">Filtros</h3>
+                      {getFilterComponent()}
+                    </div>
+                  </aside>
+                )}
+                <main className="flex-1 min-w-0">
+                  <ProductsTable
+                    category={categoryData}
+                    products={products}
+                    loading={isLoading}
+                    pageIndex={page - 1}
+                    pageSize={pageSize}
+                    pageCount={totalPages}
+                    totalItems={totalItems}
+                    onPaginationChange={handlePaginationChange}
+                    viewMode={viewMode}
+                  />
+                </main>
+              </div>
+
+            {filtroTipo === "Vehiculo" && (
+              <Sheet open={isFilterDrawerOpen} onOpenChange={setIsFilterDrawerOpen}>
+                <SheetContent side="left" className="w-80 sm:w-96 p-0">
+                  <div className="p-4 border-b">
+                    <SheetHeader>
+                      <SheetTitle className="text-lg font-semibold">Filtros</SheetTitle>
+                    </SheetHeader>
+                  </div>
+                  <div className="p-4 overflow-y-auto h-[calc(100vh-80px)]">
+                    {getFilterComponent()}
+                  </div>
+                </SheetContent>
+              </Sheet>
             )}
           </div>
         )}
@@ -1165,27 +1560,27 @@ const Catalogo = () => {
               </div>
             )}
 
-            <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToSubcategories}
-                className="text-gray-700 hover:text-gray-900 flex items-center gap-2 self-start"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {selectedCategory?.name ?? "Subcategorías"}
-              </Button>
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="search"
-                  placeholder="Buscar por número de parte, referencia o nombre..."
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  className="pl-9 h-10 bg-white border-gray-200"
-                />
-              </div>
-            </div>
+            {catalogBreadcrumb.length > 0 && (
+              <nav className="mb-4 flex flex-wrap items-center gap-1 text-sm" aria-label="Navegación">
+                {catalogBreadcrumb.map((item, i) => (
+                  <span key={item.key} className="flex items-center gap-1">
+                    {i > 0 && <ChevronRight className="h-4 w-4 shrink-0 text-gray-400" />}
+                    {item.onClick ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={item.onClick}
+                        className="h-auto py-1 px-2 text-gray-700 hover:text-gray-900 font-medium"
+                      >
+                        {item.label}
+                      </Button>
+                    ) : (
+                      <span className="text-gray-900 font-semibold py-1 px-2">{item.label}</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+            )}
 
             <div className="flex gap-6">
               {filtroTipo === "Vehiculo" && (

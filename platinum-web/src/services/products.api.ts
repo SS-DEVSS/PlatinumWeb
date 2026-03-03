@@ -17,7 +17,7 @@ export const fetchProductsByCategory = async (
   search: string,
   filters?: Record<string, any>,
   signal?: AbortSignal,
-  idSubcategory?: string | null
+  idSubcategory?: string | string[] | null
 ): Promise<ProductsResponse> => {
   const params: any = {
     type: "single",
@@ -27,7 +27,11 @@ export const fetchProductsByCategory = async (
 
   if (search) params.search = search;
   if (filters) params.filters = JSON.stringify(filters);
-  if (idSubcategory) params.idSubcategory = idSubcategory;
+  if (Array.isArray(idSubcategory) && idSubcategory.length > 0) {
+    params.idSubcategory = idSubcategory.join(",");
+  } else if (typeof idSubcategory === "string" && idSubcategory.trim() !== "") {
+    params.idSubcategory = idSubcategory.trim();
+  }
 
   const { data } = await client.get(
     `/products/category/${categoryId}`,
