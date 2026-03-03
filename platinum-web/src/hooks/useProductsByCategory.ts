@@ -8,7 +8,7 @@ export const useProductsByCategory = (
   pageSize = 10,
   search = "",
   filters?: Record<string, string | number | boolean>,
-  idSubcategory?: string | null
+  idSubcategory?: string | string[] | null
 ) => {
   return useQuery({
     queryKey: ["products", "category", categoryId, page, pageSize, search, filters, idSubcategory],

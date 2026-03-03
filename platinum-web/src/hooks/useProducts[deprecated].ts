@@ -268,7 +268,6 @@
 //       setProduct(data);
 //       return data;
 //     } catch (error) {
-//       console.log(error);
 //     } finally {
 //       setLoading(false);
 //     }
