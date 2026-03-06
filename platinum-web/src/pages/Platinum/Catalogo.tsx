@@ -86,6 +86,20 @@ function flattenTreeWithParents(
   return result;
 }
 
+/** Return a copy of the tree with each level sorted alphabetically by name. */
+function sortSubcategoryTree(nodes: Subcategory[]): Subcategory[] {
+  return [...nodes]
+    .sort((a, b) =>
+      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
+    )
+    .map((node) => ({
+      ...node,
+      children: node.children?.length
+        ? sortSubcategoryTree(node.children)
+        : node.children,
+    }));
+}
+
 /** Collect all subcategory ids in the subtree rooted at rootId (including the root itself). */
 function collectSubtreeIds(nodes: Subcategory[], rootId: string): string[] {
   const root = findSubcategoryInTree(nodes, rootId);
@@ -222,11 +236,18 @@ const Catalogo = () => {
   const subcategoriesTree = subcategoriesData ?? [];
   /** Tree used for breadcrumb path: ONLY hook data so the structure is always consistent (dropdown cache may differ). */
   const treeForBreadcrumbPath = subcategoriesTree.length > 0 ? subcategoriesTree : [];
-  /** Subcategories to show at the current drill level: roots or children of the drill parent. */
+  /** Subcategories to show at the current drill level: roots or children of the drill parent, sorted alphabetically. */
   const currentLevelSubcategories = useMemo(() => {
-    if (!drillParentSubcategoryId) return subcategoriesTree;
-    const parent = findSubcategoryInTree(subcategoriesTree, drillParentSubcategoryId);
-    return parent?.children ?? [];
+    let list: Subcategory[];
+    if (!drillParentSubcategoryId) {
+      list = subcategoriesTree;
+    } else {
+      const parent = findSubcategoryInTree(subcategoriesTree, drillParentSubcategoryId);
+      list = parent?.children ?? [];
+    }
+    return [...list].sort((a, b) =>
+      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
+    );
   }, [subcategoriesTree, drillParentSubcategoryId]);
   const drillParentSubcategory = useMemo(
     () =>
@@ -284,7 +305,10 @@ const Catalogo = () => {
   const totalPages = (data as ProductsResponse | undefined)?.totalPages ?? 1;
 
   const availableCategories = useMemo(() => {
-    return selectedBrand?.categories || [];
+    const list = selectedBrand?.categories || [];
+    return [...list].sort((a, b) =>
+      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
+    );
   }, [selectedBrand]);
 
   // Restore catalog state (brand, category, level, subcategories) on mount.
@@ -505,7 +529,10 @@ const Catalogo = () => {
     Promise.all(
       categories.map((cat) =>
         cat.id
-          ? fetchSubcategoriesByCategory(cat.id, controller.signal).then((tree) => [cat.id!, tree] as const)
+          ? fetchSubcategoriesByCategory(cat.id, controller.signal).then((tree) => [
+              cat.id!,
+              sortSubcategoryTree(tree),
+            ] as const)
           : Promise.resolve(null)
       )
     )
