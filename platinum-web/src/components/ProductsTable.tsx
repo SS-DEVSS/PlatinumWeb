@@ -291,14 +291,24 @@ const ProductsTable = ({
     }
   };
 
-  // Get image URL for a product
+  // Consider URL as "no image" when empty or a known placeholder so we show our own placeholder
+  const isPlaceholderOrEmptyUrl = (url: string | null | undefined): boolean => {
+    if (url == null || typeof url !== "string") return true;
+    const u = url.trim();
+    if (u === "") return true;
+    const lower = u.toLowerCase();
+    if (lower.includes("placeholder") || lower.includes("default.png") || lower.includes("no-image")) return true;
+    return false;
+  };
+
   const getProductImageUrl = (product: Item): string | null => {
+    let url: string | null = null;
     if (product.images && product.images.length > 0) {
-      return product.images[0].url;
+      url = product.images[0].url ?? null;
     } else if (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) {
-      return product.variants[0].images[0].url;
+      url = product.variants[0].images[0].url ?? null;
     }
-    return null;
+    return isPlaceholderOrEmptyUrl(url) ? null : url;
   };
 
   // Format references for display
@@ -448,7 +458,7 @@ const ProductsTable = ({
           </Card>
         ) : (
           /* Card Grid View */
-          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
             {(() => {
               if (loading) {
                 return (
@@ -470,7 +480,7 @@ const ProductsTable = ({
                   return (
                     <Card
                       key={product.id}
-                      className={`cursor-pointer hover:shadow-lg transition-shadow overflow-hidden ${isSelected ? 'ring-2 ring-naranja' : ''
+                      className={`cursor-pointer hover:shadow-lg transition-shadow overflow-hidden flex flex-col ${isSelected ? 'ring-2 ring-naranja' : ''
                         }`}
                       onClick={() => handleClick(row)}
                     >
@@ -483,22 +493,22 @@ const ProductsTable = ({
                             loading="lazy"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
+                              target.style.display = "none";
                               const parent = target.parentElement;
                               if (parent) {
                                 parent.innerHTML = `
-                                <div class="flex flex-col items-center justify-center text-gray-400">
-                                  <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </div>
-                              `;
+                                  <div class="flex flex-col items-center justify-center text-gray-400 w-full h-full">
+                                    <svg class="w-16 h-16 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                `;
                               }
                             }}
                           />
                         ) : (
-                          <div className="flex flex-col items-center justify-center text-gray-400">
-                            <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="flex flex-col items-center justify-center text-gray-400 w-full h-full">
+                            <svg className="w-16 h-16 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
