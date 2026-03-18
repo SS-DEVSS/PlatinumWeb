@@ -1473,7 +1473,7 @@ const Catalogo = () => {
                 {subcategoriesExpanded && (
                   <>
                     {loadingSubcategories ? (
-                      <div className="flex flex-wrap justify-center gap-4">
+                      <div className="flex flex-wrap justify-start gap-4">
                         {[1, 2, 3, 4].map((i) => (
                           <div
                             key={i}
@@ -1490,7 +1490,7 @@ const Catalogo = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-wrap justify-center gap-4">
+                      <div className="flex flex-wrap justify-start gap-4">
                         {currentLevelSubcategories.map((sub) => (
                           <div
                             key={sub.id}
