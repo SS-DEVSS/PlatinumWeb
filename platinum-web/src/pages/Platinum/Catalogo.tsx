@@ -530,9 +530,9 @@ const Catalogo = () => {
       categories.map((cat) =>
         cat.id
           ? fetchSubcategoriesByCategory(cat.id, controller.signal).then((tree) => [
-              cat.id!,
-              sortSubcategoryTree(tree),
-            ] as const)
+            cat.id!,
+            sortSubcategoryTree(tree),
+          ] as const)
           : Promise.resolve(null)
       )
     )
@@ -544,7 +544,7 @@ const Catalogo = () => {
         });
         setSubcategoryTreeByCategory(map);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return () => {
       isCancelled = true;
@@ -593,7 +593,7 @@ const Catalogo = () => {
       const path =
         treeForBreadcrumbPath.length > 0
           ? findSubcategoryPathByParentId(treeForBreadcrumbPath, sub.id) ??
-            findSubcategoryPathInTree(treeForBreadcrumbPath, sub.id)
+          findSubcategoryPathInTree(treeForBreadcrumbPath, sub.id)
           : null;
       if (path?.length) {
         setBreadcrumbPathCache((prev) => ({ ...prev, [sub.id]: path }));
@@ -656,8 +656,8 @@ const Catalogo = () => {
   const globalSearchHits =
     searchQueryFilter.length > 0
       ? flattenSearchHits(availableCategories, subcategoryTreeByCategory).filter((hit) =>
-          hit.label.toLowerCase().includes(searchQueryFilter)
-        )
+        hit.label.toLowerCase().includes(searchQueryFilter)
+      )
       : [];
   const showGlobalSearch = searchQueryFilter.length > 0;
 
@@ -718,10 +718,10 @@ const Catalogo = () => {
             onClick: isLast
               ? undefined
               : () => {
-                  setDrillParentSubcategoryId(node.id);
-                  setSelectedSubcategoryId(null);
-                  setPage(1);
-                },
+                setDrillParentSubcategoryId(node.id);
+                setSelectedSubcategoryId(null);
+                setPage(1);
+              },
           });
         });
       } else if (drillParentSubcategoryId && drillParentSubcategory) {
@@ -748,18 +748,18 @@ const Catalogo = () => {
             onClick: isLast
               ? undefined
               : () => {
-                  const pathUpToHere = pathNodes.slice(0, i + 1);
-                  setBreadcrumbPathCache((prev) => ({ ...prev, [node.id]: pathUpToHere }));
-                  if (node.children?.length) {
-                    setViewLevel("subcategories");
-                    setDrillParentSubcategoryId(node.id);
-                    setSelectedSubcategoryId(null);
-                    setPage(1);
-                  } else {
-                    setSelectedSubcategoryId(node.id);
-                    setPage(1);
-                  }
-                },
+                const pathUpToHere = pathNodes.slice(0, i + 1);
+                setBreadcrumbPathCache((prev) => ({ ...prev, [node.id]: pathUpToHere }));
+                if (node.children?.length) {
+                  setViewLevel("subcategories");
+                  setDrillParentSubcategoryId(node.id);
+                  setSelectedSubcategoryId(null);
+                  setPage(1);
+                } else {
+                  setSelectedSubcategoryId(node.id);
+                  setPage(1);
+                }
+              },
           });
         });
       }
@@ -1035,7 +1035,6 @@ const Catalogo = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectLabel>Marcas</SelectLabel>
                   {brands?.map((brand) => (
                     <SelectItem key={brand.id} value={brand.id}>
                       <div className="flex items-center">
@@ -1238,9 +1237,9 @@ const Catalogo = () => {
                                             hasChildren
                                               ? drillIntoSubcategory(top.category, node)
                                               : selectCategoryAndSubcategory(
-                                                  top.category,
-                                                  node.id
-                                                )
+                                                top.category,
+                                                node.id
+                                              )
                                           }
                                           className="flex items-center justify-between"
                                         >
@@ -1285,9 +1284,9 @@ const Catalogo = () => {
                                           hasChildren
                                             ? drillIntoSubcategory(top.category, node)
                                             : selectCategoryAndSubcategory(
-                                                top.category,
-                                                node.id
-                                              )
+                                              top.category,
+                                              node.id
+                                            )
                                         }
                                         className="flex items-center justify-between"
                                       >
@@ -1511,28 +1510,28 @@ const Catalogo = () => {
 
             <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3">Productos</h3>
             <div className="mt-2 flex gap-6">
-                {filtroTipo === "Vehiculo" && (
-                  <aside className="hidden lg:block w-80 flex-shrink-0">
-                    <div className="bg-white rounded-lg p-4 shadow-sm sticky top-4">
-                      <h3 className="font-semibold text-lg mb-4 text-gray-900">Filtros</h3>
-                      {getFilterComponent()}
-                    </div>
-                  </aside>
-                )}
-                <main className="flex-1 min-w-0">
-                  <ProductsTable
-                    category={categoryData}
-                    products={products}
-                    loading={isLoading}
-                    pageIndex={page - 1}
-                    pageSize={pageSize}
-                    pageCount={totalPages}
-                    totalItems={totalItems}
-                    onPaginationChange={handlePaginationChange}
-                    viewMode={viewMode}
-                  />
-                </main>
-              </div>
+              {filtroTipo === "Vehiculo" && (
+                <aside className="hidden lg:block w-80 flex-shrink-0">
+                  <div className="bg-white rounded-lg p-4 shadow-sm sticky top-4">
+                    <h3 className="font-semibold text-lg mb-4 text-gray-900">Filtros</h3>
+                    {getFilterComponent()}
+                  </div>
+                </aside>
+              )}
+              <main className="flex-1 min-w-0">
+                <ProductsTable
+                  category={categoryData}
+                  products={products}
+                  loading={isLoading}
+                  pageIndex={page - 1}
+                  pageSize={pageSize}
+                  pageCount={totalPages}
+                  totalItems={totalItems}
+                  onPaginationChange={handlePaginationChange}
+                  viewMode={viewMode}
+                />
+              </main>
+            </div>
 
             {filtroTipo === "Vehiculo" && (
               <Sheet open={isFilterDrawerOpen} onOpenChange={setIsFilterDrawerOpen}>
