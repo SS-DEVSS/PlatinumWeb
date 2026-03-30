@@ -320,57 +320,8 @@ const ProductsTable = ({
     }).filter(Boolean) as string[];
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="mt-6 relative">
-  //       <div className="flex flex-col items-center justify-center h-full">
-  //         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-naranja"></div>
-  //         <span className="mt-2 text-sm text-gray-600 font-medium">Cargando...</span>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   return (
-    <div className="mt-6 relative">
-      {/* View Toggle - Only show if not hidden */}
-      {/* {!hideViewToggle && (
-        <div className="flex justify-end items-center mb-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={currentViewMode === "cards" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleViewModeChange("cards")}
-              className="flex items-center gap-1 sm:gap-2"
-              title="Vista de tarjetas"
-            >
-              <LayoutGrid className="h-4 w-4" />
-              <span className="hidden sm:inline">Tarjetas</span>
-            </Button>
-            <Button
-              variant={currentViewMode === "table" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleViewModeChange("table")}
-              className="flex items-center gap-1 sm:gap-2"
-              title="Vista de tabla"
-            >
-              <Table2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Tabla</span>
-            </Button>
-          </div>
-        </div>
-      )} */}
-
-      {/* Loading Overlay */}
-      {/* {loading && (
-        <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-lg">
-          <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-naranja"></div>
-            <span className="mt-2 text-sm text-gray-600 font-medium">Cargando...</span>
-          </div>
-        </div>
-      )} */}
-
+    <div className="mt-0 relative">
       <>
         {currentViewMode === "table" ? (
           <Card className={`border overflow-hidden ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
