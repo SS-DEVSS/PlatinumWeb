@@ -12,9 +12,10 @@ type BlogPostsResponse = {
 export const fetchBlogs = async (
   page: number = 1,
   pageSize: number = 100,
+  sortOrder: "asc" | "desc" = "desc",
   signal?: AbortSignal
 ): Promise<BlogPostsResponse> => {
-  const { data } = await client.get("/blog/posts", { params: { page, pageSize }, signal });
+  const { data } = await client.get("/blog/posts", { params: { page, pageSize, sortOrder }, signal });
   return {
     blogPosts: data.blogPosts || [],
     total: data.total || 0,

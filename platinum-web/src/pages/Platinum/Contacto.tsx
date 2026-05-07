@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import ContactButton from "../../components/ContactButton";
 import { Separator } from "../../components/ui/separator";
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
@@ -13,7 +14,7 @@ export default function Contacto() {
     mensaje: "",
   });
 
-  async function handleOnSubmit(e: any) {
+  async function handleOnSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setState("loading");
@@ -41,7 +42,9 @@ export default function Contacto() {
     }, 2000);
   }, [alert]);
 
-  function handleInputChange(e: any) {
+  function handleInputChange(
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,

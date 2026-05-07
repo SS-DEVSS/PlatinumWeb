@@ -15,7 +15,7 @@ import {
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { Attribute, Category } from "../models/category";
-import { useItemContext } from "../context/Item-context";
+import { useItemContext } from "../context/use-item-context";
 import { AttributeValue } from "../models/item";
 import { useEffect, useState } from "react";
 

@@ -7,6 +7,16 @@ import { fetchBlogById } from "../../services/blogs.api";
 import { parseBlogContent } from "../../utils/blogRelatedLinks";
 import { Skeleton } from "../../components/ui/skeleton";
 
+const isAbortLikeError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+  const maybeError = error as { code?: string; name?: string };
+  return (
+    maybeError.code === "ERR_CANCELED" ||
+    maybeError.name === "CanceledError" ||
+    maybeError.name === "AbortError"
+  );
+};
+
 function BlogDetail() {
   const { id } = useParams<{ id: string }>();
   const [blog, setBlog] = useState<BlogPost | null>(null);
@@ -25,11 +35,8 @@ function BlogDetail() {
     setError(null);
     fetchBlogById(id, controller.signal)
       .then((data) => setBlog(data))
-      .catch((error: any) => {
-        const isCanceled =
-          error?.code === "ERR_CANCELED" ||
-          error?.name === "CanceledError" ||
-          error?.name === "AbortError";
+      .catch((error: unknown) => {
+        const isCanceled = isAbortLikeError(error);
         if (!isCanceled) {
           setError("No se pudo cargar el blog.");
           console.error("[BlogDetail] Error loading blog:", error);

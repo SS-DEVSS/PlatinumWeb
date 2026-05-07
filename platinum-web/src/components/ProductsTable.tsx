@@ -24,7 +24,7 @@ import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
-import { useItemContext } from "../context/Item-context";
+import { useItemContext } from "../context/use-item-context";
 import { ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 

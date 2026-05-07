@@ -26,7 +26,7 @@ import { useEffect, useState } from "react";
 import { useProduct } from "../../hooks/useProduct";
 import { Component } from "../../models/component";
 import { Image } from "../../models/image";
-import { useItemContext } from "../../context/Item-context";
+import { useItemContext } from "../../context/use-item-context";
 import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 import { TechnicalSheet } from "../../models/techincalSheet";
@@ -432,7 +432,7 @@ const ProductDetail = () => {
                       >
                         <div className="rounded-lg text-white px-5 py-3 bg-black flex gap-3 hover:cursor-pointer">
                           <Download className="w-5" />
-                          {sheet.title}
+                          <span className="truncate max-w-[520px]">{sheet.title}</span>
                         </div>
                       </Link>
                     )

@@ -233,9 +233,15 @@ const Catalogo = () => {
   const { data: subcategoriesData, isLoading: loadingSubcategories } = useSubcategoriesByCategory(
     selectedCategory?.id
   );
-  const subcategoriesTree = subcategoriesData ?? [];
+  const subcategoriesTree = useMemo<Subcategory[]>(
+    () => subcategoriesData ?? [],
+    [subcategoriesData]
+  );
   /** Tree used for breadcrumb path: ONLY hook data so the structure is always consistent (dropdown cache may differ). */
-  const treeForBreadcrumbPath = subcategoriesTree.length > 0 ? subcategoriesTree : [];
+  const treeForBreadcrumbPath = useMemo<Subcategory[]>(
+    () => (subcategoriesTree.length > 0 ? subcategoriesTree : []),
+    [subcategoriesTree]
+  );
   /** Subcategories to show at the current drill level: roots or children of the drill parent, sorted alphabetically. */
   const currentLevelSubcategories = useMemo(() => {
     let list: Subcategory[];

@@ -4,14 +4,25 @@ import { Download, ExternalLink, FileText } from "lucide-react";
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
 import ContactButton from "../../components/ContactButton";
 import { TechnicalSheet } from "../../models/techincalSheet";
-import { fetchTechSheets } from "../../services/techSheets.api";
+import { fetchTechSheets, getTechSheetDocumentUrl } from "../../services/techSheets.api";
 import { Skeleton } from "../../components/ui/skeleton";
+
+const isAbortLikeError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+  const maybeError = error as { code?: string; name?: string };
+  return (
+    maybeError.code === "ERR_CANCELED" ||
+    maybeError.name === "CanceledError" ||
+    maybeError.name === "AbortError"
+  );
+};
 
 function BoletinDetail() {
   const { id } = useParams<{ id: string }>();
   const [boletin, setBoletin] = useState<TechnicalSheet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const documentUrl = boletin?.id ? getTechSheetDocumentUrl(boletin.id) : "";
 
   useEffect(() => {
     const controller = new AbortController();
@@ -24,11 +35,8 @@ function BoletinDetail() {
         setBoletin(selected);
         if (!selected) setError("No se encontró el boletín.");
       })
-      .catch((err: any) => {
-        const isCanceled =
-          err?.code === "ERR_CANCELED" ||
-          err?.name === "CanceledError" ||
-          err?.name === "AbortError";
+      .catch((err: unknown) => {
+        const isCanceled = isAbortLikeError(err);
         if (!isCanceled) setError("No se pudo cargar el boletín.");
       })
       .finally(() => setLoading(false));
@@ -92,25 +100,29 @@ function BoletinDetail() {
             )}
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <a
-                href={boletin.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Abrir documento
-              </a>
-              <a
-                href={boletin.url}
-                target="_blank"
-                rel="noreferrer"
-                download
-                className="inline-flex items-center gap-2 rounded-md bg-naranja px-4 py-2 text-white hover:opacity-90"
-              >
-                <Download className="h-4 w-4" />
-                Descargar boletín
-              </a>
+              {boletin?.id ? (
+                <>
+                  <a
+                    href={documentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Abrir documento
+                  </a>
+                  <a
+                    href={documentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="inline-flex items-center gap-2 rounded-md bg-naranja px-4 py-2 text-white hover:opacity-90"
+                  >
+                    <Download className="h-4 w-4" />
+                    Descargar boletín
+                  </a>
+                </>
+              ) : null}
             </div>
           </article>
         )}

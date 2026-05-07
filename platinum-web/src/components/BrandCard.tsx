@@ -22,7 +22,7 @@ const BrandCard = ({
       case "Sistema de Embrague":
         return "naranja";
       default:
-        "";
+        return "";
     }
   };
   const getColorHover = () => {
@@ -34,7 +34,7 @@ const BrandCard = ({
       case "Suspensión":
         return "bg-blue-500";
       default:
-        "";
+        return "";
     }
   };
 
