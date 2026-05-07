@@ -1,5 +1,5 @@
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { MoveLeft, Share2, Download } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import {
@@ -26,7 +26,7 @@ import { useEffect, useState } from "react";
 import { useProduct } from "../../hooks/useProduct";
 import { Component } from "../../models/component";
 import { Image } from "../../models/image";
-import { useItemContext } from "../../context/Item-context";
+import { useItemContext } from "../../context/use-item-context";
 import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 import { TechnicalSheet } from "../../models/techincalSheet";
@@ -40,6 +40,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { Reference } from "../../models/reference";
+import { fetchTechSheets } from "../../services/techSheets.api";
 
 const ProductDetail = () => {
   const navigate = useNavigate();
@@ -54,6 +55,7 @@ const ProductDetail = () => {
   const [selectedReference, setSelectedReference] = useState<Reference | null>(null);
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>(undefined);
+  const [relatedSheets, setRelatedSheets] = useState<TechnicalSheet[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -81,6 +83,23 @@ const ProductDetail = () => {
       };
     }
   }, [item?.category?.id, getCategoryById]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    if (!item?.id) {
+      setRelatedSheets([]);
+      return;
+    }
+    fetchTechSheets(1, 300, controller.signal)
+      .then(({ technicalSheets }) => {
+        const linked = technicalSheets.filter((sheet) =>
+          (sheet.products || []).some((product) => product.id === item.id)
+        );
+        setRelatedSheets(linked);
+      })
+      .catch(() => setRelatedSheets([]));
+    return () => controller.abort();
+  }, [item?.id]);
 
   // Components are now directly on the product, no need for complex fetching
 
@@ -398,26 +417,24 @@ const ProductDetail = () => {
               </Card>
             )}
 
-            {/* Display technical sheets from first variant if available */}
-            {item?.variants && item.variants.length > 0 && item.variants[0].technicalSheets && item.variants[0].technicalSheets.length > 0 && (
+            {/* Display technical bulletins related by product-techsheet relation */}
+            {relatedSheets.length > 0 && (
               <Card className="mt-4 border-none shadow-md">
                 <CardHeader className="bg-[#444] text-white text-[15px] rounded-t-lg p-3 px-4 uppercase">
-                  <CardTitle className="text-lg">Documentos</CardTitle>
+                  <CardTitle className="text-lg">Boletines técnicos relacionados</CardTitle>
                 </CardHeader>
                 <section className="flex flex-wrap gap-3 p-4">
-                  {item.variants[0].technicalSheets.map(
+                  {relatedSheets.map(
                     (sheet: TechnicalSheet) => (
-                      <a
-                        href={sheet.url}
+                      <Link
+                        to={`/Boletines/${sheet.id}`}
                         key={sheet.id}
-                        target="_blank"
-                        download
                       >
                         <div className="rounded-lg text-white px-5 py-3 bg-black flex gap-3 hover:cursor-pointer">
                           <Download className="w-5" />
-                          {sheet.title}
+                          <span className="truncate max-w-[520px]">{sheet.title}</span>
                         </div>
-                      </a>
+                      </Link>
                     )
                   )}
                 </section>

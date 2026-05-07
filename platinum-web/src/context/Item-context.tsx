@@ -1,32 +1,6 @@
-import { createContext, useContext, useState } from "react";
+import { useState } from "react";
 import { AttributeValue } from "../models/item";
-
-type ItemContextType = {
-  type: "KIT" | "SINGLE" | "";
-  setType: React.Dispatch<React.SetStateAction<"KIT" | "SINGLE" | "">>;
-  variant: string;
-  setVariant: React.Dispatch<React.SetStateAction<string>>;
-
-  valuesAttributes: Array<{ attributeId: string; values: AttributeValue[][] }>;
-  setValuesAttributes: React.Dispatch<React.SetStateAction<Array<{ attributeId: string; values: AttributeValue[][] }>>>;
-
-  selectedFilters: { attributeId: string; value: string }[];
-  setSelectedFilters: React.Dispatch<
-    React.SetStateAction<{ attributeId: string; value: string }[]>
-  >;
-};
-
-const ItemContext = createContext<ItemContextType>({} as ItemContextType);
-
-export const useItemContext = () => {
-  const context = useContext(ItemContext);
-  if (!context) {
-    throw new Error(
-      "useItemContext must be used within an ItemContextProvider"
-    );
-  }
-  return context;
-};
+import { ItemContext } from "./item-context-base";
 
 export const ItemContextProvider = ({
   children,
