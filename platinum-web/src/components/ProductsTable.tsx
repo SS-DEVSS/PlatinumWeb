@@ -24,7 +24,7 @@ import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
-import { useItemContext } from "../context/Item-context";
+import { useItemContext } from "../context/use-item-context";
 import { ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 
@@ -508,90 +508,95 @@ const ProductsTable = ({
           </div>
         )}
         {!loading && mappedData.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:space-x-4 py-4 sm:py-6 bg-gray-50 rounded-lg px-3 sm:px-4 border border-gray-200 mt-6">
-            <div className="text-xs sm:text-sm font-medium text-gray-700 text-center sm:text-left">
-              Mostrando <span className="font-semibold text-gray-900">{startItem}</span> - <span className="font-semibold text-gray-900">{endItem}</span> de <span className="font-semibold text-gray-900">{totalItems}</span> resultados
+          <div className="mt-6 flex w-full max-w-full min-w-0 flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 px-2 py-4 sm:px-4 sm:py-6">
+            <div className="w-full min-w-0 px-1 text-center text-xs font-medium text-gray-700 sm:text-left sm:text-sm">
+              Mostrando <span className="font-semibold text-gray-900">{startItem}</span> -{" "}
+              <span className="font-semibold text-gray-900">{endItem}</span> de{" "}
+              <span className="font-semibold text-gray-900">{totalItems}</span> resultados
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm">
-                <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
-                  Página{" "}
-                  <strong className="text-gray-900 font-semibold">
-                    {table.getState().pagination.pageIndex + 1}
-                  </strong>{" "}
-                  de{" "}
-                  <strong className="text-gray-900 font-semibold">
-                    {totalPages || 1}
-                  </strong>
-                </span>
+            <div className="flex w-full max-w-full min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
+              <div className="flex w-full max-w-full min-w-0 flex-wrap items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={!table.getCanPreviousPage()}
+                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex min-w-0 items-center gap-2 rounded-md border border-gray-300 bg-white px-2 py-2 shadow-sm sm:px-4">
+                  <span className="whitespace-nowrap text-xs text-gray-700 sm:text-sm">
+                    Página{" "}
+                    <strong className="font-semibold text-gray-900">
+                      {table.getState().pagination.pageIndex + 1}
+                    </strong>{" "}
+                    de{" "}
+                    <strong className="font-semibold text-gray-900">{totalPages || 1}</strong>
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="hidden whitespace-nowrap text-xs text-gray-700 sm:inline sm:text-sm">
+                    Ir a:
+                  </span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={totalPages || 1}
+                    value={pageInputValue}
+                    onChange={(e) => setPageInputValue(e.target.value)}
+                    onKeyDown={handlePageInputKeyDown}
+                    onBlur={handlePageNavigation}
+                    className="h-9 w-14 px-1 text-center text-xs border-gray-300 sm:w-20 sm:px-2 sm:text-sm"
+                    placeholder="Pág"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.setPageIndex(totalPages - 1)}
+                  disabled={!table.getCanNextPage()}
+                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs sm:text-sm text-gray-700 whitespace-nowrap hidden sm:inline">Ir a:</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={totalPages || 1}
-                  value={pageInputValue}
-                  onChange={(e) => setPageInputValue(e.target.value)}
-                  onKeyDown={handlePageInputKeyDown}
-                  onBlur={handlePageNavigation}
-                  className="h-9 w-16 sm:w-20 px-2 text-xs sm:text-sm text-center border-gray-300 focus:ring-2 focus:ring-gray-400 focus:border-transparent"
-                  placeholder="Pág"
-                />
+              <div className="flex w-full max-w-full min-w-0 justify-center sm:w-auto sm:justify-end">
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    const newPageSize = Number(e.target.value);
+                    if (onPaginationChange) {
+                      onPaginationChange(0, newPageSize);
+                    }
+                  }}
+                  className="h-9 w-full max-w-[12rem] cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 sm:w-auto sm:max-w-none sm:px-3 sm:pr-8 sm:text-sm"
+                >
+                  {[8, 12, 16, 20, 24].map((size) => (
+                    <option key={size} value={size}>
+                      Mostrar {size}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.setPageIndex(totalPages - 1)}
-                disabled={!table.getCanNextPage()}
-                className="h-9 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-              <select
-                value={pageSize}
-                onChange={e => {
-                  const newPageSize = Number(e.target.value);
-                  // table.setPageSize(newPageSize); // controlled via prop update
-                  if (onPaginationChange) {
-                    onPaginationChange(0, newPageSize); // Reset to first page
-                  }
-                }}
-                className="h-9 px-2 sm:px-3 pr-6 sm:pr-8 text-xs sm:text-sm border border-gray-300 rounded-md bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow cursor-pointer font-medium text-gray-700"
-              >
-                {[8, 12, 16, 20, 24].map(pageSize => (
-                  <option key={pageSize} value={pageSize}>
-                    Mostrar {pageSize}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
         )}

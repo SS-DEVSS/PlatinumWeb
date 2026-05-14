@@ -15,11 +15,11 @@ export const fetchProductsByCategory = async (
   page: number,
   pageSize: number,
   search: string,
-  filters?: Record<string, any>,
+  filters?: Record<string, unknown>,
   signal?: AbortSignal,
   idSubcategory?: string | string[] | null
 ): Promise<ProductsResponse> => {
-  const params: any = {
+  const params: Record<string, string | number> = {
     type: "single",
     page,
     pageSize,

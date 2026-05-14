@@ -628,74 +628,87 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm">
-              Mostrando{" "}
-              <strong>
-                {table.getState().pagination.pageIndex * pageSize + 1} -{" "}
-                {Math.min(
-                  (table.getState().pagination.pageIndex + 1) * pageSize,
-                  groupedApplications.length
-                )}
-              </strong>{" "}
-              de <strong>{groupedApplications.length}</strong> resultados
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              &lt;&lt;
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              &lt;
-            </Button>
-            <span className="text-sm">
-              Página{" "}
-              <strong>
-                {table.getState().pagination.pageIndex + 1} de {totalPages || 1}
-              </strong>
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              &gt;
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.setPageIndex(totalPages - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              &gt;&gt;
-            </Button>
-            <select
-              value={pageSize}
-              onChange={e => {
-                const newPageSize = Number(e.target.value);
-                setPageSize(newPageSize);
-                table.setPageSize(newPageSize);
-              }}
-              className="border rounded px-2 py-1 text-sm"
-            >
-              {[10, 20, 30, 50].map(pageSize => (
-                <option key={pageSize} value={pageSize}>
-                  Mostrar {pageSize}
-                </option>
-              ))}
-            </select>
+        <div className="mt-4 flex w-full max-w-full min-w-0 flex-col gap-3 border-t border-border px-1 pb-2 pt-3 sm:px-2">
+          <p className="w-full min-w-0 text-center text-xs leading-snug text-muted-foreground sm:text-left sm:text-sm">
+            Mostrando{" "}
+            <span className="font-semibold text-foreground">
+              {table.getState().pagination.pageIndex * pageSize + 1} -{" "}
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) * pageSize,
+                groupedApplications.length
+              )}
+            </span>{" "}
+            de{" "}
+            <span className="font-semibold text-foreground">{groupedApplications.length}</span>{" "}
+            resultados
+          </p>
+          <div className="flex w-full max-w-full min-w-0 flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
+            <div className="flex w-full max-w-full min-w-0 flex-wrap items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 px-2"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                &lt;&lt;
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 px-2"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                &lt;
+              </Button>
+              <span className="min-w-0 whitespace-nowrap px-1 text-center text-xs text-muted-foreground sm:text-sm">
+                Página{" "}
+                <span className="font-semibold text-foreground">
+                  {table.getState().pagination.pageIndex + 1} de {totalPages || 1}
+                </span>
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 px-2"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                &gt;
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 px-2"
+                onClick={() => table.setPageIndex(totalPages - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                &gt;&gt;
+              </Button>
+            </div>
+            <div className="flex w-full max-w-full min-w-0 justify-center sm:w-auto sm:justify-end">
+              <label className="flex min-w-0 max-w-full flex-col items-center gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <span className="sr-only sm:not-sr-only sm:text-sm sm:text-muted-foreground">
+                  Filas por página
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    const newPageSize = Number(e.target.value);
+                    setPageSize(newPageSize);
+                    table.setPageSize(newPageSize);
+                  }}
+                  className="h-9 w-full max-w-[12rem] rounded border border-input bg-background px-2 text-sm sm:w-auto sm:max-w-none"
+                >
+                  {[10, 20, 30, 50].map((size) => (
+                    <option key={size} value={size}>
+                      Mostrar {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ export const menuItems = [
   },
   { text: "Otros Productos", icon: "next.png" },
   { href: "/Boletines", text: "Boletines", icon: "arrowWhite.png" },
+  { href: "/Blogs", text: "Blogs", icon: "arrowWhite.png" },
   { href: "/Galeria", text: "Galería", icon: "arrowWhite.png" },
   { href: "/Contacto", text: "Contacto", icon: "arrowWhite.png" },
 ];

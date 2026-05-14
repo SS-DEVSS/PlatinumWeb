@@ -10,6 +10,9 @@ import Kit from "./pages/Platinum/Embrague/Kit";
 import Disco from "./pages/Platinum/Embrague/Disco";
 import Plato from "./pages/Platinum/Embrague/Plato";
 import Boletines from "./pages/Platinum/Boletines";
+import BoletinDetail from "./pages/Platinum/BoletinDetail";
+import Blogs from "./pages/Platinum/Blogs";
+import BlogDetail from "./pages/Platinum/BlogDetail";
 import Galeria from "./pages/Platinum/Galeria";
 import Contacto from "./pages/Platinum/Contacto";
 import DelphiPage from "./pages/Delphi/DelphiPage";
@@ -49,6 +52,9 @@ const router = createBrowserRouter([
       { path: "Productos/Disco", element: <Disco /> },
       { path: "Productos/Plato", element: <Plato /> },
       { path: "Boletines", element: <Boletines /> },
+      { path: "Boletines/:id", element: <BoletinDetail /> },
+      { path: "Blogs", element: <Blogs /> },
+      { path: "Blogs/:id", element: <BlogDetail /> },
       { path: "Galeria", element: <Galeria /> },
       { path: "Contacto", element: <Contacto /> },
       { path: "Pastillas", element: <PastillasPage /> },
