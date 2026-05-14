@@ -45,6 +45,8 @@ export default function Carousel() {
   }, []);
 
   const slidesFromApi = !useFallback && banners.length > 0;
+  const slideCount = slidesFromApi ? banners.length : FALLBACK_IMAGES.length;
+  const enableCarouselMotion = slideCount > 1;
 
   if (loading) {
     return (
@@ -61,14 +63,20 @@ export default function Carousel() {
     <Swiper
       spaceBetween={30}
       centeredSlides={true}
-      autoplay={{
-        delay: 4500,
-        disableOnInteraction: false,
-      }}
+      loop={enableCarouselMotion}
+      watchSlidesProgress={enableCarouselMotion}
+      autoplay={
+        enableCarouselMotion
+          ? {
+              delay: 4500,
+              disableOnInteraction: false,
+            }
+          : false
+      }
       pagination={{
         clickable: true,
       }}
-      navigation={true}
+      navigation={enableCarouselMotion}
       modules={[Autoplay, Pagination, Navigation]}
       className="mySwiper"
     >
