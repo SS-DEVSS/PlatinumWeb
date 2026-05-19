@@ -184,14 +184,17 @@ const ProductsTable = ({
               (av: AttributeValue) => av.idAttribute === attribute.id
             );
 
-            const fullValue =
-              attrValue?.valueString ||
-              attrValue?.valueNumber?.toString() ||
-              attrValue?.valueBoolean?.toString() ||
-              attrValue?.valueDate?.toDateString() ||
-              "-";
+            const rawValue =
+              attrValue?.valueString ??
+              (attrValue?.valueNumber != null ? String(attrValue.valueNumber) : undefined) ??
+              (attrValue?.valueBoolean != null ? String(attrValue.valueBoolean) : undefined) ??
+              (attrValue?.valueDate ? attrValue.valueDate.toDateString() : undefined);
 
-            const valueStr = String(fullValue);
+            if (rawValue == null || String(rawValue).trim() === "") {
+              return <div />;
+            }
+
+            const valueStr = String(rawValue);
             const displayValue = valueStr.length > 30 ? `${valueStr.substring(0, 30)}...` : valueStr;
 
             return (
@@ -409,7 +412,9 @@ const ProductsTable = ({
           </Card>
         ) : (
           /* Card Grid View */
-          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div
+            className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-start ${loading ? "opacity-50 pointer-events-none" : ""}`}
+          >
             {(() => {
               if (loading) {
                 return (
@@ -590,7 +595,7 @@ const ProductsTable = ({
                   }}
                   className="h-9 w-full max-w-[12rem] cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 sm:w-auto sm:max-w-none sm:px-3 sm:pr-8 sm:text-sm"
                 >
-                  {[8, 12, 16, 20, 24].map((size) => (
+                  {[20, 30, 40, 50].map((size) => (
                     <option key={size} value={size}>
                       Mostrar {size}
                     </option>

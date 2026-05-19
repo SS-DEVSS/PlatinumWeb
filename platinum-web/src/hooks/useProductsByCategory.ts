@@ -1,6 +1,7 @@
 // hooks/useProductsByCategory.ts
 import { useQuery } from "@tanstack/react-query";
 import { fetchProductsByCategory } from "../services/products.api";
+import type { CatalogProductSort } from "../models/catalogSort";
 
 export const useProductsByCategory = (
   categoryId?: string,
@@ -8,10 +9,11 @@ export const useProductsByCategory = (
   pageSize = 10,
   search = "",
   filters?: Record<string, string | number | boolean>,
-  idSubcategory?: string | string[] | null
+  idSubcategory?: string | string[] | null,
+  sort?: CatalogProductSort
 ) => {
   return useQuery({
-    queryKey: ["products", "category", categoryId, page, pageSize, search, filters, idSubcategory],
+    queryKey: ["products", "category", categoryId, page, pageSize, search, filters, idSubcategory, sort],
     queryFn: ({ signal }) =>
       fetchProductsByCategory(
         categoryId!,
@@ -20,7 +22,8 @@ export const useProductsByCategory = (
         search,
         filters,
         signal,
-        idSubcategory
+        idSubcategory,
+        sort
       ),
     enabled: !!categoryId,
     staleTime: 15 * 60 * 1000,

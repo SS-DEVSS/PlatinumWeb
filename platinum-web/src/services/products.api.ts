@@ -1,6 +1,7 @@
 // services/products.api.ts
 import axiosClient from "../services/axiosInstance";
 import { Item } from "../models/item";
+import type { CatalogProductSort } from "../models/catalogSort";
 
 const client = axiosClient();
 
@@ -17,7 +18,8 @@ export const fetchProductsByCategory = async (
   search: string,
   filters?: Record<string, unknown>,
   signal?: AbortSignal,
-  idSubcategory?: string | string[] | null
+  idSubcategory?: string | string[] | null,
+  sort?: CatalogProductSort
 ): Promise<ProductsResponse> => {
   const params: Record<string, string | number> = {
     type: "single",
@@ -26,6 +28,7 @@ export const fetchProductsByCategory = async (
   };
 
   if (search) params.search = search;
+  if (sort) params.sort = sort;
   if (filters) params.filters = JSON.stringify(filters);
   if (Array.isArray(idSubcategory) && idSubcategory.length > 0) {
     params.idSubcategory = idSubcategory.join(",");

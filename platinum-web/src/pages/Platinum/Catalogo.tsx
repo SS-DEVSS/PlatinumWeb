@@ -28,6 +28,10 @@ import {
   SheetTitle,
 } from "../../components/ui/sheet";
 import { AlertCircle, ChevronDown, ChevronRight, ChevronUp, Filter, Search } from "lucide-react";
+import {
+  CATALOG_SORT_OPTIONS,
+  type CatalogProductSort,
+} from "../../models/catalogSort";
 import { Brand } from "../../models/brand";
 import { Subcategory } from "../../models/subcategory";
 import { fetchSubcategoriesByCategory } from "../../services/subcategories.api";
@@ -188,7 +192,8 @@ const Catalogo = () => {
   });
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12);
+  const [pageSize, setPageSize] = useState(20);
+  const [catalogSort, setCatalogSort] = useState<CatalogProductSort>("sku_asc");
   const [viewMode] = useState<"cards" | "table">("cards");
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [subcategoriesExpanded, setSubcategoriesExpanded] = useState(true);
@@ -303,7 +308,8 @@ const Catalogo = () => {
     pageSize,
     searchQuery,
     filtersDict,
-    subcategoryFilterForProducts
+    subcategoryFilterForProducts,
+    catalogSort
   );
 
   const products = (data as ProductsResponse | undefined)?.products ?? [];
@@ -852,13 +858,39 @@ const Catalogo = () => {
     }
   }, [hasError]);
 
+  const renderCatalogSortSelect = () => (
+    <div className="w-full sm:w-56 shrink-0">
+      <Label className="font-semibold text-sm sm:text-base mb-2 block">Ordenar por</Label>
+      <Select
+        value={catalogSort}
+        onValueChange={(value) => {
+          setCatalogSort(value as CatalogProductSort);
+          setPage(1);
+        }}
+      >
+        <SelectTrigger className="bg-white h-10 sm:h-12">
+          <SelectValue placeholder="Ordenar" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            {CATALOG_SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   const getFilterComponent = () => {
     switch (filtroTipo) {
       case "NumParte":
         return (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-            <div className="flex-1">
-              <Label className="font-semibold text-sm sm:text-base mb-2 sm:mb-0 sm:hidden block">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-6">
+            <div className="flex-1 flex flex-col">
+              <Label className="font-semibold text-sm sm:text-base mb-2 block sm:invisible sm:h-0 sm:mb-0 sm:overflow-hidden">
                 Número de Parte:
               </Label>
               <div className="relative">
@@ -898,13 +930,14 @@ const Catalogo = () => {
                 <span className="hidden sm:inline">Tabla</span>
               </Button>
             </div> */}
+            {renderCatalogSortSelect()}
           </div>
         );
       case "Referencia":
         return (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-            <div className="flex-1">
-              <Label className="font-semibold text-sm sm:text-base mb-2 sm:mb-0 sm:hidden block">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-6">
+            <div className="flex-1 flex flex-col">
+              <Label className="font-semibold text-sm sm:text-base mb-2 block sm:invisible sm:h-0 sm:mb-0 sm:overflow-hidden">
                 Referencia:
               </Label>
               <div className="relative">
@@ -944,6 +977,7 @@ const Catalogo = () => {
                 <span className="hidden sm:inline">Tabla</span>
               </Button>
             </div> */}
+            {renderCatalogSortSelect()}
           </div>
         );
       case "Vehiculo": {
@@ -1478,31 +1512,26 @@ const Catalogo = () => {
                 {subcategoriesExpanded && (
                   <>
                     {loadingSubcategories ? (
-                      <div className="flex flex-wrap justify-start gap-4">
+                      <div className="flex flex-wrap justify-start gap-3">
                         {[1, 2, 3, 4].map((i) => (
                           <div
                             key={i}
-                            className="w-full max-w-xs sm:w-1/2 md:w-1/3 lg:w-1/4"
+                            className="min-w-[7rem] sm:min-w-[9rem]"
                           >
-                            <div className="rounded-lg border bg-white overflow-hidden animate-pulse">
-                              <div className="aspect-square bg-gray-200" />
-                              <div className="p-4 space-y-2">
-                                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                                <div className="h-3 bg-gray-100 rounded w-1/2" />
-                              </div>
-                            </div>
+                            <div className="rounded-lg border bg-white px-4 py-3 animate-pulse"><div className="h-4 bg-gray-200 rounded w-full" /></div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-wrap justify-start gap-4">
+                      <div className="flex flex-wrap justify-start gap-3">
                         {currentLevelSubcategories.map((sub) => (
                           <div
                             key={sub.id}
-                            className="w-full max-w-xs sm:w-1/2 md:w-1/3 lg:w-1/4"
+                            className="min-w-[7rem] sm:min-w-[9rem] flex-1 max-w-[12rem] sm:max-w-[14rem]"
                           >
                             <CatalogCard
                               title={sub.name}
+                              variant="labelOnly"
                               onClick={() => handleSubcategoryCardClick(sub)}
                             />
                           </div>
@@ -1525,6 +1554,9 @@ const Catalogo = () => {
                 </aside>
               )}
               <main className="flex-1 min-w-0">
+                {filtroTipo === "Vehiculo" && (
+                  <div className="mb-4 flex justify-end">{renderCatalogSortSelect()}</div>
+                )}
                 <ProductsTable
                   category={categoryData}
                   products={products}
@@ -1626,6 +1658,10 @@ const Catalogo = () => {
 
               <main className="flex-1 min-w-0">
                 {filtroTipo !== "Vehiculo" && <div className="mb-6">{getFilterComponent()}</div>}
+
+                {filtroTipo === "Vehiculo" && (
+                  <div className="mb-4 flex justify-end">{renderCatalogSortSelect()}</div>
+                )}
 
                 <ProductsTable
                   category={categoryData}
