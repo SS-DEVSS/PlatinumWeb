@@ -11,6 +11,7 @@ export type Item = {
   type: "SINGLE" | "KIT";
   description: string;
   sku?: string | null; // Product SKU from CSV
+  idSubcategory?: string | null;
   category: {
     id: string;
     name: string;

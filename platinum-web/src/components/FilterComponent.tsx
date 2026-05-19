@@ -105,12 +105,19 @@ const FilterComponent = ({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] max-w-[400px] p-0">
-        <Command>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        collisionPadding={12}
+        className="z-[100] w-[var(--radix-popover-trigger-width)] max-w-[400px] overflow-hidden p-0"
+        onWheel={(event) => event.stopPropagation()}
+        onTouchMove={(event) => event.stopPropagation()}
+      >
+        <Command className="max-h-[min(320px,var(--radix-popover-content-available-height))]">
           <CommandInput
             placeholder={`Buscar ${(attribute.displayName || attribute.name).toLowerCase()}...`}
           />
-          <CommandList>
+          <CommandList className="max-h-[min(280px,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain">
             <CommandEmpty>
               No se encontró {(attribute.displayName || attribute.name).toLowerCase()}.
             </CommandEmpty>
