@@ -35,7 +35,6 @@ import {
 } from "../../models/catalogSort";
 import { Brand } from "../../models/brand";
 import { Subcategory } from "../../models/subcategory";
-import { fetchSubcategoriesByCategory } from "../../services/subcategories.api";
 type CatalogViewLevel = "categories" | "subcategories" | "products";
 
 const ALL_CATEGORIES_VALUE = "__all_categories__";
@@ -84,34 +83,6 @@ function flattenTreeWithParents(
   return result;
 }
 
-/** Return a copy of the tree with each level sorted alphabetically by name. */
-function sortSubcategoryTree(nodes: Subcategory[]): Subcategory[] {
-  return [...nodes]
-    .sort((a, b) =>
-      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
-    )
-    .map((node) => ({
-      ...node,
-      children: node.children?.length
-        ? sortSubcategoryTree(node.children)
-        : node.children,
-    }));
-}
-
-/** Collect all subcategory ids in the subtree rooted at rootId (including the root itself). */
-function collectSubtreeIds(nodes: Subcategory[], rootId: string): string[] {
-  const root = findSubcategoryInTree(nodes, rootId);
-  if (!root) return [rootId];
-  const ids: string[] = [];
-  const visit = (node: Subcategory | undefined | null) => {
-    if (!node || !node.id) return;
-    ids.push(node.id);
-    (node.children ?? []).forEach((child) => visit(child));
-  };
-  visit(root);
-  return ids;
-}
-
 /** Build path from target to root using the parentId chain (no dependency on nested structure). */
 function findSubcategoryPathByParentId(
   tree: Subcategory[],
@@ -126,37 +97,6 @@ function findSubcategoryPathByParentId(
     cur = cur.parentId ? byId.get(cur.parentId) ?? null : null;
   }
   return path.length > 0 ? path : null;
-}
-
-type DrillLevel =
-  | { type: "category"; category: Category }
-  | { type: "subcategory"; category: Category; node: Subcategory };
-
-const matchSearch = (query: string, name: string) =>
-  !query.trim() || name.toLowerCase().includes(query.trim().toLowerCase());
-
-type SearchHit = { category: Category; subcategoryId: string | null; label: string };
-
-function flattenSearchHits(
-  categories: Category[],
-  treeByCategory: Record<string, Subcategory[]>
-): SearchHit[] {
-  const hits: SearchHit[] = [];
-  for (const cat of categories) {
-    if (!cat.id) continue;
-    hits.push({ category: cat, subcategoryId: null, label: cat.name ?? "" });
-    const tree = treeByCategory[cat.id] ?? [];
-    const walk = (nodes: Subcategory[], path: string[]) => {
-      for (const node of nodes) {
-        const currentPath = [...path, node.name];
-        const label = [cat.name, ...currentPath].join(" › ");
-        hits.push({ category: cat, subcategoryId: node.id, label });
-        if (node.children?.length) walk(node.children, currentPath);
-      }
-    };
-    walk(tree, []);
-  }
-  return hits;
 }
 
 const Catalogo = () => {
@@ -198,10 +138,6 @@ const Catalogo = () => {
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const [subcategoryTreeByCategory, setSubcategoryTreeByCategory] = useState<
-    Record<string, Subcategory[]>
-  >({});
-  const [drillStack, setDrillStack] = useState<DrillLevel[]>([]);
   /** Cache breadcrumb paths by subcategoryId so levels are not lost across re-renders. */
   const [breadcrumbPathCache, setBreadcrumbPathCache] = useState<Record<string, Subcategory[]>>({});
 
@@ -222,9 +158,7 @@ const Catalogo = () => {
     return undefined;
   }, [filtro.vehiculo.selectedFilters]);
 
-  const { data: subcategoriesData, isLoading: loadingSubcategories } = useSubcategoriesByCategory(
-    selectedCategory?.id
-  );
+  const { data: subcategoriesData } = useSubcategoriesByCategory(selectedCategory?.id);
   const subcategoriesTree = useMemo<Subcategory[]>(
     () => subcategoriesData ?? [],
     [subcategoriesData]
@@ -234,19 +168,6 @@ const Catalogo = () => {
     () => (subcategoriesTree.length > 0 ? subcategoriesTree : []),
     [subcategoriesTree]
   );
-  /** Subcategories to show at the current drill level: roots or children of the drill parent, sorted alphabetically. */
-  const currentLevelSubcategories = useMemo(() => {
-    let list: Subcategory[];
-    if (!drillParentSubcategoryId) {
-      list = subcategoriesTree;
-    } else {
-      const parent = findSubcategoryInTree(subcategoriesTree, drillParentSubcategoryId);
-      list = parent?.children ?? [];
-    }
-    return [...list].sort((a, b) =>
-      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
-    );
-  }, [subcategoriesTree, drillParentSubcategoryId]);
   const drillParentSubcategory = useMemo(
     () =>
       drillParentSubcategoryId
@@ -518,40 +439,6 @@ const Catalogo = () => {
     return () => mediaQuery.removeEventListener("change", updateScreen);
   }, []);
 
-  // Cargar árbol de subcategorías por categoría para el dropdown (vista productos)
-  useEffect(() => {
-    const categories = selectedBrand?.categories ?? [];
-    if (categories.length === 0) return;
-
-    let isCancelled = false;
-    const controller = new AbortController();
-
-    Promise.all(
-      categories.map((cat) =>
-        cat.id
-          ? fetchSubcategoriesByCategory(cat.id, controller.signal).then((tree) => [
-            cat.id!,
-            sortSubcategoryTree(tree),
-          ] as const)
-          : Promise.resolve(null)
-      )
-    )
-      .then((results) => {
-        if (isCancelled) return;
-        const map: Record<string, Subcategory[]> = {};
-        results.forEach((r) => {
-          if (r) map[r[0]] = r[1];
-        });
-        setSubcategoryTreeByCategory(map);
-      })
-      .catch(() => { });
-
-    return () => {
-      isCancelled = true;
-      controller.abort();
-    };
-  }, [selectedBrand?.id, selectedBrand?.categories]);
-
   useEffect(() => {
     setPage(1);
   }, [filtro.vehiculo.selectedFilters, searchQuery, selectedSubcategoryPillIds]);
@@ -614,25 +501,6 @@ const Catalogo = () => {
     setPage(1);
   };
 
-  const handleSubcategoryCardClick = (sub: Subcategory) => {
-    if (sub.children?.length) {
-      setDrillParentSubcategoryId(sub.id);
-      setPage(1);
-    } else {
-      const path =
-        treeForBreadcrumbPath.length > 0
-          ? findSubcategoryPathByParentId(treeForBreadcrumbPath, sub.id) ??
-          findSubcategoryPathInTree(treeForBreadcrumbPath, sub.id)
-          : null;
-      if (path?.length) {
-        setBreadcrumbPathCache((prev) => ({ ...prev, [sub.id]: path }));
-      }
-      setSelectedSubcategoryId(sub.id);
-      setViewLevel("products");
-      setPage(1);
-    }
-  };
-
   const handleBackFromDrill = () => {
     setDrillParentSubcategoryId(null);
     setPage(1);
@@ -665,12 +533,6 @@ const Catalogo = () => {
     }
     setPage(1);
   };
-
-  const goBack = () => setDrillStack((prev) => prev.slice(0, -1));
-  const drillIntoCategory = (cat: Category) =>
-    setDrillStack((prev) => [...prev, { type: "category", category: cat }]);
-  const drillIntoSubcategory = (cat: Category, node: Subcategory) =>
-    setDrillStack((prev) => [...prev, { type: "subcategory", category: cat, node }]);
 
   type BreadcrumbItem = { key: string; label: string; onClick?: () => void };
   const catalogBreadcrumb = useMemo((): BreadcrumbItem[] => {
