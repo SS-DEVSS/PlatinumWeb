@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,14 +49,14 @@ const NavItem = ({ href = "", text, icon, isActive }: NavItemProps) => {
         isActive ? "border-b-2 border-naranja" : ""
       }`}
     >
-      <a href={href} className="flex flex-row items-center gap-3">
+      <Link to={href} className="flex flex-row items-center gap-3">
         {text}
         <img
           src={isActive ? `/icons/active-${icon}` : `/icons/${icon}`}
           alt="menu icon"
           className="float-end nav2:hidden w-5"
         />
-      </a>
+      </Link>
     </li>
   );
 };

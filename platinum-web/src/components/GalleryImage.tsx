@@ -1,12 +1,10 @@
 const GalleryImage = ({ image }: { image: string }) => {
   return (
-    <article className="w-full sm:w-[48%] lg:w-[31%] mt-3 rounded-lg">
+    <article className="w-full sm:w-[48%] lg:w-[31%]">
       <img
         src={`/images/galeria/${image}`}
-        width={700}
-        height={500}
-        alt="Foto Galeria"
-        className="w-full h-[500px] object-cover rounded-lg"
+        alt="Foto Galería"
+        className="w-full h-[280px] object-cover rounded-2xl"
       />
     </article>
   );

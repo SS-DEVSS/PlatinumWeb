@@ -6,54 +6,32 @@ type BrandCardProps = {
   text_button: string;
 };
 
-const BrandCard = ({
-  image,
-  text,
-  brand,
-  link,
-  text_button,
-}: BrandCardProps) => {
-  const getColor = () => {
+const BrandCard = ({ image, text, brand, link, text_button }: BrandCardProps) => {
+  const getAccent = () => {
     switch (text) {
-      case "Suspensión":
-        return "azul_delphi";
-      case "Pastilla de Freno":
-        return "azul_pastillas";
-      case "Sistema de Embrague":
-        return "naranja";
-      default:
-        return "";
-    }
-  };
-  const getColorHover = () => {
-    switch (text) {
-      case "Pastilla de Freno":
-        return "bg-red-500";
-      case "Componente Embrague":
-        return "bg-orange-400";
-      case "Suspensión":
-        return "bg-blue-500";
-      default:
-        return "";
+      case "Pastilla de Freno": return { color: "text-red-500", bg: "bg-red-500 hover:bg-red-600" };
+      case "Sistema de Embrague": return { color: "text-naranja", bg: "bg-naranja hover:bg-orange-500" };
+      case "Suspensión": return { color: "text-azul_delphi", bg: "bg-azul_delphi hover:bg-blue-600" };
+      default: return { color: "text-naranja", bg: "bg-naranja hover:bg-orange-500" };
     }
   };
 
+  const accent = getAccent();
+
   return (
-    <article className="border border-slate-300 rounded-lg shadow flex flex-col flex-grow 2xl:mb-20">
-      <div className="w-full bg-white">
+    <article className="flex flex-col flex-grow 2xl:mb-20 bg-white rounded-2xl overflow-hidden shadow-md border border-slate-100 transition-shadow hover:shadow-lg">
+      <div className="w-full bg-slate-50 flex items-center justify-center px-6 pt-8 pb-4">
         <img
-          alt="marca"
-          className="h-[300px] p-4 mx-auto my-3 rounded-t-lg"
+          alt={text}
+          className="h-[260px] object-contain"
           src={`/images/cajas/${image}.png`}
         />
       </div>
-      <section className="px-10 py-6 border-t-2 bg-slate-200 flex flex-col flex-grow">
-        <p className="text-black text-4xl my-4 flex-grow">{text}</p>
-        <p className={`font-bold text-${getColor()}`}>{brand}</p>
-        <a href={`/${link}`}>
-          <button
-            className={`rounded-lg bg-${getColor()} w-full py-4 mt-8 text-white hover:${getColorHover()}`}
-          >
+      <section className="px-8 py-6 flex flex-col flex-grow border-t border-slate-100">
+        <p className={`text-xs font-semibold uppercase tracking-widest ${accent.color} mb-2`}>{brand}</p>
+        <p className="text-gray-900 text-2xl font-semibold flex-grow">{text}</p>
+        <a href={`/${link}`} className="mt-6">
+          <button className={`${accent.bg} w-full py-3 rounded-xl text-white font-medium text-sm transition-colors`}>
             {text_button}
           </button>
         </a>
