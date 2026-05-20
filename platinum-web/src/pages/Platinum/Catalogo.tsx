@@ -1104,7 +1104,6 @@ const Catalogo = () => {
 
               <ProductsTable
                 category={categoryData}
-                subcategoryTree={subcategoriesTree}
                 products={products}
                 loading={isLoading}
                 pageIndex={page - 1}
@@ -1128,7 +1127,6 @@ const Catalogo = () => {
 
               <ProductsTable
                 category={categoryData}
-                subcategoryTree={subcategoriesTree}
                 products={products}
                 loading={isLoading}
                 pageIndex={page - 1}
