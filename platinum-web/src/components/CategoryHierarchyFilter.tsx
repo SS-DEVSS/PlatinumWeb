@@ -96,7 +96,6 @@ export function CategoryHierarchyFilter({
         className="w-[var(--radix-dropdown-menu-trigger-width)] min-w-[240px] p-0"
         align="start"
         onCloseAutoFocus={(e) => e.preventDefault()}
-        modal={false}
       >
         <div className="p-2 border-b" onPointerDown={(e) => e.stopPropagation()}>
           <div className="relative">
