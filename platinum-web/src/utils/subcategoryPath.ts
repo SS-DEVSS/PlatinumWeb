@@ -1,5 +1,30 @@
 import { Subcategory } from "../models/subcategory";
 
+export function findSubcategoryInTree(
+  nodes: Subcategory[],
+  targetId: string
+): Subcategory | null {
+  for (const node of nodes) {
+    if (node.id === targetId) return node;
+    if (node.children?.length) {
+      const found = findSubcategoryInTree(node.children, targetId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export function collectSubcategoryIdsWithDescendants(node: Subcategory): string[] {
+  const ids: string[] = [];
+  if (node.id) ids.push(node.id);
+  if (node.children?.length) {
+    for (const child of node.children) {
+      ids.push(...collectSubcategoryIdsWithDescendants(child));
+    }
+  }
+  return ids;
+}
+
 function findSubcategoryPathInTree(
   nodes: Subcategory[],
   targetId: string,

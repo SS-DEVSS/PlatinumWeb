@@ -448,22 +448,38 @@ const ProductsTable = ({
                       onClick={() => handleClick(row)}
                     >
                       <div className="relative w-full aspect-square shrink-0 overflow-hidden bg-white">
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-400" aria-hidden>
-                          <svg className="h-16 w-16 shrink-0 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
                         {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={product.sku || product.name}
-                            className="absolute inset-0 z-10 m-auto h-full w-full max-h-full max-w-full object-contain p-3"
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : null}
+                          <div className="absolute inset-0 bg-white">
+                            <img
+                              src={imageUrl}
+                              alt={product.sku || product.name}
+                              className="h-full w-full object-contain bg-white p-3"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-white text-gray-400"
+                            aria-hidden
+                          >
+                            <svg
+                              className="h-16 w-16 shrink-0 text-gray-300"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </div>
+                        )}
                       </div>
 
                       <CardContent className="p-3 bg-gray-50">
@@ -484,7 +500,7 @@ const ProductsTable = ({
                               ))}
                               {references.length > 2 && (
                                 <span className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                                  +{references.length - 2} m?s
+                                  +{references.length - 2} más
                                 </span>
                               )}
                             </div>
