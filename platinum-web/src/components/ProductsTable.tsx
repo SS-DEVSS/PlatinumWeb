@@ -24,7 +24,6 @@ import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
-import { Subcategory } from "../models/subcategory";
 import { useItemContext } from "../context/use-item-context";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCardSkeleton from "./ProductCardSkeleton";
@@ -40,10 +39,8 @@ const ProductsTable = ({
   totalItems = 0,
   onPaginationChange,
   viewMode: externalViewMode = "cards",
-  subcategoryTree = [],
 }: {
   category: Category | null;
-  subcategoryTree?: Subcategory[];
   products?: Item[];
   itemVariant?: Item | null;
   setItemVariant?: React.Dispatch<React.SetStateAction<Item | null>>;
