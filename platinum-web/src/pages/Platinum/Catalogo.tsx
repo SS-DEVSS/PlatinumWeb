@@ -13,7 +13,6 @@ import FilterSection from "../../components/FilterSection";
 import { CategoryHierarchyFilter } from "../../components/CategoryHierarchyFilter";
 import ProductsTable from "../../components/ProductsTable";
 import CatalogCard from "../../components/CatalogCard";
-import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import { Category } from "../../models/category";
 import {
   Dialog,
@@ -116,7 +115,7 @@ const Catalogo = () => {
   });
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(30);
   const [catalogSort, setCatalogSort] = useState<CatalogProductSort>("sku_asc");
   const [viewMode] = useState<"cards" | "table">("cards");
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -1022,7 +1021,14 @@ const Catalogo = () => {
   if (loadingBrands) {
     return (
       <PlatinumLayout>
-        <SkeletonCatalog />
+        <section className="px-4 sm:px-6 md:px-12 lg:px-20 py-6 sm:py-8 bg-[#E4E4E4]">
+          <div className="min-h-[280px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 border-4 border-naranja border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-gray-600">Cargando catálogo...</p>
+            </div>
+          </div>
+        </section>
       </PlatinumLayout>
     );
   }

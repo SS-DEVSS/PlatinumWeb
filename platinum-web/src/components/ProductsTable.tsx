@@ -28,8 +28,6 @@ import { Subcategory } from "../models/subcategory";
 import { useItemContext } from "../context/use-item-context";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCardSkeleton from "./ProductCardSkeleton";
-import { formatProductSubcategoryLabel } from "../utils/subcategoryPath";
-
 const ProductsTable = ({
   category,
   itemVariant,
@@ -177,7 +175,7 @@ const ProductsTable = ({
           // Include if:
           // 1. Not "descripci?n" AND
           // 2. visibleInCatalog is not explicitly false (undefined/null/true are all OK)
-          return nameLower !== "descripci?n" && visibleInCatalog !== false;
+          return nameLower !== "descripciùn" && visibleInCatalog !== false;
         })
         .map((attribute: Attribute) => ({
           accessorKey: attribute.id,
@@ -318,14 +316,48 @@ const ProductsTable = ({
     return isPlaceholderOrEmptyUrl(url) ? null : url;
   };
 
-  // Format references for display
   const formatReferences = (product: Item): string[] => {
     if (!product.references) return [];
-    return product.references.map((ref: string | { referenceNumber?: string }) => {
-      if (typeof ref === 'string') return ref;
-      return (ref as { referenceNumber?: string }).referenceNumber || '';
+    return product.references.map((ref: string | { referenceNumber?: string; reference_number?: string }) => {
+      if (typeof ref === "string") return ref;
+      return ref.referenceNumber ?? ref.reference_number ?? "";
     }).filter(Boolean) as string[];
   };
+
+  const formatReferencesLabel = (references: string[]): string => {
+    if (references.length === 0) return "";
+    const shown = references.slice(0, 3);
+    const remaining = references.length - shown.length;
+    const base = shown.join(" | ");
+    return remaining > 0 ? `${base} y ${remaining}+` : base;
+  };
+
+  const getAttributeDisplayValue = (
+    product: Item,
+    attribute: Attribute
+  ): string | null => {
+    const attrValue = product.attributeValues.find(
+      (av: AttributeValue) => av.idAttribute === attribute.id
+    );
+    const rawValue =
+      attrValue?.valueString ??
+      (attrValue?.valueNumber != null ? String(attrValue.valueNumber) : undefined) ??
+      (attrValue?.valueBoolean != null ? String(attrValue.valueBoolean) : undefined) ??
+      (attrValue?.valueDate ? String(attrValue.valueDate) : undefined);
+
+    if (rawValue == null || String(rawValue).trim() === "") return null;
+    return String(rawValue);
+  };
+
+  const catalogGridAttributes = useMemo(() => {
+    if (!attributes?.product?.length) return [];
+    return [...attributes.product]
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .filter((attribute: Attribute) => {
+        const nameLower = attribute.name.toLowerCase();
+        return nameLower !== "descripciùn" && attribute.visibleInCatalog !== false;
+      });
+  }, [attributes?.product]);
 
   return (
     <div className="mt-0 relative">
@@ -417,7 +449,7 @@ const ProductsTable = ({
         ) : (
           /* Card Grid View */
           <div
-            className={`grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-start ${loading ? "opacity-50 pointer-events-none" : ""}`}
+            className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch ${loading ? "opacity-50 pointer-events-none" : ""}`}
           >
             {(() => {
               if (loading) {
@@ -435,38 +467,39 @@ const ProductsTable = ({
                   const product: Item = row.original;
                   const imageUrl = getProductImageUrl(product);
                   const references = formatReferences(product);
+                  const referencesLabel = formatReferencesLabel(references);
                   const isSelected = itemVariant && product.id === itemVariant.id;
-                  const subcategoryLabel = formatProductSubcategoryLabel(
-                    subcategoryTree,
-                    product.idSubcategory
-                  );
+                  const visibleCatalogAttributes = catalogGridAttributes
+                    .map((attribute) => ({
+                      attribute,
+                      value: getAttributeDisplayValue(product, attribute),
+                    }))
+                    .filter((row) => row.value != null);
 
                   return (
                     <Card
                       key={product.id}
-                      className={`cursor-pointer hover:shadow-lg transition-shadow overflow-hidden flex flex-col ${isSelected ? "ring-2 ring-naranja" : ""}`}
+                      className={`flex h-full min-h-[168px] flex-row cursor-pointer overflow-hidden border border-gray-300 transition-shadow hover:shadow-lg ${isSelected ? "ring-2 ring-naranja" : ""}`}
                       onClick={() => handleClick(row)}
                     >
-                      <div className="relative w-full aspect-square shrink-0 overflow-hidden bg-white">
+                      <div className="relative flex w-[38%] min-w-[120px] max-w-[180px] shrink-0 self-stretch overflow-hidden border-r border-gray-200 bg-white">
                         {imageUrl ? (
-                          <div className="absolute inset-0 bg-white">
-                            <img
-                              src={imageUrl}
-                              alt={product.sku || product.name}
-                              className="h-full w-full object-contain bg-white p-3"
-                              loading="lazy"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          </div>
+                          <img
+                            src={imageUrl}
+                            alt={product.sku || product.name}
+                            className="h-full min-h-[140px] w-full flex-1 object-contain bg-white p-2"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
                         ) : (
                           <div
-                            className="absolute inset-0 flex items-center justify-center bg-white text-gray-400"
+                            className="flex min-h-[140px] flex-1 items-center justify-center bg-white text-gray-400"
                             aria-hidden
                           >
                             <svg
-                              className="h-16 w-16 shrink-0 text-gray-300"
+                              className="h-12 w-12 shrink-0 text-gray-300"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -482,28 +515,39 @@ const ProductsTable = ({
                         )}
                       </div>
 
-                      <CardContent className="p-3 bg-gray-50">
-                        <p className="text-sm font-semibold text-naranja line-clamp-2 break-all">
-                          {product.sku || "-"}
-                        </p>
-                        {subcategoryLabel && (
-                          <p className="mt-1 text-xs text-gray-600 line-clamp-2">{subcategoryLabel}</p>
-                        )}
-                        {references.length > 0 && (
-                          <div className="mt-2">
-                            <span className="text-xs text-gray-600 font-medium">Referencias: </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {references.slice(0, 2).map((ref: string, index: number) => (
-                                <span key={index} className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                                  {ref}
+                      <CardContent className="flex h-full min-h-0 flex-1 flex-col p-3 text-sm">
+                        <div className="shrink-0 space-y-1 border-b border-gray-200 pb-2">
+                          <p className="text-xs font-medium text-gray-800">
+                            No. Parte Platinum:
+                          </p>
+                          <p className="text-lg font-bold text-naranja break-all">
+                            {product.sku || "-"}
+                          </p>
+                          <div className="min-h-[2.75rem] pt-0.5">
+                            <p className="text-xs font-medium text-gray-800">
+                              Referencias:
+                            </p>
+                            <p className="line-clamp-2 text-sm text-gray-600 break-words">
+                              {referencesLabel || "\u00A0"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {visibleCatalogAttributes.length > 0 && (
+                          <div className="mt-auto divide-y divide-gray-200">
+                            {visibleCatalogAttributes.map(({ attribute, value }) => (
+                              <div
+                                key={attribute.id}
+                                className="flex items-start justify-between gap-2 py-1"
+                              >
+                                <span className="shrink-0 font-medium text-gray-800 text-xs">
+                                  {attribute.displayName || attribute.name}:
                                 </span>
-                              ))}
-                              {references.length > 2 && (
-                                <span className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                                  +{references.length - 2} m·s
+                                <span className="text-right text-gray-700 break-words text-xs">
+                                  {value}
                                 </span>
-                              )}
-                            </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </CardContent>
@@ -581,7 +625,7 @@ const ProductsTable = ({
                   }}
                   className="h-9 min-w-0 flex-1 cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 sm:flex-none sm:px-3 sm:pr-8 sm:text-sm"
                 >
-                  {[20, 30, 40, 50].map((size) => (
+                  {[30, 45, 60].map((size) => (
                     <option key={size} value={size}>
                       Mostrar {size}
                     </option>

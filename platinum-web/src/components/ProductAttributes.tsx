@@ -25,6 +25,13 @@ export const ProductAttributes = ({
   reference,
   applications = [],
 }: ProductAttributesProps) => {
+  const filterDetailAttributes = (attrs: Attribute[] | undefined) =>
+    attrs?.filter(
+      (attr) =>
+        attr.name.toLowerCase() !== "descripción" &&
+        attr.visibleInProductDetail !== false
+    );
+
   const renderAttributes = (
     attributes: Attribute[] | undefined,
     values: AttributeValue[],
@@ -86,12 +93,6 @@ export const ProductAttributes = ({
           <section>
             <Table className="border-separate border-spacing-0">
               <TableBody>
-                {selectedProduct.sku && (
-                  <TableRow className="bg-white">
-                    <TableCell className="font-bold w-1/3 rounded-tl-lg">SKU</TableCell>
-                    <TableCell className="rounded-tr-lg">{selectedProduct.sku}</TableCell>
-                  </TableRow>
-                )}
                 {selectedVariant && selectedVariant.sku && (
                   <TableRow className="bg-[#f5f5f5]">
                     <TableCell className="font-bold w-1/3">SKU Variante</TableCell>
@@ -99,7 +100,7 @@ export const ProductAttributes = ({
                   </TableRow>
                 )}
                 {hasProductAttributes && (() => {
-                  const productAttrs = category.attributes!.product!.filter(attr => attr.name.toLowerCase() !== 'descripción');
+                  const productAttrs = filterDetailAttributes(category.attributes!.product) ?? [];
                   const hasMoreSections = hasVariantAttributes || hasReferenceAttributes || hasApplicationAttributes;
                   const isFirstSection = !selectedProduct.sku && !(selectedVariant?.sku);
                   return renderAttributes(
