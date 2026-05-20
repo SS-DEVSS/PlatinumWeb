@@ -7,9 +7,10 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useCategories } from "../../hooks/useCategories";
 import { useBrands } from "../../hooks/useBrands";
 import { useProductsByCategory } from "../../hooks/useProductsByCategory";
-import { useSubcategoriesByCategory } from "../../hooks/useSubcategoriesByCategory";
+import { useSubcategoriesMap } from "../../hooks/useSubcategoriesMap";
 import { ProductsResponse } from "../../services/products.api";
 import FilterSection from "../../components/FilterSection";
+import { CategoryHierarchyFilter } from "../../components/CategoryHierarchyFilter";
 import ProductsTable from "../../components/ProductsTable";
 import CatalogCard from "../../components/CatalogCard";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
@@ -35,21 +36,12 @@ import {
 } from "../../models/catalogSort";
 import { Brand } from "../../models/brand";
 import { Subcategory } from "../../models/subcategory";
+import {
+  collectSubcategoryIdsWithDescendants,
+  findSubcategoryInTree,
+} from "../../utils/subcategoryPath";
+import { getCategoryFilterLabel } from "../../utils/categoryHierarchyFilter";
 type CatalogViewLevel = "categories" | "subcategories" | "products";
-
-const ALL_CATEGORIES_VALUE = "__all_categories__";
-
-/** Find a subcategory node by id in the tree. */
-function findSubcategoryInTree(nodes: Subcategory[], id: string): Subcategory | null {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-    if (node.children?.length) {
-      const found = findSubcategoryInTree(node.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 
 /** Path of nodes from root to the node with targetId (inclusive). Uses tree traversal. */
 function findSubcategoryPathInTree(
@@ -132,7 +124,6 @@ const Catalogo = () => {
   const [activeVehicleFilters, setActiveVehicleFilters] = useState<
     Array<{ attributeId: string; attributeName: string; value: string }>
   >([]);
-  const [selectedSubcategoryPillIds, setSelectedSubcategoryPillIds] = useState<string[]>([]);
   const [vehicleFiltersResetKey, setVehicleFiltersResetKey] = useState(0);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
 
@@ -158,12 +149,29 @@ const Catalogo = () => {
     return undefined;
   }, [filtro.vehiculo.selectedFilters]);
 
-  const { data: subcategoriesData } = useSubcategoriesByCategory(selectedCategory?.id);
-  const subcategoriesTree = useMemo<Subcategory[]>(
-    () => subcategoriesData ?? [],
-    [subcategoriesData]
+  const availableCategories = useMemo(() => {
+    const list = selectedBrand?.categories || [];
+    return [...list].sort((a, b) =>
+      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
+    );
+  }, [selectedBrand]);
+
+  const categoryIdsForSubcategories = useMemo(
+    () =>
+      availableCategories
+        .map((category) => category.id)
+        .filter((id): id is string => Boolean(id)),
+    [availableCategories]
   );
-  /** Tree used for breadcrumb path: ONLY hook data so the structure is always consistent (dropdown cache may differ). */
+
+  const { map: subcategoriesByCategoryId } = useSubcategoriesMap(categoryIdsForSubcategories);
+
+  const subcategoriesTree = useMemo<Subcategory[]>(
+    () => (selectedCategory?.id ? subcategoriesByCategoryId.get(selectedCategory.id) ?? [] : []),
+    [selectedCategory?.id, subcategoriesByCategoryId]
+  );
+
+  /** Tree used for breadcrumb path: ONLY hook data so the structure is always consistent. */
   const treeForBreadcrumbPath = useMemo<Subcategory[]>(
     () => (subcategoriesTree.length > 0 ? subcategoriesTree : []),
     [subcategoriesTree]
@@ -203,17 +211,16 @@ const Catalogo = () => {
 
   const showProducts = viewLevel === "subcategories" || viewLevel === "products";
 
-  const rootSubcategories = useMemo(() => {
-    return [...subcategoriesTree].sort((a, b) =>
-      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
-    );
-  }, [subcategoriesTree]);
-
   const subcategoryFilterForProducts = useMemo((): string | string[] | null => {
-    if (!showProducts || selectedSubcategoryPillIds.length === 0) return null;
-    if (selectedSubcategoryPillIds.length === 1) return selectedSubcategoryPillIds[0];
-    return selectedSubcategoryPillIds;
-  }, [showProducts, selectedSubcategoryPillIds]);
+    if (!showProducts || !selectedSubcategoryId) return null;
+    const node = findSubcategoryInTree(subcategoriesTree, selectedSubcategoryId);
+    if (!node) return selectedSubcategoryId;
+    const ids = collectSubcategoryIdsWithDescendants(node);
+    if (ids.length === 0) return selectedSubcategoryId;
+    if (ids.length === 1) return ids[0];
+    return ids;
+  }, [showProducts, selectedSubcategoryId, subcategoriesTree]);
+
   const { data, isLoading, error: productsError } = useProductsByCategory(
     showProducts ? selectedCategory?.id : undefined,
     page,
@@ -228,12 +235,15 @@ const Catalogo = () => {
   const totalItems = (data as ProductsResponse | undefined)?.total ?? 0;
   const totalPages = (data as ProductsResponse | undefined)?.totalPages ?? 1;
 
-  const availableCategories = useMemo(() => {
-    const list = selectedBrand?.categories || [];
-    return [...list].sort((a, b) =>
-      (a.name ?? "").localeCompare(b.name ?? "", undefined, { sensitivity: "base" })
-    );
-  }, [selectedBrand]);
+  const selectedCategoryFilterLabel = useMemo(
+    () =>
+      getCategoryFilterLabel(
+        selectedCategory,
+        selectedSubcategoryId,
+        subcategoriesByCategoryId
+      ),
+    [selectedCategory, selectedSubcategoryId, subcategoriesByCategoryId]
+  );
 
   // Restore catalog state (brand, category, level, subcategories) on mount.
   useEffect(() => {
@@ -441,11 +451,7 @@ const Catalogo = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [filtro.vehiculo.selectedFilters, searchQuery, selectedSubcategoryPillIds]);
-
-  useEffect(() => {
-    setSelectedSubcategoryPillIds([]);
-  }, [selectedCategory?.id]);
+  }, [filtro.vehiculo.selectedFilters, searchQuery, selectedSubcategoryId]);
 
   const handleBrandChange = (brandId: string) => {
     const brand = brands.find((b) => b.id === brandId) || null;
@@ -460,7 +466,6 @@ const Catalogo = () => {
       searchText: "",
       vehiculo: { selectedFilters: [] },
     });
-    setSelectedSubcategoryPillIds([]);
     setPage(1);
   };
 
@@ -469,19 +474,18 @@ const Catalogo = () => {
       searchText: "",
       vehiculo: { selectedFilters: [] },
     });
-    setSelectedSubcategoryPillIds([]);
     setSelectedSubcategoryId(null);
     setDrillParentSubcategoryId(null);
     setVehicleFiltersResetKey((k) => k + 1);
     setPage(1);
   };
 
-  const toggleSubcategoryPill = (subcategoryId: string) => {
-    setSelectedSubcategoryPillIds((prev) =>
-      prev.includes(subcategoryId)
-        ? prev.filter((id) => id !== subcategoryId)
-        : [...prev, subcategoryId]
-    );
+  const clearSubcategoryFilter = () => {
+    setSelectedSubcategoryId(null);
+    setDrillParentSubcategoryId(null);
+    if (selectedCategory) {
+      setViewLevel("subcategories");
+    }
     setPage(1);
     setIsFilterDrawerOpen(false);
   };
@@ -489,7 +493,7 @@ const Catalogo = () => {
   const hasActiveCatalogFilters =
     filtro.searchText.trim() !== "" ||
     filtro.vehiculo.selectedFilters.length > 0 ||
-    selectedSubcategoryPillIds.length > 0;
+    selectedSubcategoryId !== null;
 
   const handleCategoryCardClick = (category: Category) => {
     setSelectedCategory(category);
@@ -525,9 +529,10 @@ const Catalogo = () => {
   const selectCategoryAndSubcategory = (cat: Category | null, subId: string | null) => {
     setSelectedCategory(cat);
     setSelectedSubcategoryId(subId);
+    setDrillParentSubcategoryId(null);
     if (cat) {
       localStorage.setItem("catalogo-selected-categoria", cat.id);
-      setViewLevel("products");
+      setViewLevel(subId ? "products" : "subcategories");
     } else {
       setViewLevel("categories");
     }
@@ -805,67 +810,17 @@ const Catalogo = () => {
   const renderCategoryFilter = () => (
     <div className="flex flex-col">
       <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-gray-700">Categoría</Label>
-      <Select
-        value={selectedCategory?.id ?? ALL_CATEGORIES_VALUE}
-        onValueChange={(value) => {
-          if (value === ALL_CATEGORIES_VALUE) {
-            selectCategoryAndSubcategory(null, null);
-            return;
-          }
-          const cat = availableCategories.find((c) => c.id === value);
-          if (cat) selectCategoryAndSubcategory(cat, null);
-        }}
-      >
-        <SelectTrigger className="h-9 sm:h-10 w-full bg-white">
-          <SelectValue placeholder="Todas las categorías" />
-        </SelectTrigger>
-        <SelectContent position="popper" className="max-h-[min(300px,70vh)]">
-          <SelectGroup>
-            <SelectItem value={ALL_CATEGORIES_VALUE}>Todas las categorías</SelectItem>
-            {availableCategories.map((cat) =>
-              cat.id ? (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ) : null
-            )}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+      <CategoryHierarchyFilter
+        categories={availableCategories}
+        subcategoriesByCategoryId={subcategoriesByCategoryId}
+        selectedCategory={selectedCategory}
+        selectedSubcategoryId={selectedSubcategoryId}
+        onSelect={selectCategoryAndSubcategory}
+      />
     </div>
   );
 
 
-  const renderSubcategoryPills = () => {
-    if (!selectedCategory || rootSubcategories.length === 0) return null;
-    return (
-      <div className="flex flex-col gap-2">
-        <Label className="font-semibold text-xs sm:text-sm text-gray-700">Subcategorías</Label>
-        <div className="flex flex-wrap gap-2">
-          {rootSubcategories.map((sub) => {
-            if (!sub.id) return null;
-            const isActive = selectedSubcategoryPillIds.includes(sub.id);
-            return (
-              <button
-                key={sub.id}
-                type="button"
-                onClick={() => toggleSubcategoryPill(sub.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
-                  isActive
-                    ? "bg-naranja text-white border-naranja"
-                    : "bg-white text-gray-800 border-gray-300 hover:border-naranja/50"
-                )}
-              >
-                {sub.name}
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-xs text-gray-500">Sin selección se muestran todas.</p>
-      </div>
-    );
-  };
 
   const renderClearFiltersButton = (options?: { className?: string; disabled?: boolean }) => (
     <Button
@@ -886,7 +841,7 @@ const Catalogo = () => {
   const hasMobileActiveFilterPills =
     searchQuery.trim() !== "" ||
     activeVehicleFilters.length > 0 ||
-    selectedSubcategoryPillIds.length > 0;
+    selectedSubcategoryId !== null;
 
   const renderMobileActiveFilterPills = () => {
     if (!showProducts || !hasMobileActiveFilterPills) return null;
@@ -914,21 +869,16 @@ const Catalogo = () => {
             <X className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden />
           </button>
         ))}
-        {selectedSubcategoryPillIds.map((subcategoryId) => {
-          const subcategory = findSubcategoryInTree(subcategoriesTree, subcategoryId);
-          if (!subcategory?.name) return null;
-          return (
-            <button
-              key={subcategoryId}
-              type="button"
-              onClick={() => toggleSubcategoryPill(subcategoryId)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-gray-200"
-            >
-              {subcategory.name}
-              <X className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden />
-            </button>
-          );
-        })}
+        {selectedSubcategoryId && selectedCategoryFilterLabel !== selectedCategory?.name && (
+          <button
+            type="button"
+            onClick={clearSubcategoryFilter}
+            className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-gray-200"
+          >
+            {selectedCategoryFilterLabel}
+            <X className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden />
+          </button>
+        )}
       </div>
     );
   };
@@ -1003,7 +953,6 @@ const Catalogo = () => {
         {renderSidebarSearch()}
         {renderBrandSelect()}
         {selectedBrand && renderCategoryFilter()}
-        {showProducts && selectedCategory && renderSubcategoryPills()}
         {showVehicleFilters && (
           <div className="border-t pt-4">
             <h3 className="font-semibold text-lg mb-4 text-gray-900">Filtros de vehículo</h3>
