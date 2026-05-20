@@ -226,7 +226,7 @@ const ProductDetail = () => {
             <div className="space-y-4 mb-4">
               <div className="flex flex-col lg:flex-row justify-between items-start">
                 <div className='flez flex-col gap-0 mb-2'>
-                  <p className="font-bold text-sm">No. Parte:</p>
+                  <p className="font-bold text-sm">No. Parte Platinum:</p>
                   <h4 className="text-3xl font-semibold text-naranja py-1">
                     {item?.sku || item?.name}
                   </h4>
