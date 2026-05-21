@@ -15,7 +15,7 @@ const NavMobile = ({ toggleMenu }: { toggleMenu: () => void }) => {
       </ul>
 
       <div className="px-5 pb-6 mt-2">
-        <Link to="https://catalogoplatinumdriveline.com" target="_blank">
+        <Link to="/Catalogo">
           <div className="bg-gris_oscuro flex items-center justify-between px-5 py-4 rounded-xl text-white font-medium text-sm">
             <div className="flex items-center gap-3">
               <img className="w-5" src="/icons/webWhite.png" alt="web" />
