@@ -1,3 +1,4 @@
+import { REFERENCE_FIELD_LABELS } from "../constants/referenceFieldLabels";
 import { Attribute, Category } from "../models/category";
 import { Item, Variant, AttributeValue } from "../models/item";
 import { Reference } from "../models/reference";
@@ -145,29 +146,29 @@ export const ProductAttributes = ({
                 {/* Display direct reference fields first */}
                 {reference.referenceBrand && (
                   <TableRow className="bg-white">
-                    <TableCell className="font-bold w-1/3">Marca de Referencia</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.referenceBrand}</TableCell>
                     <TableCell>{reference.referenceBrand}</TableCell>
                   </TableRow>
                 )}
                 <TableRow className={reference.referenceBrand ? 'bg-[#f5f5f5]' : 'bg-white'}>
-                  <TableCell className="font-bold w-1/3">Número de Referencia</TableCell>
+                  <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.referenceNumber}</TableCell>
                   <TableCell>{reference.referenceNumber}</TableCell>
                 </TableRow>
                 {reference.typeOfPart && (
                   <TableRow className="bg-white">
-                    <TableCell className="font-bold w-1/3">Tipo de Parte</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.typeOfPart}</TableCell>
                     <TableCell>{reference.typeOfPart}</TableCell>
                   </TableRow>
                 )}
                 {reference.type && (
                   <TableRow className={reference.typeOfPart ? 'bg-[#f5f5f5]' : 'bg-white'}>
-                    <TableCell className="font-bold w-1/3">Tipo</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.referenceType}</TableCell>
                     <TableCell>{reference.type}</TableCell>
                   </TableRow>
                 )}
                 {reference.description && (
                   <TableRow className={reference.type ? 'bg-white' : 'bg-[#f5f5f5]'}>
-                    <TableCell className="font-bold w-1/3">Descripción:</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.description}:</TableCell>
                     <TableCell>{reference.description}</TableCell>
                   </TableRow>
                 )}

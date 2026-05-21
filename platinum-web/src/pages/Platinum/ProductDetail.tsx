@@ -31,6 +31,7 @@ import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 import { TechnicalSheet } from "../../models/techincalSheet";
 import { ProductAttributes } from "../../components/ProductAttributes";
+import { REFERENCE_FIELD_LABELS } from "../../constants/referenceFieldLabels";
 import { useToast } from "../../hooks/use-toast";
 import SkeletonProductDetails from "../../skeletons/SkeletonProductDetails";
 import {
@@ -285,37 +286,49 @@ const ProductDetail = () => {
                   <div className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="font-semibold text-sm text-gray-600">Número de Referencia:</p>
+                        <p className="font-semibold text-sm text-gray-600">
+                          {REFERENCE_FIELD_LABELS.referenceNumber}:
+                        </p>
                         <p className="text-base">{selectedReference.referenceNumber}</p>
                       </div>
                       {selectedReference.referenceBrand && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">Marca de Referencia:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.referenceBrand}:
+                          </p>
                           <p className="text-base">{selectedReference.referenceBrand}</p>
                         </div>
                       )}
                       {selectedReference.typeOfPart && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">Tipo de Parte:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.typeOfPart}:
+                          </p>
                           <p className="text-base">{selectedReference.typeOfPart}</p>
                         </div>
                       )}
                       {selectedReference.type && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">Tipo:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.referenceType}:
+                          </p>
                           <p className="text-base">{selectedReference.type}</p>
                         </div>
                       )}
                       {selectedReference.sku && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">SKU:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.sku}:
+                          </p>
                           <p className="text-base">{selectedReference.sku}</p>
                         </div>
                       )}
                     </div>
                     {selectedReference.description && (
                       <div>
-                        <p className="font-semibold text-sm text-gray-600">Descripción:</p>
+                        <p className="font-semibold text-sm text-gray-600">
+                          {REFERENCE_FIELD_LABELS.description}:
+                        </p>
                         <p className="text-base">{selectedReference.description}</p>
                       </div>
                     )}

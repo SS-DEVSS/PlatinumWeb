@@ -172,7 +172,7 @@ const ProductsTable = ({
           // Include if:
           // 1. Not "descripci?n" AND
           // 2. visibleInCatalog is not explicitly false (undefined/null/true are all OK)
-          return nameLower !== "descripciùn" && visibleInCatalog !== false;
+          return nameLower !== "descripciÔøΩn" && visibleInCatalog !== false;
         })
         .map((attribute: Attribute) => ({
           accessorKey: attribute.id,
@@ -352,7 +352,7 @@ const ProductsTable = ({
       .sort((a, b) => (a.order || 0) - (b.order || 0))
       .filter((attribute: Attribute) => {
         const nameLower = attribute.name.toLowerCase();
-        return nameLower !== "descripciùn" && attribute.visibleInCatalog !== false;
+        return nameLower !== "descripciÔøΩn" && attribute.visibleInCatalog !== false;
       });
   }, [attributes?.product]);
 
@@ -562,72 +562,74 @@ const ProductsTable = ({
           </div>
         )}
         {!loading && mappedData.length > 0 && (
-          <div className="mt-6 w-full min-w-0 space-y-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 sm:px-4">
-            <p className="text-center text-xs font-medium text-gray-700 sm:text-left sm:text-sm">
-              Mostrando <span className="font-semibold text-gray-900">{startItem}</span> -{" "}
-              <span className="font-semibold text-gray-900">{endItem}</span> de{" "}
-              <span className="font-semibold text-gray-900">{totalItems}</span> resultados
-            </p>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2 sm:gap-y-2">
-              <div className="flex items-center justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm sm:px-4">
-                  <span className="whitespace-nowrap text-xs text-gray-700 sm:text-sm">
-                    {"P\u00e1gina"}{" "}
-                    <strong className="font-semibold text-gray-900">
-                      {table.getState().pagination.pageIndex + 1}
-                    </strong>{" "}
-                    de{" "}
-                    <strong className="font-semibold text-gray-900">{totalPages || 1}</strong>
-                  </span>
+          <div className="mt-6 w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 sm:px-4">
+            <div className="flex flex-col items-center justify-center lg:justify-between gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+              <p className="text-center text-xs font-medium text-gray-700 sm:text-sm">
+                Mostrando <span className="font-semibold text-gray-900">{startItem}</span> -{" "}
+                <span className="font-semibold text-gray-900">{endItem}</span> de{" "}
+                <span className="font-semibold text-gray-900">{totalItems}</span> resultados
+              </p>
+              <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-2 sm:gap-y-2">
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                    className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm sm:px-4">
+                    <span className="whitespace-nowrap text-xs text-gray-700 sm:text-sm">
+                      {"P\u00e1gina"}{" "}
+                      <strong className="font-semibold text-gray-900">
+                        {table.getState().pagination.pageIndex + 1}
+                      </strong>{" "}
+                      de{" "}
+                      <strong className="font-semibold text-gray-900">{totalPages || 1}</strong>
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                    className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <span className="shrink-0 whitespace-nowrap text-xs text-gray-700 sm:text-sm">Ir a:</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={totalPages || 1}
-                  value={pageInputValue}
-                  onChange={(e) => setPageInputValue(e.target.value)}
-                  onKeyDown={handlePageInputKeyDown}
-                  onBlur={handlePageNavigation}
-                  className="h-9 w-14 shrink-0 px-1 text-center text-xs border-gray-300 sm:w-20 sm:px-2 sm:text-sm"
-                  placeholder={"P\u00e1g"}
-                />
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    const newPageSize = Number(e.target.value);
-                    if (onPaginationChange) {
-                      onPaginationChange(0, newPageSize);
-                    }
-                  }}
-                  className="h-9 min-w-0 flex-1 cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 sm:flex-none sm:px-3 sm:pr-8 sm:text-sm"
-                >
-                  {[30, 45, 60].map((size) => (
-                    <option key={size} value={size}>
-                      Mostrar {size}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="shrink-0 whitespace-nowrap text-xs text-gray-700 sm:text-sm">Ir a:</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={totalPages || 1}
+                    value={pageInputValue}
+                    onChange={(e) => setPageInputValue(e.target.value)}
+                    onKeyDown={handlePageInputKeyDown}
+                    onBlur={handlePageNavigation}
+                    className="h-9 w-14 shrink-0 px-1 text-center text-xs border-gray-300 sm:w-20 sm:px-2 sm:text-sm"
+                    placeholder={"P\u00e1g"}
+                  />
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      const newPageSize = Number(e.target.value);
+                      if (onPaginationChange) {
+                        onPaginationChange(0, newPageSize);
+                      }
+                    }}
+                    className="h-9 min-w-0 flex-1 cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 sm:flex-none sm:px-3 sm:pr-8 sm:text-sm"
+                  >
+                    {[30, 45, 60].map((size) => (
+                      <option key={size} value={size}>
+                        Mostrar {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
