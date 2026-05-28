@@ -92,7 +92,12 @@ function findSubcategoryPathByParentId(
 
 const Catalogo = () => {
   const { loading: loadingBrands, brands: brandsMap, error: brandsError } = useBrands();
-  const { getCategoryById, getCategoryFilters, error: categoriesError } = useCategories();
+  const {
+    getCategoryById,
+    getCategoryFilters,
+    peekCategoryFilters,
+    error: categoriesError,
+  } = useCategories();
 
   const brands = useMemo(
     () => Object.values(brandsMap || {}),
@@ -352,11 +357,19 @@ const Catalogo = () => {
     }
 
     const categoryId = selectedCategory.id;
+
+    // Hydrate from cache synchronously so a remount/return-from-detail shows options instantly.
+    const cachedOptions = peekCategoryFilters(categoryId);
+    if (cachedOptions) {
+      setFilterOptions(cachedOptions);
+      setLoadingFilterOptions(false);
+    }
+
     if (fetchingCategoryRef.current === categoryId) return;
 
     fetchingCategoryRef.current = categoryId;
     const controller = new AbortController();
-    setLoadingFilterOptions(true);
+    if (!cachedOptions) setLoadingFilterOptions(true);
 
     getCategoryById(categoryId)
       .then((category) => {
@@ -387,64 +400,63 @@ const Catalogo = () => {
         fetchingCategoryRef.current = null;
       }
     };
-  }, [selectedCategory?.id, getCategoryById, getCategoryFilters]);
+  }, [selectedCategory?.id, getCategoryById, getCategoryFilters, peekCategoryFilters]);
 
   useEffect(() => {
-    if (selectedCategory?.id && filtro.vehiculo.selectedFilters.length > 0) {
-      const categoryId = selectedCategory.id;
+    if (!selectedCategory?.id) return;
+    const categoryId = selectedCategory.id;
+    const hasFilters = filtro.vehiculo.selectedFilters.length > 0;
+
+    const filtersDict: Record<string, string> | undefined = hasFilters
+      ? filtro.vehiculo.selectedFilters.reduce<Record<string, string>>((acc, f) => {
+          acc[f.attributeId] = f.value;
+          return acc;
+        }, {})
+      : undefined;
+
+    const cached = peekCategoryFilters(categoryId, filtersDict);
+    if (cached) {
+      setFilterOptions(cached);
+      setLoadingFilterOptions(false);
+      if (hasFilters) fetchingFiltersRef.current = null;
+      return;
+    }
+
+    if (hasFilters) {
       if (fetchingFiltersRef.current === categoryId) return;
-
       fetchingFiltersRef.current = categoryId;
-      const controller = new AbortController();
-      setLoadingFilterOptions(true);
+    }
 
-      const filtersDict: Record<string, string> = {};
-      filtro.vehiculo.selectedFilters.forEach((f) => {
-        filtersDict[f.attributeId] = f.value;
+    const controller = new AbortController();
+    setLoadingFilterOptions(true);
+
+    getCategoryFilters(categoryId, filtersDict, controller.signal)
+      .then((options) => {
+        if (controller.signal.aborted) return;
+        if (options) {
+          setFilterOptions(options);
+        }
+        if (hasFilters) fetchingFiltersRef.current = null;
+        setLoadingFilterOptions(false);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        if (hasFilters) fetchingFiltersRef.current = null;
+        setLoadingFilterOptions(false);
       });
 
-      getCategoryFilters(categoryId, filtersDict, controller.signal)
-        .then((options) => {
-          if (controller.signal.aborted) return;
-          if (options) {
-            setFilterOptions(options);
-          }
-          fetchingFiltersRef.current = null;
-          setLoadingFilterOptions(false);
-        })
-        .catch(() => {
-          if (controller.signal.aborted) return;
-          fetchingFiltersRef.current = null;
-          setLoadingFilterOptions(false);
-        });
-
-      return () => {
-        controller.abort();
-        if (fetchingFiltersRef.current === categoryId) {
-          fetchingFiltersRef.current = null;
-        }
-      };
-    } else if (selectedCategory?.id && filtro.vehiculo.selectedFilters.length === 0) {
-      const categoryId = selectedCategory.id;
-      const controller = new AbortController();
-      setLoadingFilterOptions(true);
-
-      getCategoryFilters(categoryId, undefined, controller.signal)
-        .then((options) => {
-          if (controller.signal.aborted) return;
-          if (options) {
-            setFilterOptions(options);
-          }
-          setLoadingFilterOptions(false);
-        })
-        .catch(() => {
-          if (controller.signal.aborted) return;
-          setLoadingFilterOptions(false);
-        });
-
-      return () => controller.abort();
-    }
-  }, [selectedCategory?.id, filtro.vehiculo.selectedFilters, getCategoryFilters]);
+    return () => {
+      controller.abort();
+      if (hasFilters && fetchingFiltersRef.current === categoryId) {
+        fetchingFiltersRef.current = null;
+      }
+    };
+  }, [
+    selectedCategory?.id,
+    filtro.vehiculo.selectedFilters,
+    getCategoryFilters,
+    peekCategoryFilters,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
