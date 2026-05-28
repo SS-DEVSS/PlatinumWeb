@@ -20,6 +20,7 @@ type FilterSectionProps = {
     };
   };
   filterOptions?: Record<string, Array<string | number | boolean | Date>>;
+  loadingFilterOptions?: boolean;
   onFilterChange?: (filters: VehicleFilterSelection[]) => void;
   onActiveFiltersChange?: (
     filters: Array<{ attributeId: string; attributeName: string; value: string }>
@@ -55,6 +56,7 @@ const FilterSection = ({
   filtroInfo,
   onFilterChange,
   filterOptions,
+  loadingFilterOptions = false,
   onActiveFiltersChange,
 }: FilterSectionProps) => {
   const [attributeStates, setAttributeStates] = useState<Record<string, AttributeState>>({});
@@ -182,20 +184,31 @@ const FilterSection = ({
     <div className="flex flex-col gap-4">
       {filterAttributes.length > 0 ? (
         <div className="grid grid-cols-1 gap-3">
-          {filterAttributes.map((attribute) => (
-            <FilterComponent
-              key={attribute.id}
-              attribute={attribute}
-              category={category!}
-              filtroInfo={filtroInfo}
-              open={attributeStates[attribute.id]?.open || false}
-              selectedValue={attributeStates[attribute.id]?.selectedValue || ""}
-              enabled={!attributeStates[attribute.id]?.disabled}
-              availableOptions={getOptionsForAttribute(attribute.id)}
-              onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
-              onSelect={(name: string) => handleSelect(attribute.id, name)}
-            />
-          ))}
+          {filterAttributes.map((attribute) => {
+            const hasSelection = Boolean(attributeStates[attribute.id]?.selectedValue);
+            const isDisabled = Boolean(attributeStates[attribute.id]?.disabled);
+            const options = getOptionsForAttribute(attribute.id);
+            const isAttributeLoading =
+              loadingFilterOptions &&
+              !hasSelection &&
+              !isDisabled &&
+              options.length === 0;
+            return (
+              <FilterComponent
+                key={attribute.id}
+                attribute={attribute}
+                category={category!}
+                filtroInfo={filtroInfo}
+                open={attributeStates[attribute.id]?.open || false}
+                selectedValue={attributeStates[attribute.id]?.selectedValue || ""}
+                enabled={!isDisabled}
+                availableOptions={options}
+                loading={isAttributeLoading}
+                onToggleOpen={(open: boolean) => toggleOpen(attribute.id, open)}
+                onSelect={(name: string) => handleSelect(attribute.id, name)}
+              />
+            );
+          })}
         </div>
       ) : (
         <div className="text-gray-500 text-sm">

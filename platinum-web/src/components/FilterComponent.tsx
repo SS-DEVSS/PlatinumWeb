@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Loader2 } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -33,6 +33,7 @@ type FilterComponentProps = {
   selectedValue: string;
   enabled: boolean;
   availableOptions: string[];
+  loading?: boolean;
   onToggleOpen: (open: boolean) => void;
   onSelect: (name: string) => void;
 };
@@ -43,6 +44,7 @@ const FilterComponent = ({
   selectedValue,
   enabled,
   availableOptions,
+  loading = false,
   onToggleOpen,
   onSelect,
 }: FilterComponentProps) => {
@@ -97,11 +99,17 @@ const FilterComponent = ({
             <div className="text-left">
               <h4 className="font-bold">{attribute.displayName || attribute.name}</h4>
               <p className="font-light text-[15px] mt-1">
-                Seleccionar {(attribute.displayName || attribute.name).toLowerCase()}
+                {loading
+                  ? "Cargando opciones…"
+                  : `Seleccionar ${(attribute.displayName || attribute.name).toLowerCase()}`}
               </p>
             </div>
           )}
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-100 text-naranja" />
+          {loading && !selectedValue ? (
+            <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin text-naranja" />
+          ) : (
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-100 text-naranja" />
+          )}
         </Button>
       </PopoverTrigger>
 
@@ -118,6 +126,12 @@ const FilterComponent = ({
             placeholder={`Buscar ${(attribute.displayName || attribute.name).toLowerCase()}...`}
           />
           <CommandList className="max-h-[min(280px,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain">
+            {loading && itemsToDisplay.length === 0 ? (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin text-naranja" />
+                Cargando opciones…
+              </div>
+            ) : null}
             <CommandEmpty>
               No se encontró {(attribute.displayName || attribute.name).toLowerCase()}.
             </CommandEmpty>
