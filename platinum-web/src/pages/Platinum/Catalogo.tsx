@@ -106,6 +106,7 @@ const Catalogo = () => {
   const [viewLevel, setViewLevel] = useState<CatalogViewLevel>("categories");
   const [categoryData, setCategoryData] = useState<Category | null>(null);
   const [filterOptions, setFilterOptions] = useState<Record<string, string[]> | undefined>(undefined);
+  const [loadingFilterOptions, setLoadingFilterOptions] = useState(false);
 
   const [filtro, setFiltro] = useState({
     searchText: "",
@@ -346,6 +347,7 @@ const Catalogo = () => {
     if (!selectedCategory?.id) {
       setCategoryData(null);
       setFilterOptions(undefined);
+      setLoadingFilterOptions(false);
       return;
     }
 
@@ -354,6 +356,7 @@ const Catalogo = () => {
 
     fetchingCategoryRef.current = categoryId;
     const controller = new AbortController();
+    setLoadingFilterOptions(true);
 
     getCategoryById(categoryId)
       .then((category) => {
@@ -369,10 +372,12 @@ const Catalogo = () => {
           setFilterOptions(options);
         }
         fetchingCategoryRef.current = null;
+        setLoadingFilterOptions(false);
       })
       .catch(() => {
         if (controller.signal.aborted) return;
         fetchingCategoryRef.current = null;
+        setLoadingFilterOptions(false);
         console.error("Error fetching category data");
       });
 
@@ -391,6 +396,7 @@ const Catalogo = () => {
 
       fetchingFiltersRef.current = categoryId;
       const controller = new AbortController();
+      setLoadingFilterOptions(true);
 
       const filtersDict: Record<string, string> = {};
       filtro.vehiculo.selectedFilters.forEach((f) => {
@@ -404,10 +410,12 @@ const Catalogo = () => {
             setFilterOptions(options);
           }
           fetchingFiltersRef.current = null;
+          setLoadingFilterOptions(false);
         })
         .catch(() => {
           if (controller.signal.aborted) return;
           fetchingFiltersRef.current = null;
+          setLoadingFilterOptions(false);
         });
 
       return () => {
@@ -419,6 +427,7 @@ const Catalogo = () => {
     } else if (selectedCategory?.id && filtro.vehiculo.selectedFilters.length === 0) {
       const categoryId = selectedCategory.id;
       const controller = new AbortController();
+      setLoadingFilterOptions(true);
 
       getCategoryFilters(categoryId, undefined, controller.signal)
         .then((options) => {
@@ -426,8 +435,12 @@ const Catalogo = () => {
           if (options) {
             setFilterOptions(options);
           }
+          setLoadingFilterOptions(false);
         })
-        .catch(() => { });
+        .catch(() => {
+          if (controller.signal.aborted) return;
+          setLoadingFilterOptions(false);
+        });
 
       return () => controller.abort();
     }
@@ -773,6 +786,7 @@ const Catalogo = () => {
         }}
         onFilterChange={handleVehicleFilterChange}
         filterOptions={filterOptions}
+        loadingFilterOptions={loadingFilterOptions}
         onActiveFiltersChange={setActiveVehicleFilters}
       />
     );
