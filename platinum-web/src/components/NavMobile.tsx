@@ -1,53 +1,59 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { menuItems } from "../data/menuData";
 import NavItem from "./NavItem";
+import { isNavActive } from "../utils/navActive";
 
 const NavMobile = ({ toggleMenu }: { toggleMenu: () => void }) => {
+  const { pathname } = useLocation();
+
   return (
-    <main className="min-h-screen">
-      <section className="bg-white flex flex-col justify-between text-black font-medium nav2:hidden px-6 min-h-screen">
-        <ul className="flex flex-col justify-center gap-7 bg-gris_oscuro text-white rounded-2xl py-7 px-7">
-          {menuItems.map((item, index) => (
-            <article
-              onClick={toggleMenu}
-              className="flex justify-between py-4"
+    <div className="flex-1 bg-white flex flex-col overflow-y-auto">
+      <ul className="flex flex-col px-5 pt-4 pb-6 gap-1">
+        {menuItems.map((item, index) => {
+          const active = isNavActive(pathname, item.href);
+          return (
+            <li
               key={index}
+              onClick={toggleMenu}
+              className={`px-4 py-3.5 rounded-xl transition-colors border-b border-slate-100 last:border-0 ${
+                active ? "bg-naranja/5" : "hover:bg-slate-50"
+              }`}
             >
               <NavItem
-                key={index}
                 href={item.href}
                 text={item.text}
                 icon={item.icon}
+                variant="mobile"
               />
-            </article>
-          ))}
-          <Link to="https://catalogoplatinumdriveline.com" target="_blank">
-            <article className="bg-naranja flex items-center px-3 py-3 gap-3 rounded-lg">
-              <img className="w-8" src="/icons/webWhite.png" alt="email" />
-              <p className="text-white">Visita el Catálogo Electrónico</p>
-            </article>
-          </Link>
-        </ul>
-        <section className="md:px-20 xl:px-40 py-10 lg:py-0 flex justify-center lg:justify-start gap-7">
-          <a href="mailto:seb.flores2002@gmail.com">
-            <img src="/icons/email.png" alt="email" />
-          </a>
-          <a
-            href="https://www.facebook.com/PlatinumDrivelineMx/"
-            target="_blank"
-          >
-            <img src="/icons/facebookNaranja.png" alt="facebook" />
-          </a>
-          <a href="https://wa.me/4423455370" target="_blank">
-            <img
-              className="w-6"
-              src="/icons/whatsappnaranja.png"
-              alt="whatsapp"
-            />
-          </a>
-        </section>
-      </section>
-    </main>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="px-5 pb-6 mt-2">
+        <Link to="/Catalogo">
+          <div className="bg-gris_oscuro flex items-center justify-between px-5 py-4 rounded-xl text-white font-medium text-sm">
+            <div className="flex items-center gap-3">
+              <img className="w-5" src="/icons/webWhite.png" alt="web" />
+              <span>Catálogo Electrónico</span>
+            </div>
+            <img src="/icons/arrowWhite.png" alt="" className="w-4 opacity-60" />
+          </div>
+        </Link>
+      </div>
+
+      <div className="px-5 pb-8 flex gap-5 items-center">
+        <a href="mailto:ventas@platinumdriveline.mx">
+          <img src="/icons/emailNaranja.png" alt="email" className="w-6" />
+        </a>
+        <a href="https://www.facebook.com/PlatinumDrivelineMx/" target="_blank">
+          <img src="/icons/facebookNaranja.png" alt="facebook" className="w-6" />
+        </a>
+        <a href="https://wa.me/4423455370" target="_blank">
+          <img src="/icons/whatsappnaranja.png" alt="whatsapp" className="w-6" />
+        </a>
+      </div>
+    </div>
   );
 };
 

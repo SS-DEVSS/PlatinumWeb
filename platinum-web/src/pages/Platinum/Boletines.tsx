@@ -28,15 +28,15 @@ function Boletines() {
     setError(null);
     const timeoutId = window.setTimeout(() => {
       fetchTechSheets(1, 200, controller.signal, searchFilter)
-      .then(({ technicalSheets }) => setTechnicalSheets(technicalSheets))
-      .catch((error: unknown) => {
-        const isCanceled = isAbortLikeError(error);
-        if (!isCanceled) {
-          setError("No se pudieron cargar los boletines.");
-          console.error("[Boletines] Error loading technical sheets:", error);
-        }
-      })
-      .finally(() => setLoading(false));
+        .then(({ technicalSheets }) => setTechnicalSheets(technicalSheets))
+        .catch((error: unknown) => {
+          const isCanceled = isAbortLikeError(error);
+          if (!isCanceled) {
+            setError("No se pudieron cargar los boletines.");
+            console.error("[Boletines] Error loading technical sheets:", error);
+          }
+        })
+        .finally(() => setLoading(false));
     }, 250);
 
     return () => {
@@ -45,24 +45,30 @@ function Boletines() {
     };
   }, [searchFilter]);
 
-  const hasTechnicalSheets = useMemo(() => technicalSheets.length > 0, [technicalSheets]);
+  const hasTechnicalSheets = useMemo(
+    () => technicalSheets.length > 0,
+    [technicalSheets],
+  );
 
   return (
     <PlatinumLayout>
       <main className="px-5 xl:px-40 py-6 lg:py-9">
-        <h1 className="pb-6 lg:pb-9">Nuestros Boletines</h1>
-        <p className="mb-6 text-sm text-slate-600">
-          Consulta documentación técnica, productos relacionados y referencias aplicables.
-        </p>
-        <div className="relative mb-6 max-w-md">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-          <input
-            type="search"
-            value={searchFilter}
-            onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Buscar por boletín, producto, numero de parte o referencia..."
-            className="h-10 w-full rounded-md border border-slate-300 bg-white pl-8 pr-3 text-sm text-slate-700"
-          />
+        <h1 className="pb-4 text-center">Nuestros Boletines</h1>
+        <div className="mx-auto mb-8 flex max-w-2xl flex-col items-center text-center">
+          <p className="mb-6 text-sm leading-relaxed text-slate-600 md:text-base">
+            Consulta documentación técnica, productos relacionados y referencias
+            aplicables.
+          </p>
+          <div className="relative w-full max-w-xl">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type="search"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Buscar por boletín, producto, numero de parte o referencia..."
+              className="h-12 w-full rounded-full border border-slate-300 bg-white pl-11 pr-5 text-sm text-slate-700 shadow-sm outline-none transition focus:border-naranja focus:ring-2 focus:ring-naranja/20 md:text-base"
+            />
+          </div>
         </div>
         <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {loading ? (
@@ -75,7 +81,9 @@ function Boletines() {
           ) : error ? (
             <p className="text-sm text-red-600">{error}</p>
           ) : !hasTechnicalSheets ? (
-            <p className="text-sm text-slate-600">No hay boletines disponibles.</p>
+            <p className="text-sm text-slate-600">
+              No hay boletines disponibles.
+            </p>
           ) : (
             technicalSheets.map((boletin) => (
               <article
@@ -88,14 +96,21 @@ function Boletines() {
                       <FileText className="h-3.5 w-3.5" />
                       Boletín técnico
                     </div>
-                    <h5 className="text-xl font-semibold text-gris_oscuro line-clamp-2">{boletin.title}</h5>
+                    <h5 className="text-xl font-semibold text-gris_oscuro line-clamp-2">
+                      {boletin.title}
+                    </h5>
                     <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-4">
                       {boletin.description || "Boletín técnico"}
                     </p>
                     {boletin.products && boletin.products.length > 0 ? (
                       <p className="mt-3 text-xs text-slate-500">
-                        Productos: {boletin.products
-                          .map((product) => product.sku ? `${product.name} (${product.sku})` : product.name)
+                        Productos:{" "}
+                        {boletin.products
+                          .map((product) =>
+                            product.sku
+                              ? `${product.name} (${product.sku})`
+                              : product.name,
+                          )
                           .join(", ")}
                       </p>
                     ) : null}

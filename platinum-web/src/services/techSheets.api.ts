@@ -31,6 +31,14 @@ export const fetchTechSheets = async (
   };
 };
 
+export const fetchTechSheetById = async (
+  id: string,
+  signal?: AbortSignal
+): Promise<TechnicalSheet> => {
+  const { data } = await client.get(`/ts/${id}`, { signal });
+  return data;
+};
+
 export const getTechSheetDocumentUrl = (id: string): string => {
   return `${API_BASE_URL.replace(/\/$/, "")}/ts/${id}/document`;
 };

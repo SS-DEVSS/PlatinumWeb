@@ -6,100 +6,102 @@ import { menuItems } from "../data/menuData";
 
 function Header() {
   const [isVisible, setIsVisible] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  const toggleMenu = () => {
-    setIsVisible(!isVisible);
-  };
+  const toggleMenu = () => setIsVisible(!isVisible);
 
   useEffect(() => {
-    if (isVisible) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = isVisible ? "hidden" : "";
   }, [isVisible]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <main>
-      <section className="hidden nav2:flex bg-naranja px-[50px] 2xl:px-[60px] py-2 justify-between items-center">
-        <section className="flex gap-5">
+    <header>
+      {/* Top bar */}
+      <div className="hidden nav2:flex bg-naranja/90 px-12 2xl:px-16 py-1.5 justify-between items-center text-white text-xs">
+        <div className="flex gap-4 items-center">
           <Link
             to="https://www.facebook.com/PlatinumDrivelineMx/"
             target="_blank"
+            className="opacity-80 hover:opacity-100 transition-opacity"
           >
-            <img src="/icons/facebookWhite.png" alt="facebook" />
+            <img
+              src="/icons/facebookWhite.png"
+              alt="facebook"
+              className="w-6"
+            />
           </Link>
-          <Link to="mailto:ventas@platinumdriveline.mx">
-            <img src="/icons/emailWhite.png" alt="email" />
+          <Link
+            to="mailto:ventas@platinumdriveline.mx"
+            className="opacity-80 hover:opacity-100 transition-opacity"
+          >
+            <img src="/icons/emailWhite.png" alt="email" className="w-6" />
           </Link>
-        </section>
-        <section>
-          <section className="flex gap-5 text-[#edeaea] py-1">
-            <Link to="https://catalogoplatinumdriveline.com/" target="_blank">
-              <article className="flex items-center px-5 gap-3 rounded-xl bg-white py-2 hover:bg-slate-200">
-                <img className="w-5" src="/icons/webBlack.png" alt="email" />
-                <p className="font-medium text-gris_oscuro hover:underline">
-                  Visita el Catálogo Electrónico
-                </p>
-              </article>
-            </Link>
-            <Link
-              to="https://drive.google.com/file/d/18D9Jt4JPXq125AJl3dbak-qnmIVdtaBj/view?usp=sharing"
-              target="_blank"
-            >
-              <article className="flex items-center px-5 gap-3 rounded-xl bg-white py-2 hover:bg-slate-200">
-                <img className="w-5" src="/icons/webBlack.png" alt="email" />
-                <p className="font-medium text-gris_oscuro hover:underline">
-                  Visita el Catálogo Ligero
-                </p>
-              </article>
-            </Link>
-          </section>
-        </section>
-      </section>
+        </div>
+        <div className="flex gap-3">
+          <Link
+            to="/Catalogo"
+            className="flex items-center gap-2 bg-white/15 hover:bg-white/25 transition-colors px-4 py-1.5 rounded-full text-white text-xs font-medium"
+          >
+            <img className="w-3.5" src="/icons/webWhite.png" alt="web" />
+            ¡Nuevo! Catálogo en línea
+          </Link>
+        </div>
+      </div>
+
+      {/* Main nav */}
       <nav
-        className={`${
-          isVisible
-            ? "fixed inset-0 overflow-y-auto w-full flex flex-col z-50"
-            : ""
-        }`}
+        className={`${isVisible ? "fixed inset-0 z-50 flex flex-col" : "sticky top-0 z-40"}`}
       >
-        <section
-          className={`${
-            isVisible ? "bg-white" : "bg-gris_oscuro"
-          } flex justify-between items-center md:pl-10 pr-7 md:pr-20 xl:px-[50px] h-[10vh]`}
+        <div
+          className={`flex justify-between items-center px-6 md:px-10 xl:px-14 h-20 transition-all duration-200
+          ${isVisible ? "bg-white" : scrolled ? "bg-gris_oscuro/95 backdrop-blur-sm shadow-md" : "bg-gris_oscuro"}`}
         >
-          <section className="flex gap-4 items-center">
-            <a href="/">
-              <img
-                src="/LOGOPlatinum.png"
-                alt="Kit"
-                className="w-[160px] h-auto ml-8 nav:ml-0"
-              />
-            </a>
-          </section>
-          <img
+          <a href="/">
+            <img
+              src="/LOGOPlatinum.png"
+              alt="Platinum Driveline"
+              className="w-36 h-auto"
+            />
+          </a>
+
+          {/* Burger */}
+          <button
             onClick={toggleMenu}
-            src={isVisible ? "/icons/close.png" : "/icons/menu.png"}
-            alt="burger menu"
-            width={25}
-            height={25}
-            className="float-end nav2:hidden cursor-pointer"
-          />
-          <ul className="hidden nav2:flex gap-10 text-white justify-end w-[80%] items-center">
+            className="nav2:hidden p-1"
+            aria-label="Menu"
+          >
+            <img
+              src={isVisible ? "/icons/close.png" : "/icons/menu.png"}
+              alt="menu"
+              width={24}
+              height={24}
+            />
+          </button>
+
+          {/* Desktop links */}
+          <ul className="hidden nav2:flex gap-6 xl:gap-8 text-white items-center">
             {menuItems.map((item) => (
-              <NavItem
-                key={item.text}
-                href={item.href}
-                text={item.text}
-                icon={item.icon}
-              />
+              <li key={item.text}>
+                <NavItem
+                  href={item.href}
+                  text={item.text}
+                  icon={item.icon}
+                  variant="desktop"
+                />
+              </li>
             ))}
           </ul>
-        </section>
+        </div>
+
         {isVisible && <NavMobile toggleMenu={toggleMenu} />}
       </nav>
-    </main>
+    </header>
   );
 }
 

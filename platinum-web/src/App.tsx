@@ -1,4 +1,4 @@
-import CardDownload from "./components/CardDownload";
+// import CardDownload from "./components/CardDownload";
 import Carousel from "./components/Carousel/Carousel";
 import ContactButton from "./components/ContactButton";
 import Marcas from "./components/Marcas";
@@ -7,14 +7,13 @@ import FeaturedProductsSection from "./components/FeaturedProductsSection";
 
 function page() {
   return (
-
     <PlatinumLayout>
       <Carousel />
       <Marcas />
 
       <FeaturedProductsSection />
 
-      <section className="px-6 lg:px-10 xl:px-40 bg-gris_ligero mt-20 py-12">
+      {/* <section className="px-6 lg:px-10 xl:px-40 bg-gris_ligero mt-20 py-12">
         <h1 className="text-white">Accede a Nuestro Contenido</h1>
         <section className="mt-28 flex flex-col md:flex-row justify-center gap-24 md:gap-8 lg:gap-6 xl:gap-10">
           <CardDownload
@@ -49,11 +48,10 @@ function page() {
             href={"/download/CatalogHD.pdf"}
           />
         </section>
-      </section>
+      </section> */}
 
       <ContactButton />
     </PlatinumLayout>
-
   );
 }
 

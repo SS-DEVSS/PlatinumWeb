@@ -20,6 +20,7 @@ import PastillasPage from "./pages/Pastillas/PastillasPage";
 import Catalogo from "./pages/Platinum/Catalogo";
 import ProductDetail from "./pages/Platinum/ProductDetail";
 import ErrorPage from "./pages/ErrorPage";
+import Privacidad from "./pages/Platinum/Privacidad";
 import { ItemContextProvider } from "./context/Item-context";
 import { Toaster } from "./components/ui/toaster";
 
@@ -59,6 +60,7 @@ const router = createBrowserRouter([
       { path: "Contacto", element: <Contacto /> },
       { path: "Pastillas", element: <PastillasPage /> },
       { path: "Delphi", element: <DelphiPage /> },
+      { path: "privacidad", element: <Privacidad /> },
     ],
   },
 ]);
