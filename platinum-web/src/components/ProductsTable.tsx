@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
@@ -35,6 +35,10 @@ import {
   shouldUsePlaceholderBackground,
 } from "../utils/imagePlaceholder";
 import ProductCardSkeleton from "./ProductCardSkeleton";
+import {
+  getProductDetailPath,
+  shouldOpenProductInNewTab,
+} from "../utils/productPaths";
 const ProductsTable = ({
   category,
   itemVariant,
@@ -72,9 +76,14 @@ const ProductsTable = ({
   const location = useLocation();
   const { setType, setVariant } = useItemContext();
 
-  const handleClick = (row: Row<Item>) => {
-    const product: Item = row.original;
+  const prepareProductContext = (product: Item) => {
+    setVariant(product.id);
+    const productType = product.type;
+    setType(productType === "KIT" ? "KIT" : "SINGLE");
+    localStorage.setItem("type", productType);
+  };
 
+  const handleProductNavigation = (product: Item, event?: React.MouseEvent) => {
     if (
       location.pathname.includes("producto") ||
       location.pathname.includes("kit")
@@ -83,19 +92,23 @@ const ProductsTable = ({
         setItemVariant(product);
       }
       return;
-    } else {
-      setVariant(product.id);
     }
 
-    const type = product.type;
-    if (type === "KIT") {
-      setType("KIT");
-      navigate(`/kit/${product.id}`);
-    } else {
-      setType("SINGLE");
-      navigate(`/producto/${product.id}`);
+    const path = getProductDetailPath(product);
+
+    if (event && shouldOpenProductInNewTab(event)) {
+      window.open(path, "_blank", "noopener,noreferrer");
+      return;
     }
-    localStorage.setItem("type", type);
+
+    prepareProductContext(product);
+    navigate(path);
+  };
+
+  const handleProductAuxClick = (product: Item, event: React.MouseEvent) => {
+    if (event.button !== 1) return;
+    event.preventDefault();
+    window.open(getProductDetailPath(product), "_blank", "noopener,noreferrer");
   };
 
   const columns = useMemo(() => {
@@ -386,7 +399,8 @@ const ProductsTable = ({
                           <TableRow
                             key={row.id}
                             data-state={row.getIsSelected() && "selected"}
-                            onClick={() => handleClick(row)}
+                            onClick={(event) => handleProductNavigation(row.original, event)}
+                            onAuxClick={(event) => handleProductAuxClick(row.original, event)}
                             className={`cursor-pointer hover:bg-orange-200 odd:bg-[#f5f5f5] even:bg-white`}
                             style={{
                               backgroundColor:
@@ -457,10 +471,17 @@ const ProductsTable = ({
                     .filter((row) => row.value != null);
 
                   return (
-                    <Card
+                    <Link
                       key={product.id}
+                      to={getProductDetailPath(product)}
+                      className="block h-full"
+                      onClick={(event) => {
+                        if (shouldOpenProductInNewTab(event)) return;
+                        prepareProductContext(product);
+                      }}
+                    >
+                    <Card
                       className={`flex h-full min-h-[168px] flex-row cursor-pointer overflow-hidden border border-gray-300 transition-shadow hover:shadow-lg ${isSelected ? "ring-2 ring-naranja" : ""}`}
-                      onClick={() => handleClick(row)}
                     >
                       <div className={`relative flex w-[38%] min-w-[120px] max-w-[180px] shrink-0 self-stretch items-center justify-center overflow-hidden border-r border-gray-200 ${getImageSurfaceClassName(rawImageUrl)}`}>
                         <img
@@ -509,6 +530,7 @@ const ProductsTable = ({
                         )}
                       </CardContent>
                     </Card>
+                    </Link>
                   );
                 });
               }
