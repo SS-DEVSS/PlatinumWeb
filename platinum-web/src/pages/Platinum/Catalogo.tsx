@@ -45,7 +45,12 @@ import {
   findSubcategoryInTree,
 } from "../../utils/subcategoryPath";
 import { getCategoryFilterLabel } from "../../utils/categoryHierarchyFilter";
-type CatalogViewLevel = "categories" | "subcategories" | "products";
+import {
+  CATALOGO_LAST_STATE_KEY,
+  type CatalogPersistedState,
+  type CatalogViewLevel,
+  writeCatalogPersistedState,
+} from "../../utils/catalogState";
 
 /** Path of nodes from root to the node with targetId (inclusive). Uses tree traversal. */
 function findSubcategoryPathInTree(
@@ -255,21 +260,28 @@ const Catalogo = () => {
     [selectedCategory, selectedSubcategoryId, subcategoriesByCategoryId]
   );
 
-  // Restore catalog state (brand, category, level, subcategories) on mount.
+  // Restore catalog state (brand, category, level, subcategories, filters) on mount.
   useEffect(() => {
     if (brands.length > 0 && !selectedBrand && !hasRestoredSelectionsRef.current) {
-      const savedStateRaw = localStorage.getItem("catalogo-last-state");
+      const savedStateRaw = localStorage.getItem(CATALOGO_LAST_STATE_KEY);
       let restoredFromLastState = false;
+
+      const applyPersistedFilters = (parsed: Partial<CatalogPersistedState>) => {
+        const searchText = parsed.searchText ?? "";
+        setFiltro({
+          searchText,
+          vehiculo: { selectedFilters: parsed.vehicleFilters ?? [] },
+        });
+        setDebouncedSearch(searchText.trim());
+        setActiveVehicleFilters(parsed.activeVehicleFilters ?? []);
+        setPage(parsed.page ?? 1);
+        setPageSize(parsed.pageSize ?? 30);
+        setCatalogSort(parsed.catalogSort ?? "sku_asc");
+      };
 
       if (savedStateRaw) {
         try {
-          const parsed = JSON.parse(savedStateRaw) as {
-            brandId: string | null;
-            categoryId: string | null;
-            viewLevel: CatalogViewLevel;
-            selectedSubcategoryId: string | null;
-            drillParentSubcategoryId: string | null;
-          };
+          const parsed = JSON.parse(savedStateRaw) as Partial<CatalogPersistedState>;
 
           const brandFromState =
             parsed.brandId && brandsMap[parsed.brandId]
@@ -290,6 +302,7 @@ const Catalogo = () => {
               setViewLevel(parsed.viewLevel ?? "subcategories");
               setSelectedSubcategoryId(parsed.selectedSubcategoryId ?? null);
               setDrillParentSubcategoryId(parsed.drillParentSubcategoryId ?? null);
+              applyPersistedFilters(parsed);
             } else {
               setViewLevel("categories");
             }
@@ -321,20 +334,33 @@ const Catalogo = () => {
 
   // Persist the last catalog state so it can be restored when returning from product detail.
   useEffect(() => {
-    const snapshot = {
+    if (!selectedBrand) return;
+
+    writeCatalogPersistedState({
       brandId: selectedBrand?.id ?? null,
       categoryId: selectedCategory?.id ?? null,
       viewLevel,
       selectedSubcategoryId,
       drillParentSubcategoryId,
-    };
-    localStorage.setItem("catalogo-last-state", JSON.stringify(snapshot));
+      searchText: filtro.searchText,
+      vehicleFilters: filtro.vehiculo.selectedFilters,
+      activeVehicleFilters,
+      page,
+      pageSize,
+      catalogSort,
+    });
   }, [
-    selectedBrand?.id,
+    selectedBrand,
     selectedCategory?.id,
     viewLevel,
     selectedSubcategoryId,
     drillParentSubcategoryId,
+    filtro.searchText,
+    filtro.vehiculo.selectedFilters,
+    activeVehicleFilters,
+    page,
+    pageSize,
+    catalogSort,
   ]);
 
   useEffect(() => {
