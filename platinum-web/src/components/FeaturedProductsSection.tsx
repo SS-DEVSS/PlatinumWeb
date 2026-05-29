@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import CardProduct from './CardProduct';
 import { fetchFeaturedProducts, FeaturedProduct } from '../services/products.api';
+import { getDisplayImageUrl } from '../utils/imagePlaceholder';
 
 const FeaturedProductsSection = () => {
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
@@ -85,16 +86,18 @@ const FeaturedProductsSection = () => {
   };
 
   const getProductImage = (product: FeaturedProduct): string => {
+    let url: string | null = null;
     if (product.images && product.images.length > 0) {
       const image = product.images[0];
       if (image.url) {
-        return image.url;
-      }
-      if (image.path) {
-        return image.path.startsWith('http') ? image.path : `https://${import.meta.env.VITE_S3_BUCKET || 'platinum-driveline-bucket'}.s3.${import.meta.env.VITE_AWS_REGION || 'us-east-1'}.amazonaws.com/${image.path}`;
+        url = image.url;
+      } else if (image.path) {
+        url = image.path.startsWith('http')
+          ? image.path
+          : `https://${import.meta.env.VITE_S3_BUCKET || 'platinum-driveline-bucket'}.s3.${import.meta.env.VITE_AWS_REGION || 'us-east-1'}.amazonaws.com/${image.path}`;
       }
     }
-    return '/images/aplicaciones/default.png';
+    return getDisplayImageUrl(url);
   };
 
   const getProductLink = (product: FeaturedProduct): string => {

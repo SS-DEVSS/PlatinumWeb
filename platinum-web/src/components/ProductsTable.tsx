@@ -26,6 +26,13 @@ import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/use-item-context";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  getDisplayImageUrl,
+  getImageClassName,
+  IMAGE_PLACEHOLDER_BG_CLASS,
+  isMissingImageUrl,
+  onImageErrorFallback,
+} from "../utils/imagePlaceholder";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 const ProductsTable = ({
   category,
@@ -97,7 +104,6 @@ const ProductsTable = ({
         header: "Imagen",
         cell: ({ row }: { row: Row<Item> }) => {
           const product: Item = row.original;
-          // Get first image from product images, fallback to variant images
           const firstImage = product.images && product.images.length > 0
             ? product.images[0].url
             : (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0
@@ -105,35 +111,14 @@ const ProductsTable = ({
               : null);
 
           return (
-            <div className="flex items-center justify-center w-16 h-16">
-              {firstImage ? (
-                <img
-                  src={firstImage}
-                  alt={product.name}
-                  className="w-12 h-12 object-cover rounded"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="flex flex-col items-center justify-center text-gray-400 w-12 h-12">
-                          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-gray-400 w-12 h-12">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              )}
+            <div className={`flex items-center justify-center w-16 h-16 rounded ${isMissingImageUrl(firstImage) ? IMAGE_PLACEHOLDER_BG_CLASS : ""}`}>
+              <img
+                src={getDisplayImageUrl(firstImage)}
+                alt={product.name}
+                className={getImageClassName(firstImage, "w-12 h-12 object-contain rounded")}
+                loading="lazy"
+                onError={onImageErrorFallback}
+              />
             </div>
           );
         },
@@ -293,24 +278,19 @@ const ProductsTable = ({
     }
   };
 
-  // Consider URL as "no image" when empty or a known placeholder so we show our own placeholder
-  const isPlaceholderOrEmptyUrl = (url: string | null | undefined): boolean => {
-    if (url == null || typeof url !== "string") return true;
-    const u = url.trim();
-    if (u === "") return true;
-    const lower = u.toLowerCase();
-    if (lower.includes("placeholder") || lower.includes("default.png") || lower.includes("no-image")) return true;
-    return false;
-  };
-
-  const getProductImageUrl = (product: Item): string | null => {
-    let url: string | null = null;
+  const getProductRawImageUrl = (product: Item): string | null => {
     if (product.images && product.images.length > 0) {
-      url = product.images[0].url ?? null;
-    } else if (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) {
-      url = product.variants[0].images[0].url ?? null;
+      return product.images[0].url ?? null;
     }
-    return isPlaceholderOrEmptyUrl(url) ? null : url;
+    if (
+      product.variants &&
+      product.variants.length > 0 &&
+      product.variants[0].images &&
+      product.variants[0].images.length > 0
+    ) {
+      return product.variants[0].images[0].url ?? null;
+    }
+    return null;
   };
 
   const formatReferences = (product: Item): string[] => {
@@ -462,7 +442,8 @@ const ProductsTable = ({
               if (mappedData.length > 0) {
                 return currentPageItems.map((row) => {
                   const product: Item = row.original;
-                  const imageUrl = getProductImageUrl(product);
+                  const rawImageUrl = getProductRawImageUrl(product);
+                  const imageUrl = getDisplayImageUrl(rawImageUrl);
                   const references = formatReferences(product);
                   const referencesLabel = formatReferencesLabel(references);
                   const isSelected = itemVariant && product.id === itemVariant.id;
@@ -479,37 +460,14 @@ const ProductsTable = ({
                       className={`flex h-full min-h-[168px] flex-row cursor-pointer overflow-hidden border border-gray-300 transition-shadow hover:shadow-lg ${isSelected ? "ring-2 ring-naranja" : ""}`}
                       onClick={() => handleClick(row)}
                     >
-                      <div className="relative flex w-[38%] min-w-[120px] max-w-[180px] shrink-0 self-stretch overflow-hidden border-r border-gray-200 bg-white">
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={product.sku || product.name}
-                            className="h-full min-h-[140px] w-full flex-1 object-contain bg-white p-2"
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="flex min-h-[140px] flex-1 items-center justify-center bg-white text-gray-400"
-                            aria-hidden
-                          >
-                            <svg
-                              className="h-12 w-12 shrink-0 text-gray-300"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                          </div>
-                        )}
+                      <div className={`relative flex w-[38%] min-w-[120px] max-w-[180px] shrink-0 self-stretch items-center justify-center overflow-hidden border-r border-gray-200 ${isMissingImageUrl(rawImageUrl) ? IMAGE_PLACEHOLDER_BG_CLASS : "bg-white"}`}>
+                        <img
+                          src={imageUrl}
+                          alt={product.sku || product.name}
+                          className={getImageClassName(rawImageUrl, "h-full min-h-[140px] w-full flex-1 object-contain")}
+                          loading="lazy"
+                          onError={onImageErrorFallback}
+                        />
                       </div>
 
                       <CardContent className="flex h-full min-h-0 flex-1 flex-col p-3 text-sm">

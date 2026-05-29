@@ -28,6 +28,11 @@ import {
   SheetTitle,
 } from "../../components/ui/sheet";
 import { AlertCircle, ArrowUpDown, ChevronDown, ChevronRight, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  getDisplayImageUrl,
+  getImageClassName,
+  onImageErrorFallback,
+} from "../../utils/imagePlaceholder";
 import { cn } from "../../lib/utils";
 import {
   CATALOG_SORT_OPTIONS,
@@ -811,9 +816,12 @@ const Catalogo = () => {
         <SelectTrigger className="h-9 sm:h-10 w-full">
           {selectedBrand ? (
             <div className="flex items-center gap-2">
-              {selectedBrand.logoImgUrl ? (
-                <img className="w-6 h-6 object-contain" src={selectedBrand.logoImgUrl} alt={selectedBrand.name} />
-              ) : null}
+              <img
+                className={getImageClassName(selectedBrand.logoImgUrl, "w-6 h-6 object-contain")}
+                src={getDisplayImageUrl(selectedBrand.logoImgUrl)}
+                alt={selectedBrand.name}
+                onError={onImageErrorFallback}
+              />
               <span className="text-sm truncate">{selectedBrand.name}</span>
             </div>
           ) : (
