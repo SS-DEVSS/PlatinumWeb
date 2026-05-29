@@ -85,14 +85,16 @@ function Header() {
           </button>
 
           {/* Desktop links */}
-          <ul className="hidden nav2:flex gap-8 text-white items-center">
+          <ul className="hidden nav2:flex gap-6 xl:gap-8 text-white items-center">
             {menuItems.map((item) => (
-              <NavItem
-                key={item.text}
-                href={item.href}
-                text={item.text}
-                icon={item.icon}
-              />
+              <li key={item.text}>
+                <NavItem
+                  href={item.href}
+                  text={item.text}
+                  icon={item.icon}
+                  variant="desktop"
+                />
+              </li>
             ))}
           </ul>
         </div>

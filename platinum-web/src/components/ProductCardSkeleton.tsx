@@ -35,4 +35,31 @@ export const ProductCardSkeletons = ({ count = 8 }: { count?: number }) => {
   );
 };
 
+/** Skeleton for home "Nuevas Integraciones" cards (vertical CardProduct layout). */
+export const FeaturedProductCardSkeleton = () => {
+  return (
+    <article className="flex w-full h-full flex-col items-center overflow-hidden rounded-[20px] border-t text-center shadow animate-pulse">
+      <div className="h-[350px] w-full rounded-t-[20px] border-b bg-gray-200" />
+      <section className="flex min-h-[180px] w-full flex-1 flex-col rounded-b-[20px] bg-gray-100 px-4 pb-6 pt-6">
+        <div className="mx-auto mb-4 h-8 w-40 rounded-md bg-gray-200 xl:h-9" />
+        <div className="mx-auto flex flex-1 flex-col gap-3">
+          <div className="mx-auto h-4 w-32 rounded bg-gray-200" />
+          <div className="mx-auto h-4 w-48 rounded bg-gray-200" />
+          <div className="mx-auto h-4 w-36 rounded bg-gray-200" />
+        </div>
+      </section>
+    </article>
+  );
+};
+
+export const FeaturedProductCardSkeletons = ({ count = 3 }: { count?: number }) => {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
+        <FeaturedProductCardSkeleton key={`featured-skeleton-${index}`} />
+      ))}
+    </>
+  );
+};
+
 export default ProductCardSkeleton;

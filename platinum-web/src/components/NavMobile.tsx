@@ -1,17 +1,33 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { menuItems } from "../data/menuData";
 import NavItem from "./NavItem";
+import { isNavActive } from "../utils/navActive";
 
 const NavMobile = ({ toggleMenu }: { toggleMenu: () => void }) => {
+  const { pathname } = useLocation();
+
   return (
     <div className="flex-1 bg-white flex flex-col overflow-y-auto">
       <ul className="flex flex-col px-5 pt-4 pb-6 gap-1">
-        {menuItems.map((item, index) => (
-          <li key={index} onClick={toggleMenu}
-            className="flex justify-between items-center px-4 py-3.5 rounded-xl hover:bg-slate-50 transition-colors text-gray-800 font-medium border-b border-slate-100 last:border-0">
-            <NavItem href={item.href} text={item.text} icon={item.icon} />
-          </li>
-        ))}
+        {menuItems.map((item, index) => {
+          const active = isNavActive(pathname, item.href);
+          return (
+            <li
+              key={index}
+              onClick={toggleMenu}
+              className={`px-4 py-3.5 rounded-xl transition-colors border-b border-slate-100 last:border-0 ${
+                active ? "bg-naranja/5" : "hover:bg-slate-50"
+              }`}
+            >
+              <NavItem
+                href={item.href}
+                text={item.text}
+                icon={item.icon}
+                variant="mobile"
+              />
+            </li>
+          );
+        })}
       </ul>
 
       <div className="px-5 pb-6 mt-2">

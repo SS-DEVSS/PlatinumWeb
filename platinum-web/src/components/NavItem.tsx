@@ -1,63 +1,77 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { isNavActive } from "../utils/navActive";
 
 type NavItemProps = {
   href: string | undefined;
   text: string;
   icon: string;
-  isActive?: boolean;
+  variant?: "desktop" | "mobile";
 };
 
-const NavItem = ({ href = "", text, icon, isActive }: NavItemProps) => {
+const desktopLinkClass = (active: boolean) =>
+  active
+    ? "relative inline-flex items-center gap-3 py-2 text-base font-medium text-naranja border-b-2 border-naranja transition-colors"
+    : "relative inline-flex items-center gap-3 py-2 text-base font-light text-white border-b-2 border-transparent hover:border-naranja hover:text-naranja/90 transition-colors";
+
+const mobileLinkClass = (active: boolean) =>
+  active
+    ? "flex w-full items-center justify-between text-base font-semibold text-naranja border-l-[3px] border-naranja pl-3 -ml-3 transition-colors"
+    : "flex w-full items-center justify-between text-base font-medium text-gray-800 border-l-[3px] border-transparent pl-3 -ml-3 hover:border-naranja hover:text-naranja transition-colors";
+
+const NavItem = ({ href = "", text, icon, variant = "desktop" }: NavItemProps) => {
+  const { pathname } = useLocation();
+  const active = isNavActive(pathname, href);
+  const isDesktop = variant === "desktop";
+  const linkClass = isDesktop ? desktopLinkClass(active) : mobileLinkClass(active);
+
   if (text === "Otros Productos") {
     return (
-      <li
-        className={`gap-3 text-base font-light text-center flex ${
-          isActive ? "border-b-2 border-naranja" : ""
-        }`}
-      >
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex flex-row gap-4 justify-between items-center">
-            {text}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className={`${linkClass} outline-none focus-visible:ring-2 focus-visible:ring-naranja/50`}
+        >
+          {text}
+          {isDesktop && (
             <img
               className="w-5"
               src="/icons/arrowDown.png"
               alt="dropdown arrow"
             />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem asChild>
-              <a href="/delphi">Delphi</a>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <a href="/pastillas">Pastillas de Freno</a>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </li>
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem asChild>
+            <Link to="/Delphi">Delphi</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/Pastillas">Pastillas de Freno</Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
   return (
-    <li
-      className={`gap-3 text-base font-light text-center ${
-        isActive ? "border-b-2 border-naranja" : ""
-      }`}
+    <Link
+      to={href}
+      className={linkClass}
+      aria-current={active ? "page" : undefined}
     >
-      <Link to={href} className="flex flex-row items-center gap-3">
-        {text}
+      {text}
+      {!isDesktop && (
         <img
-          src={isActive ? `/icons/active-${icon}` : `/icons/${icon}`}
-          alt="menu icon"
-          className="float-end nav2:hidden w-5"
+          src={active ? `/icons/active-${icon}` : `/icons/${icon}`}
+          alt=""
+          className="w-5 opacity-70"
         />
-      </Link>
-    </li>
+      )}
+    </Link>
   );
 };
 

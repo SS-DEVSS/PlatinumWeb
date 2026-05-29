@@ -1,10 +1,19 @@
-import { useEffect, useState } from 'react';
-import CardProduct from './CardProduct';
-import { fetchFeaturedProducts, FeaturedProduct } from '../services/products.api';
-import { getDisplayImageUrl } from '../utils/imagePlaceholder';
+import { useEffect, useState } from "react";
+import CardProduct from "./CardProduct";
+import { FeaturedProductCardSkeletons } from "./ProductCardSkeleton";
+import {
+  fetchFeaturedProducts,
+  FeaturedProduct,
+} from "../services/products.api";
+import { getDisplayImageUrl } from "../utils/imagePlaceholder";
+
+const FEATURED_GRID_CLASS =
+  "grid grid-cols-1 sm:grid-cols-2 nav:grid-cols-3 gap-5 px-6 sm:px-5 xl:px-24 2xl:px-40 items-stretch";
 
 const FeaturedProductsSection = () => {
-  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,8 +25,8 @@ const FeaturedProductsSection = () => {
         const response = await fetchFeaturedProducts();
         setFeaturedProducts(response.products);
       } catch (err: unknown) {
-        console.error('Error loading featured products:', err);
-        setError('Error al cargar productos destacados');
+        console.error("Error loading featured products:", err);
+        setError("Error al cargar productos destacados");
       } finally {
         setLoading(false);
       }
@@ -27,7 +36,14 @@ const FeaturedProductsSection = () => {
   }, []);
 
   if (loading) {
-    return null;
+    return (
+      <div className="pb-12" aria-busy="true" aria-label="Cargando nuevas integraciones">
+        <h1 className="py-6 lg:py-9">Nuevas Integraciones</h1>
+        <section className={FEATURED_GRID_CLASS}>
+          <FeaturedProductCardSkeletons count={3} />
+        </section>
+      </div>
+    );
   }
 
   if (error || featuredProducts.length === 0) {
@@ -46,10 +62,12 @@ const FeaturedProductsSection = () => {
     const sortedAttributes = [...app.attributeValues]
       .filter((av) => {
         // Only include attributes that have a non-null value
-        return av.valueString ||
+        return (
+          av.valueString ||
           (av.valueNumber !== null && av.valueNumber !== undefined) ||
           (av.valueBoolean !== null && av.valueBoolean !== undefined) ||
-          av.valueDate;
+          av.valueDate
+        );
       })
       .sort((a, b) => {
         // Sort by attribute order, with attributes without order going to the end
@@ -72,7 +90,10 @@ const FeaturedProductsSection = () => {
         value = String(attr.valueString);
       } else if (attr.valueNumber !== null && attr.valueNumber !== undefined) {
         value = String(attr.valueNumber);
-      } else if (attr.valueBoolean !== null && attr.valueBoolean !== undefined) {
+      } else if (
+        attr.valueBoolean !== null &&
+        attr.valueBoolean !== undefined
+      ) {
         value = String(attr.valueBoolean);
       }
 
@@ -92,26 +113,26 @@ const FeaturedProductsSection = () => {
       if (image.url) {
         url = image.url;
       } else if (image.path) {
-        url = image.path.startsWith('http')
+        url = image.path.startsWith("http")
           ? image.path
-          : `https://${import.meta.env.VITE_S3_BUCKET || 'platinum-driveline-bucket'}.s3.${import.meta.env.VITE_AWS_REGION || 'us-east-1'}.amazonaws.com/${image.path}`;
+          : `https://${import.meta.env.VITE_S3_BUCKET || "platinum-driveline-bucket"}.s3.${import.meta.env.VITE_AWS_REGION || "us-east-1"}.amazonaws.com/${image.path}`;
       }
     }
     return getDisplayImageUrl(url);
   };
 
   const getProductLink = (product: FeaturedProduct): string => {
-    const productType = product.type || 'SINGLE';
-    if (productType === 'KIT') {
+    const productType = product.type || "SINGLE";
+    if (productType === "KIT") {
       return `/kit/${product.id}`;
     }
     return `/producto/${product.id}`;
   };
 
   return (
-    <>
+    <div className="pb-12">
       <h1 className="py-6 lg:py-9">Nuevas Integraciones</h1>
-      <section className="grid grid-cols-1 sm:grid-cols-2 nav:grid-cols-3 gap-5 px-6 sm:px-5 xl:px-24 2xl:px-40 items-stretch">
+      <section className={FEATURED_GRID_CLASS}>
         {featuredProducts.map((product) => (
           <CardProduct
             key={product.id}
@@ -122,7 +143,7 @@ const FeaturedProductsSection = () => {
           />
         ))}
       </section>
-    </>
+    </div>
   );
 };
 
