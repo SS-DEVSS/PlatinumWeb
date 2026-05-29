@@ -29,10 +29,12 @@ import { Image } from "../../models/image";
 import {
   getDisplayImageUrl,
   getImageClassName,
+  getImageSurfaceClassName,
   IMAGE_PLACEHOLDER,
-  IMAGE_PLACEHOLDER_BG_CLASS,
   IMAGE_PLACEHOLDER_SCALE_CLASS,
+  isMissingImageUrl,
   onImageErrorFallback,
+  shouldUsePlaceholderBackground,
 } from "../../utils/imagePlaceholder";
 import { useItemContext } from "../../context/use-item-context";
 import { Category } from "../../models/category";
@@ -65,10 +67,15 @@ const ProductDetail = () => {
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>(undefined);
   const [relatedSheets, setRelatedSheets] = useState<TechnicalSheet[]>([]);
+  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [itemId]);
+
+  useEffect(() => {
+    setFailedImageIds(new Set());
+  }, [itemId, item?.images]);
 
   useEffect(() => {
     if (item?.type) {
@@ -183,23 +190,47 @@ const ProductDetail = () => {
                 <Card className="w-full">
                   <Carousel className="w-full" setApi={setCarouselApi}>
                     <CarouselContent>
-                      {[...item.images].sort((a, b) => (a.order || 0) - (b.order || 0)).map((image: Image, index: number) => (
-                        <CarouselItem key={index}>
+                      {[...item.images].sort((a, b) => (a.order || 0) - (b.order || 0)).map((image: Image, index: number) => {
+                        const imageKey = image.id ?? `image-${index}`;
+                        const usePlaceholderStyle = shouldUsePlaceholderBackground(
+                          image.url,
+                          failedImageIds.has(imageKey)
+                        );
+
+                        return (
+                        <CarouselItem key={imageKey}>
                           <div className="p-1">
-                            <Card className="border-none shadow-none bg-white">
-                              <CardContent className={`flex aspect-square items-center justify-center p-6 ${IMAGE_PLACEHOLDER_BG_CLASS}`}>
+                            <Card className="border-none shadow-none overflow-hidden rounded-lg bg-white">
+                              <CardContent
+                                className={`flex aspect-square items-center justify-center p-6 ${getImageSurfaceClassName(
+                                  image.url,
+                                  failedImageIds.has(imageKey)
+                                )}`}
+                              >
                                 <img
-                                  src={getDisplayImageUrl(image.url)}
+                                  src={
+                                    isMissingImageUrl(image.url)
+                                      ? getDisplayImageUrl(image.url)
+                                      : image.url
+                                  }
                                   alt={item.name}
-                                  className={getImageClassName(image.url, "max-w-full max-h-full object-contain")}
+                                  className={getImageClassName(
+                                    image.url,
+                                    "max-w-full max-h-full object-contain",
+                                    usePlaceholderStyle
+                                  )}
                                   loading="lazy"
-                                  onError={onImageErrorFallback}
+                                  onError={(event) => {
+                                    setFailedImageIds((prev) => new Set(prev).add(imageKey));
+                                    onImageErrorFallback(event);
+                                  }}
                                 />
                               </CardContent>
                             </Card>
                           </div>
                         </CarouselItem>
-                      ))}
+                        );
+                      })}
                     </CarouselContent>
                   </Carousel>
                 </Card>
@@ -208,8 +239,8 @@ const ProductDetail = () => {
                 )}
               </div>
             ) : (
-              <Card className="w-full">
-                <CardContent className={`flex aspect-square items-center justify-center p-6 ${IMAGE_PLACEHOLDER_BG_CLASS}`}>
+              <Card className="w-full overflow-hidden rounded-lg">
+                <CardContent className={`flex aspect-square items-center justify-center p-6 ${getImageSurfaceClassName(null)}`}>
                   <img
                     src={IMAGE_PLACEHOLDER}
                     alt={item?.name ?? "Producto"}

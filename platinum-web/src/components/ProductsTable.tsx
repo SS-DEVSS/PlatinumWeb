@@ -29,9 +29,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getDisplayImageUrl,
   getImageClassName,
-  IMAGE_PLACEHOLDER_BG_CLASS,
+  getImageSurfaceClassName,
   isMissingImageUrl,
   onImageErrorFallback,
+  shouldUsePlaceholderBackground,
 } from "../utils/imagePlaceholder";
 import ProductCardSkeleton from "./ProductCardSkeleton";
 const ProductsTable = ({
@@ -111,11 +112,11 @@ const ProductsTable = ({
               : null);
 
           return (
-            <div className={`flex items-center justify-center w-16 h-16 rounded ${isMissingImageUrl(firstImage) ? IMAGE_PLACEHOLDER_BG_CLASS : ""}`}>
+            <div className={`flex items-center justify-center w-16 h-16 rounded ${getImageSurfaceClassName(firstImage)}`}>
               <img
                 src={getDisplayImageUrl(firstImage)}
                 alt={product.name}
-                className={getImageClassName(firstImage, "w-12 h-12 object-contain rounded")}
+                className={getImageClassName(firstImage, "w-12 h-12 object-contain rounded", isMissingImageUrl(firstImage))}
                 loading="lazy"
                 onError={onImageErrorFallback}
               />
@@ -444,6 +445,7 @@ const ProductsTable = ({
                   const product: Item = row.original;
                   const rawImageUrl = getProductRawImageUrl(product);
                   const imageUrl = getDisplayImageUrl(rawImageUrl);
+                  const usePlaceholderStyle = shouldUsePlaceholderBackground(rawImageUrl);
                   const references = formatReferences(product);
                   const referencesLabel = formatReferencesLabel(references);
                   const isSelected = itemVariant && product.id === itemVariant.id;
@@ -460,11 +462,11 @@ const ProductsTable = ({
                       className={`flex h-full min-h-[168px] flex-row cursor-pointer overflow-hidden border border-gray-300 transition-shadow hover:shadow-lg ${isSelected ? "ring-2 ring-naranja" : ""}`}
                       onClick={() => handleClick(row)}
                     >
-                      <div className={`relative flex w-[38%] min-w-[120px] max-w-[180px] shrink-0 self-stretch items-center justify-center overflow-hidden border-r border-gray-200 ${isMissingImageUrl(rawImageUrl) ? IMAGE_PLACEHOLDER_BG_CLASS : "bg-white"}`}>
+                      <div className={`relative flex w-[38%] min-w-[120px] max-w-[180px] shrink-0 self-stretch items-center justify-center overflow-hidden border-r border-gray-200 ${getImageSurfaceClassName(rawImageUrl)}`}>
                         <img
                           src={imageUrl}
                           alt={product.sku || product.name}
-                          className={getImageClassName(rawImageUrl, "h-full min-h-[140px] w-full flex-1 object-contain")}
+                          className={getImageClassName(rawImageUrl, "h-full min-h-[140px] w-full flex-1 object-contain", usePlaceholderStyle)}
                           loading="lazy"
                           onError={onImageErrorFallback}
                         />
