@@ -4,8 +4,11 @@ import { Download, ExternalLink, FileText } from "lucide-react";
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
 import ContactButton from "../../components/ContactButton";
 import { TechnicalSheet } from "../../models/techincalSheet";
-import { fetchTechSheets, getTechSheetDocumentUrl } from "../../services/techSheets.api";
-import { Skeleton } from "../../components/ui/skeleton";
+import {
+  fetchTechSheetById,
+  getTechSheetDocumentUrl,
+} from "../../services/techSheets.api";
+import SkeletonBoletinDetail from "../../skeletons/SkeletonBoletinDetail";
 
 const isAbortLikeError = (error: unknown): boolean => {
   if (!error || typeof error !== "object") return false;
@@ -25,23 +28,38 @@ function BoletinDetail() {
   const documentUrl = boletin?.id ? getTechSheetDocumentUrl(boletin.id) : "";
 
   useEffect(() => {
+    if (!id) {
+      setBoletin(null);
+      setError("Boletín inválido.");
+      setLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
+    let cancelled = false;
+
     setLoading(true);
     setError(null);
+    setBoletin(null);
 
-    fetchTechSheets(1, 300, controller.signal)
-      .then(({ technicalSheets }) => {
-        const selected = technicalSheets.find((sheet) => sheet.id === id) || null;
-        setBoletin(selected);
-        if (!selected) setError("No se encontró el boletín.");
+    fetchTechSheetById(id, controller.signal)
+      .then((sheet) => {
+        if (cancelled) return;
+        setBoletin(sheet);
       })
       .catch((err: unknown) => {
-        const isCanceled = isAbortLikeError(err);
-        if (!isCanceled) setError("No se pudo cargar el boletín.");
+        if (cancelled || isAbortLikeError(err)) return;
+        setBoletin(null);
+        setError("No se pudo cargar el boletín.");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [id]);
 
   return (
@@ -52,18 +70,13 @@ function BoletinDetail() {
         </Link>
 
         {loading ? (
-          <article className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
-            <Skeleton className="mb-4 h-6 w-36" />
-            <Skeleton className="mb-3 h-8 w-3/4" />
-            <Skeleton className="mb-2 h-4 w-full" />
-            <Skeleton className="mb-2 h-4 w-11/12" />
-            <Skeleton className="mb-6 h-4 w-9/12" />
-            <Skeleton className="h-10 w-44" />
-          </article>
+          <SkeletonBoletinDetail />
         ) : error || !boletin ? (
-          <p className="mt-6 text-sm text-slate-600">{error || "No se encontró el boletín."}</p>
+          <p className="mt-6 text-sm text-slate-600">
+            {error || "No se encontró el boletín."}
+          </p>
         ) : (
-          <article className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+          <article className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:rounded-3xl lg:p-8">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
               <FileText className="h-3.5 w-3.5" />
               Boletín técnico
@@ -79,7 +92,10 @@ function BoletinDetail() {
                 <ul className="list-disc pl-5">
                   {boletin.products.map((product) => (
                     <li key={product.id}>
-                      <Link to={`/producto/${product.id}`} className="text-naranja hover:underline">
+                      <Link
+                        to={`/producto/${product.id}`}
+                        className="text-naranja hover:underline"
+                      >
                         {product.name}
                       </Link>
                     </li>
@@ -100,29 +116,25 @@ function BoletinDetail() {
             )}
 
             <div className="mt-8 flex flex-wrap gap-3">
-              {boletin?.id ? (
-                <>
-                  <a
-                    href={documentUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Abrir documento
-                  </a>
-                  <a
-                    href={documentUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    download
-                    className="inline-flex items-center gap-2 rounded-md bg-naranja px-4 py-2 text-white hover:opacity-90"
-                  >
-                    <Download className="h-4 w-4" />
-                    Descargar boletín
-                  </a>
-                </>
-              ) : null}
+              <a
+                href={documentUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-5 py-2 text-slate-700 hover:bg-slate-50"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Abrir documento
+              </a>
+              <a
+                href={documentUrl}
+                target="_blank"
+                rel="noreferrer"
+                download
+                className="inline-flex items-center gap-2 rounded-full bg-naranja px-5 py-2 text-white hover:opacity-90"
+              >
+                <Download className="h-4 w-4" />
+                Descargar boletín
+              </a>
             </div>
           </article>
         )}

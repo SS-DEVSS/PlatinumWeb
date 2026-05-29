@@ -19,13 +19,13 @@ const Marcas = () => {
           link={"pastillas"}
           text_button={"Visitar"}
         />
-        <BrandCard
+        {/* <BrandCard
           image={"cajaDelphiLogo"}
           text={"Suspensión"}
           brand={"DELPHI"}
           link={"delphi"}
           text_button={"Visitar"}
-        />
+        /> */}
       </div>
     </div>
   );

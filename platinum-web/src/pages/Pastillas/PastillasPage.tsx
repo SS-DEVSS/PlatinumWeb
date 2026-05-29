@@ -1,152 +1,142 @@
-import CardDownload from "../../components/CardDownload";
-import Footer from "../../components/Footer";
+import ContactButton from "../../components/ContactButton";
+import PlatinumLayout from "../../Layouts/PlatinumLayout";
 
 function PastillasPage() {
   return (
-    <main>
-      <section className="bg-azul_pastillas p-6 xl:px-40 mb-20 pb-16 pt-10">
-        <a href="/">
-          <button className="flex border rounded-full px-6 py-2 gap-3">
+    <PlatinumLayout>
+      {/* Hero */}
+      <section className="bg-gris_oscuro px-6 lg:px-16 xl:px-24 pt-6 pb-0">
+        <div className="flex items-center gap-4 mb-6">
+          <a
+            href="/"
+            className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors flex-shrink-0"
+          >
             <img
               src="/icons/left-arrow.png"
-              width={24}
-              height={24}
-              alt="Icon regresar"
+              width={14}
+              height={14}
+              alt="regresar"
             />
-            <p className="text-white">Regresar</p>
-          </button>
-        </a>
-        <h2 className="font-bold text-white text-5xl mt-12">
-          Pastillas de Freno
-        </h2>
-        <p className="font-bold text-[#dbdddd] mt-5 mb-10">
-          PLATINUM DRIVELINE
-        </p>
+            Regresar
+          </a>
+          <span className="text-slate-600">|</span>
+          <p className="text-slate-400 text-sm font-semibold uppercase tracking-widest">
+            Platinum Driveline
+          </p>
+          <span className="text-slate-600">|</span>
+          <span className="text-white text-lg font-bold">Pastillas de Freno</span>
+        </div>
 
-        <article className="flex flex-col md:flex-row bg-white rounded-2xl rounded-t-2xl mt-7">
-          <section className="bg-[#e5e2e2] rounded-t-2xl md:rounded-r-none md:rounded-l-2xl basis-2/6 flex flex-col items-center justify-center">
+        <div className="bg-white rounded-2xl overflow-hidden flex flex-col md:flex-row">
+          <div className="bg-slate-100 md:w-2/5 flex items-center justify-center p-8">
             <img
               src="/images/cajas/CajaPastilla.png"
-              alt="Kit"
-              width={400}
-              height={400}
+              alt="Pastillas de Freno"
+              className="w-72 object-contain"
             />
-          </section>
-          <p className="basis-4/6 text-justify p-8 lg:p-16 leading-10 flex flex-col items-center justify-center">
-            <span className="text-left mr-auto font-bold">
-              Platinum Premium brake pads
-            </span>
-            Pastillas de freno integral moldeadas de última tecnología, con
-            shims, accesorios y homologación con primer equipo. Material de
-            fricción seleccionado para satisfacer las demandas de los vehículos
-            modernos con ABS y sistemas de frenado automatizado.
-          </p>
-        </article>
+          </div>
+          <div className="md:w-3/5 p-8 lg:p-12 flex flex-col justify-center">
+            <p className="font-bold text-gray-900 text-lg mb-3">
+              Platinum Premium Brake Pads
+            </p>
+            <p className="text-gray-600 leading-relaxed">
+              Pastillas de freno integral moldeadas de última tecnología, con
+              shims, accesorios y homologación con primer equipo. Material de
+              fricción seleccionado para satisfacer las demandas de los
+              vehículos modernos con ABS y sistemas de frenado automatizado.
+            </p>
+          </div>
+        </div>
       </section>
-      <section className="px-6 lg:px-12 xl:px-40 mb-20">
-        <h1>Visita Nuestro Catálogo</h1>
-        <section className="mt-28 flex flex-col sm:flex-row justify-center gap-28 sm:gap-4 md:gap-8 lg:gap-6 xl:gap-10">
-          <CardDownload
-            page={"pastillas"}
-            title={"Catálogo Pastillas de Freno"}
-            content={
-              "Explora el catálogo de pastillas de freno de Platinum Driveline. Conoce nuestra línea de productos desarrollados para garantizar una frenada eficiente y segura."
-            }
-            type={"download"}
-            href={"/download/BrakesLista.pdf"}
-          />
-        </section>
-      </section>
-      <section className="bg-azul_pastillas px-5 lg:px-16 xl:px-28">
-        <h1 className="text-center py-16 text-white text-[32px] font-medium">
-          Mas Información
-        </h1>
-        <section className="md:flex gap-5 pb-20">
-          <article className="bg-white rounded-2xl rounded-t-2xl p-7 w-full lg:w-1/2 mb-8 md:mb-0">
-            <h3 className="font-bold text-2xl mb-5">Características:</h3>
-            <ul className="list-disc space-y-5 px-4 text-justify">
-              <li>
-                Fabricadas bajo altos estandares de equipo original. Con
-                aprobacion SAE-J661
-              </li>
-              <li>Frenado eficiente y seguro para su vehiculo.</li>
-              <li>Excelente duracion.</li>
-              <li>Alta resistencia a la temperatura.</li>
-              <li>No genera ruidos ni vibraciones.</li>
-              <li>No abrasivas con los discos.</li>
-              <li>Calidad competitiva a precios atractivos.</li>
-              <li>
-                Marcado con lote de fabricacion, coeficiente de friccion y
-                numero de parte, para control de calidad.
-              </li>
-              <li>
-                Producto garantizado por parte de Platinum Driveline y su red de
-                distribuidores, aplicable a defectos de fabricacion y/o
-                materiales. Sujeta a revision tecnica.
-              </li>
+
+      {/* Características y Garantía */}
+      <section className="bg-gris_oscuro px-6 lg:px-16 xl:px-24 py-8">
+        <div className="flex flex-col md:flex-row gap-6">
+          <article className="bg-white rounded-2xl p-8 flex-1">
+            <h3 className="font-bold text-xl text-gray-900 mb-5">
+              Características
+            </h3>
+            <ul className="space-y-3 text-gray-600 text-sm">
+              {[
+                "Fabricadas bajo altos estándares de equipo original. Con aprobación SAE-J661.",
+                "Frenado eficiente y seguro para su vehículo.",
+                "Excelente duración y alta resistencia a la temperatura.",
+                "No genera ruidos ni vibraciones.",
+                "No abrasivas con los discos.",
+                "Calidad competitiva a precios atractivos.",
+                "Marcado con lote de fabricación, coeficiente de fricción y número de parte.",
+                "Producto garantizado por Platinum Driveline. Sujeta a revisión técnica.",
+              ].map((item, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="text-naranja font-bold mt-0.5">•</span>
+                  {item}
+                </li>
+              ))}
             </ul>
           </article>
-          <article className="bg-white rounded-2xl rounded-t-2xl p-8 w-full lg:w-1/2">
-            <h3 className="font-bold text-2xl mb-3">Garantía:</h3>
-            <p className="text-justify leading-8">
-              Garantia de 6 meses o 10,000 km , lo que ocurra primero,
-              unicamente por defectos de material o fabricacion. No incluye
-              gastos de desmontaje ni mano de obra.
+
+          <article className="bg-white rounded-2xl p-8 flex-1">
+            <h3 className="font-bold text-xl text-gray-900 mb-4">Garantía</h3>
+            <p className="text-gray-600 text-sm leading-relaxed mb-4">
+              Garantía de 6 meses o 10,000 km, lo que ocurra primero, únicamente
+              por defectos de material o fabricación. No incluye gastos de
+              desmontaje ni mano de obra.
             </p>
-            <p className="my-3 font-bold">
-              La garantia no se hara efectiva en los siguientes casos:
+            <p className="font-semibold text-gray-900 text-sm mb-3">
+              La garantía no aplica cuando:
             </p>
-            <ul className="list-disc ml-6 leading-8">
-              <li>Hayan sido instaladas incorrectamente.</li>
-              <li>
-                Muestren daños originados por motivos ajenos a su
-                funcionamiento.
-              </li>
-              <li>
-                Tengan alguna modificación o alteración en su diseño original.
-              </li>
-              <li>Presenten signos visibles de abuso en su utilización.</li>
-              <li>
-                Se instalen en vehículos para los cuales no fueron diseñadas o
-                en aquellos que hayan sido modificados de su diseño original.
-              </li>
+            <ul className="space-y-2 text-gray-600 text-sm">
+              {[
+                "Hayan sido instaladas incorrectamente.",
+                "Muestren daños originados por motivos ajenos a su funcionamiento.",
+                "Tengan alguna modificación en su diseño original.",
+                "Presenten signos visibles de abuso en su utilización.",
+                "Se instalen en vehículos para los cuales no fueron diseñadas.",
+              ].map((item, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="text-red-400 font-bold mt-0.5">•</span>
+                  {item}
+                </li>
+              ))}
             </ul>
-            <p className="mt-3 leading-8">
+            <p className="text-gray-500 text-xs mt-4 leading-relaxed">
               Para que la garantía de desgaste proceda, se debe tener un
-              desgaste regular en las 4 pastillas, parejo, ya que lo común es
-              que se presente solo en 1 pastilla, que se quede pegada, o las de
-              un eje, o desgaste en forma de cuña, tampoco aplicable.
+              desgaste regular en las 4 pastillas de forma pareja.
             </p>
           </article>
-        </section>
+        </div>
       </section>
-      <section className="px-6 lg:px-12 xl:px-40">
-        <section className="bg-gris_oscuro text-white mt-10 mb-10 lg:mb-20 p-4 md:p-10 text-center rounded-2xl">
-          <h3 className="text-3xl py-3 lg:py-5">Nuestros Boletines</h3>
-          <section className="flex flex-col sm:flex-row justify-center gap-4 md:gap-8 mt-3 lg:mt-6 px-4 pb-4">
-            <a
-              href="/download/boletinInstalacion.jpg"
-              download
-              className="bg-white rounded-xl flex flex-col items-center"
-            >
-              <section className="flex-shrink-0">
-                <img
-                  src="/download/boletinInstalacion.jpg"
-                  alt="Kit"
-                  width={550}
-                  height={400}
-                  className="w-full h-full rounded-t-xl object-contain border-b-2 sm:max-w-[400px]"
-                />
-              </section>
-              <h5 className="p-4 lg:p-6 text-center flex-grow flex flex-col justify-center text-black">
+
+      {/* Boletines */}
+      <section className="px-6 lg:px-16 xl:px-24 py-14 bg-[#F5F6F8]">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-8">
+          Nuestros Boletines
+        </h2>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <a
+            href="/download/boletinInstalacion.jpg"
+            download
+            className="group bg-white rounded-2xl overflow-hidden border border-slate-100 hover:shadow-md transition-shadow w-full sm:w-72"
+          >
+            <img
+              src="/download/boletinInstalacion.jpg"
+              alt="Boletín Instalación"
+              className="w-full object-contain border-b border-slate-100"
+            />
+            <div className="p-5">
+              <p className="font-medium text-gray-900 text-sm">
                 Recomendaciones de Instalación
-              </h5>
-            </a>
-          </section>
-        </section>
+              </p>
+              <p className="text-naranja text-sm font-semibold mt-2 group-hover:underline">
+                Descargar →
+              </p>
+            </div>
+          </a>
+        </div>
       </section>
-      <Footer />
-    </main>
+
+      <ContactButton />
+    </PlatinumLayout>
   );
 }
 
