@@ -26,11 +26,22 @@ import { useEffect, useState } from "react";
 import { useProduct } from "../../hooks/useProduct";
 import { Component } from "../../models/component";
 import { Image } from "../../models/image";
+import {
+  getDisplayImageUrl,
+  getImageClassName,
+  getImageSurfaceClassName,
+  IMAGE_PLACEHOLDER,
+  IMAGE_PLACEHOLDER_SCALE_CLASS,
+  isMissingImageUrl,
+  onImageErrorFallback,
+  shouldUsePlaceholderBackground,
+} from "../../utils/imagePlaceholder";
 import { useItemContext } from "../../context/use-item-context";
 import { Category } from "../../models/category";
 import { useCategories } from "../../hooks/useCategories";
 import { TechnicalSheet } from "../../models/techincalSheet";
 import { ProductAttributes } from "../../components/ProductAttributes";
+import { REFERENCE_FIELD_LABELS } from "../../constants/referenceFieldLabels";
 import { useToast } from "../../hooks/use-toast";
 import SkeletonProductDetails from "../../skeletons/SkeletonProductDetails";
 import {
@@ -56,10 +67,15 @@ const ProductDetail = () => {
   const [isReferenceDialogOpen, setIsReferenceDialogOpen] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>(undefined);
   const [relatedSheets, setRelatedSheets] = useState<TechnicalSheet[]>([]);
+  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [itemId]);
+
+  useEffect(() => {
+    setFailedImageIds(new Set());
+  }, [itemId, item?.images]);
 
   useEffect(() => {
     if (item?.type) {
@@ -174,31 +190,47 @@ const ProductDetail = () => {
                 <Card className="w-full">
                   <Carousel className="w-full" setApi={setCarouselApi}>
                     <CarouselContent>
-                      {[...item.images].sort((a, b) => (a.order || 0) - (b.order || 0)).map((image: Image, index: number) => (
-                        <CarouselItem key={index}>
+                      {[...item.images].sort((a, b) => (a.order || 0) - (b.order || 0)).map((image: Image, index: number) => {
+                        const imageKey = image.id ?? `image-${index}`;
+                        const usePlaceholderStyle = shouldUsePlaceholderBackground(
+                          image.url,
+                          failedImageIds.has(imageKey)
+                        );
+
+                        return (
+                        <CarouselItem key={imageKey}>
                           <div className="p-1">
-                            <Card className="border-none shadow-none bg-white">
-                              <CardContent className="flex aspect-square items-center justify-center p-6 bg-white">
-                                {image.url ? (
-                                  <img
-                                    src={image.url}
-                                    alt={item.name}
-                                    className="max-w-full max-h-full object-contain"
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <div className="flex flex-col items-center justify-center text-gray-400">
-                                    <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <p className="text-sm">Sin imagen</p>
-                                  </div>
-                                )}
+                            <Card className="border-none shadow-none overflow-hidden rounded-lg bg-white">
+                              <CardContent
+                                className={`flex aspect-square items-center justify-center p-6 ${getImageSurfaceClassName(
+                                  image.url,
+                                  failedImageIds.has(imageKey)
+                                )}`}
+                              >
+                                <img
+                                  src={
+                                    isMissingImageUrl(image.url)
+                                      ? getDisplayImageUrl(image.url)
+                                      : image.url
+                                  }
+                                  alt={item.name}
+                                  className={getImageClassName(
+                                    image.url,
+                                    "max-w-full max-h-full object-contain",
+                                    usePlaceholderStyle
+                                  )}
+                                  loading="lazy"
+                                  onError={(event) => {
+                                    setFailedImageIds((prev) => new Set(prev).add(imageKey));
+                                    onImageErrorFallback(event);
+                                  }}
+                                />
                               </CardContent>
                             </Card>
                           </div>
                         </CarouselItem>
-                      ))}
+                        );
+                      })}
                     </CarouselContent>
                   </Carousel>
                 </Card>
@@ -207,14 +239,13 @@ const ProductDetail = () => {
                 )}
               </div>
             ) : (
-              <Card className="w-full">
-                <CardContent className="flex aspect-square items-center justify-center p-6">
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    <svg className="w-16 h-16 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-sm">Sin imagen disponible</p>
-                  </div>
+              <Card className="w-full overflow-hidden rounded-lg">
+                <CardContent className={`flex aspect-square items-center justify-center p-6 ${getImageSurfaceClassName(null)}`}>
+                  <img
+                    src={IMAGE_PLACEHOLDER}
+                    alt={item?.name ?? "Producto"}
+                    className={`max-w-full max-h-full object-contain ${IMAGE_PLACEHOLDER_SCALE_CLASS}`}
+                  />
                 </CardContent>
               </Card>
             )}
@@ -226,7 +257,7 @@ const ProductDetail = () => {
             <div className="space-y-4 mb-4">
               <div className="flex flex-col lg:flex-row justify-between items-start">
                 <div className='flez flex-col gap-0 mb-2'>
-                  <p className="font-bold text-sm">No. Parte:</p>
+                  <p className="font-bold text-sm">No. Parte Platinum:</p>
                   <h4 className="text-3xl font-semibold text-naranja py-1">
                     {item?.sku || item?.name}
                   </h4>
@@ -285,37 +316,49 @@ const ProductDetail = () => {
                   <div className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="font-semibold text-sm text-gray-600">Número de Referencia:</p>
+                        <p className="font-semibold text-sm text-gray-600">
+                          {REFERENCE_FIELD_LABELS.referenceNumber}:
+                        </p>
                         <p className="text-base">{selectedReference.referenceNumber}</p>
                       </div>
                       {selectedReference.referenceBrand && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">Marca de Referencia:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.referenceBrand}:
+                          </p>
                           <p className="text-base">{selectedReference.referenceBrand}</p>
                         </div>
                       )}
                       {selectedReference.typeOfPart && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">Tipo de Parte:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.typeOfPart}:
+                          </p>
                           <p className="text-base">{selectedReference.typeOfPart}</p>
                         </div>
                       )}
                       {selectedReference.type && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">Tipo:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.referenceType}:
+                          </p>
                           <p className="text-base">{selectedReference.type}</p>
                         </div>
                       )}
                       {selectedReference.sku && (
                         <div>
-                          <p className="font-semibold text-sm text-gray-600">SKU:</p>
+                          <p className="font-semibold text-sm text-gray-600">
+                            {REFERENCE_FIELD_LABELS.sku}:
+                          </p>
                           <p className="text-base">{selectedReference.sku}</p>
                         </div>
                       )}
                     </div>
                     {selectedReference.description && (
                       <div>
-                        <p className="font-semibold text-sm text-gray-600">Descripción:</p>
+                        <p className="font-semibold text-sm text-gray-600">
+                          {REFERENCE_FIELD_LABELS.description}:
+                        </p>
                         <p className="text-base">{selectedReference.description}</p>
                       </div>
                     )}

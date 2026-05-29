@@ -25,9 +25,16 @@ import { Input } from "./ui/input";
 import { Attribute, Category } from "../models/category";
 import { AttributeValue, Item } from "../models/item";
 import { useItemContext } from "../context/use-item-context";
-import { ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  getDisplayImageUrl,
+  getImageClassName,
+  getImageSurfaceClassName,
+  isMissingImageUrl,
+  onImageErrorFallback,
+  shouldUsePlaceholderBackground,
+} from "../utils/imagePlaceholder";
 import ProductCardSkeleton from "./ProductCardSkeleton";
-
 const ProductsTable = ({
   category,
   itemVariant,
@@ -98,7 +105,6 @@ const ProductsTable = ({
         header: "Imagen",
         cell: ({ row }: { row: Row<Item> }) => {
           const product: Item = row.original;
-          // Get first image from product images, fallback to variant images
           const firstImage = product.images && product.images.length > 0
             ? product.images[0].url
             : (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0
@@ -106,35 +112,14 @@ const ProductsTable = ({
               : null);
 
           return (
-            <div className="flex items-center justify-center w-16 h-16">
-              {firstImage ? (
-                <img
-                  src={firstImage}
-                  alt={product.name}
-                  className="w-12 h-12 object-cover rounded"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="flex flex-col items-center justify-center text-gray-400 w-12 h-12">
-                          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      `;
-                    }
-                  }}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-gray-400 w-12 h-12">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              )}
+            <div className={`flex items-center justify-center w-16 h-16 rounded ${getImageSurfaceClassName(firstImage)}`}>
+              <img
+                src={getDisplayImageUrl(firstImage)}
+                alt={product.name}
+                className={getImageClassName(firstImage, "w-12 h-12 object-contain rounded", isMissingImageUrl(firstImage))}
+                loading="lazy"
+                onError={onImageErrorFallback}
+              />
             </div>
           );
         },
@@ -166,14 +151,14 @@ const ProductsTable = ({
 
       return sortedAttributes
         .filter((attribute: Attribute) => {
-          // Filter out "Descripción" and attributes that are explicitly set to not visible in catalog
+          // Filter out "Descripci?n" and attributes that are explicitly set to not visible in catalog
           const nameLower = attribute.name.toLowerCase();
           const visibleInCatalog = (attribute as Attribute & { visibleInCatalog?: boolean }).visibleInCatalog;
 
           // Include if:
-          // 1. Not "descripción" AND
+          // 1. Not "descripci?n" AND
           // 2. visibleInCatalog is not explicitly false (undefined/null/true are all OK)
-          return nameLower !== "descripción" && visibleInCatalog !== false;
+          return nameLower !== "descripci�n" && visibleInCatalog !== false;
         })
         .map((attribute: Attribute) => ({
           accessorKey: attribute.id,
@@ -184,14 +169,17 @@ const ProductsTable = ({
               (av: AttributeValue) => av.idAttribute === attribute.id
             );
 
-            const fullValue =
-              attrValue?.valueString ||
-              attrValue?.valueNumber?.toString() ||
-              attrValue?.valueBoolean?.toString() ||
-              attrValue?.valueDate?.toDateString() ||
-              "-";
+            const rawValue =
+              attrValue?.valueString ??
+              (attrValue?.valueNumber != null ? String(attrValue.valueNumber) : undefined) ??
+              (attrValue?.valueBoolean != null ? String(attrValue.valueBoolean) : undefined) ??
+              (attrValue?.valueDate ? attrValue.valueDate.toDateString() : undefined);
 
-            const valueStr = String(fullValue);
+            if (rawValue == null || String(rawValue).trim() === "") {
+              return <div />;
+            }
+
+            const valueStr = String(rawValue);
             const displayValue = valueStr.length > 30 ? `${valueStr.substring(0, 30)}...` : valueStr;
 
             return (
@@ -291,34 +279,63 @@ const ProductsTable = ({
     }
   };
 
-  // Consider URL as "no image" when empty or a known placeholder so we show our own placeholder
-  const isPlaceholderOrEmptyUrl = (url: string | null | undefined): boolean => {
-    if (url == null || typeof url !== "string") return true;
-    const u = url.trim();
-    if (u === "") return true;
-    const lower = u.toLowerCase();
-    if (lower.includes("placeholder") || lower.includes("default.png") || lower.includes("no-image")) return true;
-    return false;
-  };
-
-  const getProductImageUrl = (product: Item): string | null => {
-    let url: string | null = null;
+  const getProductRawImageUrl = (product: Item): string | null => {
     if (product.images && product.images.length > 0) {
-      url = product.images[0].url ?? null;
-    } else if (product.variants && product.variants.length > 0 && product.variants[0].images && product.variants[0].images.length > 0) {
-      url = product.variants[0].images[0].url ?? null;
+      return product.images[0].url ?? null;
     }
-    return isPlaceholderOrEmptyUrl(url) ? null : url;
+    if (
+      product.variants &&
+      product.variants.length > 0 &&
+      product.variants[0].images &&
+      product.variants[0].images.length > 0
+    ) {
+      return product.variants[0].images[0].url ?? null;
+    }
+    return null;
   };
 
-  // Format references for display
   const formatReferences = (product: Item): string[] => {
     if (!product.references) return [];
-    return product.references.map((ref: string | { referenceNumber?: string }) => {
-      if (typeof ref === 'string') return ref;
-      return (ref as { referenceNumber?: string }).referenceNumber || '';
+    return product.references.map((ref: string | { referenceNumber?: string; reference_number?: string }) => {
+      if (typeof ref === "string") return ref;
+      return ref.referenceNumber ?? ref.reference_number ?? "";
     }).filter(Boolean) as string[];
   };
+
+  const formatReferencesLabel = (references: string[]): string => {
+    if (references.length === 0) return "";
+    const shown = references.slice(0, 3);
+    const remaining = references.length - shown.length;
+    const base = shown.join(" | ");
+    return remaining > 0 ? `${base} y ${remaining}+` : base;
+  };
+
+  const getAttributeDisplayValue = (
+    product: Item,
+    attribute: Attribute
+  ): string | null => {
+    const attrValue = product.attributeValues.find(
+      (av: AttributeValue) => av.idAttribute === attribute.id
+    );
+    const rawValue =
+      attrValue?.valueString ??
+      (attrValue?.valueNumber != null ? String(attrValue.valueNumber) : undefined) ??
+      (attrValue?.valueBoolean != null ? String(attrValue.valueBoolean) : undefined) ??
+      (attrValue?.valueDate ? String(attrValue.valueDate) : undefined);
+
+    if (rawValue == null || String(rawValue).trim() === "") return null;
+    return String(rawValue);
+  };
+
+  const catalogGridAttributes = useMemo(() => {
+    if (!attributes?.product?.length) return [];
+    return [...attributes.product]
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .filter((attribute: Attribute) => {
+        const nameLower = attribute.name.toLowerCase();
+        return nameLower !== "descripci�n" && attribute.visibleInCatalog !== false;
+      });
+  }, [attributes?.product]);
 
   return (
     <div className="mt-0 relative">
@@ -409,7 +426,9 @@ const ProductsTable = ({
           </Card>
         ) : (
           /* Card Grid View */
-          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-start ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
+          <div
+            className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch ${loading ? "opacity-50 pointer-events-none" : ""}`}
+          >
             {(() => {
               if (loading) {
                 return (
@@ -424,73 +443,68 @@ const ProductsTable = ({
               if (mappedData.length > 0) {
                 return currentPageItems.map((row) => {
                   const product: Item = row.original;
-                  const imageUrl = getProductImageUrl(product);
+                  const rawImageUrl = getProductRawImageUrl(product);
+                  const imageUrl = getDisplayImageUrl(rawImageUrl);
+                  const usePlaceholderStyle = shouldUsePlaceholderBackground(rawImageUrl);
                   const references = formatReferences(product);
+                  const referencesLabel = formatReferencesLabel(references);
                   const isSelected = itemVariant && product.id === itemVariant.id;
+                  const visibleCatalogAttributes = catalogGridAttributes
+                    .map((attribute) => ({
+                      attribute,
+                      value: getAttributeDisplayValue(product, attribute),
+                    }))
+                    .filter((row) => row.value != null);
 
                   return (
                     <Card
                       key={product.id}
-                      className={`cursor-pointer hover:shadow-lg transition-shadow overflow-hidden flex flex-col ${isSelected ? 'ring-2 ring-naranja' : ''
-                        }`}
+                      className={`flex h-full min-h-[168px] flex-row cursor-pointer overflow-hidden border border-gray-300 transition-shadow hover:shadow-lg ${isSelected ? "ring-2 ring-naranja" : ""}`}
                       onClick={() => handleClick(row)}
                     >
-                      <div className="w-full aspect-square bg-white flex items-center justify-center p-4">
-                        {imageUrl ? (
-                          <img
-                            src={imageUrl}
-                            alt={product.name}
-                            className="w-full h-full object-contain"
-                            loading="lazy"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = "none";
-                              const parent = target.parentElement;
-                              if (parent) {
-                                parent.innerHTML = `
-                                  <div class="flex flex-col items-center justify-center text-gray-400 w-full h-full">
-                                    <svg class="w-16 h-16 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                `;
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center justify-center text-gray-400 w-full h-full">
-                            <svg className="w-16 h-16 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                        )}
+                      <div className={`relative flex w-[38%] min-w-[120px] max-w-[180px] shrink-0 self-stretch items-center justify-center overflow-hidden border-r border-gray-200 ${getImageSurfaceClassName(rawImageUrl)}`}>
+                        <img
+                          src={imageUrl}
+                          alt={product.sku || product.name}
+                          className={getImageClassName(rawImageUrl, "h-full min-h-[140px] w-full flex-1 object-contain", usePlaceholderStyle)}
+                          loading="lazy"
+                          onError={onImageErrorFallback}
+                        />
                       </div>
 
-                      <CardContent className="p-4 bg-gray-50">
-                        <div className="mb-2">
-                          <span className="text-xs text-gray-600 font-medium">No. Parte: </span>
-                          <span className="text-sm font-semibold text-naranja">{product.sku || '-'}</span>
+                      <CardContent className="flex h-full min-h-0 flex-1 flex-col p-3 text-sm">
+                        <div className="shrink-0 space-y-1 border-b border-gray-200 pb-2">
+                          <p className="text-xs font-medium text-gray-800">
+                            No. Parte Platinum:
+                          </p>
+                          <p className="text-lg font-bold text-naranja break-all">
+                            {product.sku || "-"}
+                          </p>
+                          <div className="min-h-[2.75rem] pt-0.5">
+                            <p className="text-xs font-medium text-gray-800">
+                              Referencias:
+                            </p>
+                            <p className="line-clamp-2 text-sm text-gray-600 break-words">
+                              {referencesLabel || "\u00A0"}
+                            </p>
+                          </div>
                         </div>
 
-                        <h3 className="text-sm font-semibold text-gray-900 mb-3 line-clamp-2 min-h-[2.5rem]">
-                          {product.name}
-                        </h3>
-
-                        {references.length > 0 && (
-                          <div className="mt-2">
-                            <span className="text-xs text-gray-600 font-medium">Referencias: </span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {references.slice(0, 2).map((ref: string, index: number) => (
-                                <span key={index} className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                                  {ref}
+                        {visibleCatalogAttributes.length > 0 && (
+                          <div className="mt-auto divide-y divide-gray-200">
+                            {visibleCatalogAttributes.map(({ attribute, value }) => (
+                              <div
+                                key={attribute.id}
+                                className="flex items-start justify-between gap-2 py-1"
+                              >
+                                <span className="shrink-0 font-medium text-gray-800 text-xs">
+                                  {attribute.displayName || attribute.name}:
                                 </span>
-                              ))}
-                              {references.length > 2 && (
-                                <span className="text-xs text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                                  +{references.length - 2} más
+                                <span className="text-right text-gray-700 break-words text-xs">
+                                  {value}
                                 </span>
-                              )}
-                            </div>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </CardContent>
@@ -508,46 +522,46 @@ const ProductsTable = ({
           </div>
         )}
         {!loading && mappedData.length > 0 && (
-          <div className="mt-6 flex w-full max-w-full min-w-0 flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 px-2 py-4 sm:px-4 sm:py-6">
-            <div className="w-full min-w-0 px-1 text-center text-xs font-medium text-gray-700 sm:text-left sm:text-sm">
-              Mostrando <span className="font-semibold text-gray-900">{startItem}</span> -{" "}
-              <span className="font-semibold text-gray-900">{endItem}</span> de{" "}
-              <span className="font-semibold text-gray-900">{totalItems}</span> resultados
-            </div>
-            <div className="flex w-full max-w-full min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
-              <div className="flex w-full max-w-full min-w-0 flex-wrap items-center justify-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.setPageIndex(0)}
-                  disabled={!table.getCanPreviousPage()}
-                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex min-w-0 items-center gap-2 rounded-md border border-gray-300 bg-white px-2 py-2 shadow-sm sm:px-4">
-                  <span className="whitespace-nowrap text-xs text-gray-700 sm:text-sm">
-                    Página{" "}
-                    <strong className="font-semibold text-gray-900">
-                      {table.getState().pagination.pageIndex + 1}
-                    </strong>{" "}
-                    de{" "}
-                    <strong className="font-semibold text-gray-900">{totalPages || 1}</strong>
-                  </span>
+          <div className="mt-6 w-full min-w-0 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 sm:px-4">
+            <div className="flex flex-col items-center justify-center lg:justify-between gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+              <p className="text-center text-xs font-medium text-gray-700 sm:text-sm">
+                Mostrando <span className="font-semibold text-gray-900">{startItem}</span> -{" "}
+                <span className="font-semibold text-gray-900">{endItem}</span> de{" "}
+                <span className="font-semibold text-gray-900">{totalItems}</span> resultados
+              </p>
+              <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-2 sm:gap-y-2">
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                    className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm sm:px-4">
+                    <span className="whitespace-nowrap text-xs text-gray-700 sm:text-sm">
+                      {"P\u00e1gina"}{" "}
+                      <strong className="font-semibold text-gray-900">
+                        {table.getState().pagination.pageIndex + 1}
+                      </strong>{" "}
+                      de{" "}
+                      <strong className="font-semibold text-gray-900">{totalPages || 1}</strong>
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                    className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <span className="hidden whitespace-nowrap text-xs text-gray-700 sm:inline sm:text-sm">
-                    Ir a:
-                  </span>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="shrink-0 whitespace-nowrap text-xs text-gray-700 sm:text-sm">Ir a:</span>
                   <Input
                     type="number"
                     min={1}
@@ -556,46 +570,26 @@ const ProductsTable = ({
                     onChange={(e) => setPageInputValue(e.target.value)}
                     onKeyDown={handlePageInputKeyDown}
                     onBlur={handlePageNavigation}
-                    className="h-9 w-14 px-1 text-center text-xs border-gray-300 sm:w-20 sm:px-2 sm:text-sm"
-                    placeholder="Pág"
+                    className="h-9 w-14 shrink-0 px-1 text-center text-xs border-gray-300 sm:w-20 sm:px-2 sm:text-sm"
+                    placeholder={"P\u00e1g"}
                   />
+                  <select
+                    value={pageSize}
+                    onChange={(e) => {
+                      const newPageSize = Number(e.target.value);
+                      if (onPaginationChange) {
+                        onPaginationChange(0, newPageSize);
+                      }
+                    }}
+                    className="h-9 min-w-0 flex-1 cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 sm:flex-none sm:px-3 sm:pr-8 sm:text-sm"
+                  >
+                    {[30, 45, 60].map((size) => (
+                      <option key={size} value={size}>
+                        Mostrar {size}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.setPageIndex(totalPages - 1)}
-                  disabled={!table.getCanNextPage()}
-                  className="h-9 shrink-0 px-3 border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex w-full max-w-full min-w-0 justify-center sm:w-auto sm:justify-end">
-                <select
-                  value={pageSize}
-                  onChange={(e) => {
-                    const newPageSize = Number(e.target.value);
-                    if (onPaginationChange) {
-                      onPaginationChange(0, newPageSize);
-                    }
-                  }}
-                  className="h-9 w-full max-w-[12rem] cursor-pointer rounded-md border border-gray-300 bg-white px-2 text-xs font-medium text-gray-700 shadow-sm hover:border-gray-400 sm:w-auto sm:max-w-none sm:px-3 sm:pr-8 sm:text-sm"
-                >
-                  {[8, 12, 16, 20, 24].map((size) => (
-                    <option key={size} value={size}>
-                      Mostrar {size}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </div>

@@ -24,7 +24,8 @@ export interface Attribute {
   type: CategoryAttributesTypes;
   order: number;
   scope: string;
-  visibleInCatalog?: boolean; // Optional field to control visibility in catalog
+  visibleInCatalog?: boolean;
+  visibleInProductDetail?: boolean;
 }
 
 export enum CategoryAttributesTypes {

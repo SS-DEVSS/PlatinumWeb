@@ -14,48 +14,67 @@ import {
   TableRow,
 } from "./ui/table";
 import { Button } from "./ui/button";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { Attribute, Category, CategoryAttributesTypes } from "../models/category";
 import { AttributeValue } from "../models/item";
 import { Application } from "../models/application";
 import { Info, ChevronLeft, ChevronRight } from "lucide-react";
+import ApplicationTableFilters from "./ApplicationTableFilters";
+import {
+  extractYearFromDate,
+  formatDateValue,
+  applicationMatchesFilters,
+  APPLICATION_TABLE_FILTER_LIMIT,
+  isCatalogueHiddenApplicationAttribute,
+} from "../utils/applicationAttributeValue";
 
 type ApplicationsTableProps = {
   category: Category | null;
   applications: Application[];
 };
 
-const extractYearFromDate = (dateValue: Date | string | null | undefined): number | null => {
-  if (!dateValue) return null;
-  try {
-    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-    if (!isNaN(date.getTime())) {
-      return date.getFullYear();
-    }
-  } catch {
-    // Error extracting year from date
-  }
-  return null;
-};
-
-const formatDateValue = (dateValue: Date | string | null | undefined): string => {
-  const year = extractYearFromDate(dateValue);
-  return year !== null ? year.toString() : '-';
-};
+type ApplicationFilterSelection = { attributeId: string; value: string };
 
 const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [showLeftScroll, setShowLeftScroll] = useState<boolean>(false);
   const [showRightScroll, setShowRightScroll] = useState<boolean>(true);
+  const [tableFilters, setTableFilters] = useState<ApplicationFilterSelection[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { attributes } = category || {};
 
+  const filterAttributes = useMemo(() => {
+    if (!attributes?.application?.length) return [];
+    return [...attributes.application]
+      .filter((attr) => !isCatalogueHiddenApplicationAttribute(attr))
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .slice(0, APPLICATION_TABLE_FILTER_LIMIT);
+  }, [attributes?.application]);
+
+  const attributesById = useMemo(
+    () => new Map(filterAttributes.map((attr) => [attr.id, attr])),
+    [filterAttributes]
+  );
+
+  const handleFiltersChange = useCallback((filters: ApplicationFilterSelection[]) => {
+    setTableFilters(filters);
+    setCurrentPage(0);
+  }, []);
+
+  const filteredApplications = useMemo(() => {
+    if (!applications?.length) return [];
+    if (tableFilters.length === 0) return applications;
+    return applications.filter((app) =>
+      applicationMatchesFilters(app, tableFilters, attributesById)
+    );
+  }, [applications, tableFilters, attributesById]);
+
   // Group applications by year ranges (same logic as mobile)
   const groupedApplications = useMemo(() => {
-    if (!applications || !attributes?.application) {
-      return applications;
+    if (!filteredApplications || !attributes?.application) {
+      return filteredApplications;
     }
 
     const appAttrs = [...attributes.application].sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -67,12 +86,12 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
       attr.name.toLowerCase().includes('year')
     );
 
-    if (yearAttrIndex === -1) return applications;
+    if (yearAttrIndex === -1) return filteredApplications;
 
     // Group rows by all attributes except year
     const grouped = new Map<string, Application[]>();
 
-    applications.forEach(app => {
+    filteredApplications.forEach(app => {
       // Create a key from all attribute values except year
       const keyParts: string[] = [];
       appAttrs.forEach((attr, idx) => {
@@ -298,54 +317,16 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
     }
 
     return groupedApps;
-  }, [applications, attributes]);
+  }, [filteredApplications, attributes]);
 
   const columns = useMemo(() => {
-    const initialColumns = [
-      {
-        accessorKey: "origin",
-        header: "Origen",
-        cell: ({ row }: { row: { original: Application } }) => {
-          const application: Application = row.original;
-          const value = application.origin || "-";
-          const valueStr = String(value);
-          const displayValue = valueStr.length > 30 ? `${valueStr.substring(0, 30)}...` : valueStr;
-          const hasTooltip = valueStr.length > 30;
-          return (
-            <div className="flex items-center gap-2" style={{ position: 'relative', overflow: 'visible' }}>
-              <div
-                className="truncate max-w-[200px]"
-                title={valueStr}
-              >
-                {displayValue}
-              </div>
-              {hasTooltip && (
-                <div className="relative group inline-block" style={{ zIndex: 1000, position: 'relative', overflow: 'visible' }}>
-                  <Info className="w-4 h-4 text-gray-400 flex-shrink-0 cursor-pointer hover:text-gray-600 transition-colors" />
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-lg text-sm text-gray-800 whitespace-normal max-w-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200"
-                    style={{
-                      zIndex: 10000,
-                      pointerEvents: 'auto',
-                      marginBottom: '4px',
-                      position: 'absolute'
-                    }}>
-                    {valueStr}
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-200"></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        },
-      },
-    ];
-
     // Get application attribute columns
     const getApplicationAttributeColumns = () => {
       if (!attributes?.application || attributes.application.length === 0) return [];
 
-      // Sort attributes by order field (ascending) - Modelo should be first (order: 1)
-      const sortedAttributes = [...attributes.application].sort((a, b) => (a.order || 0) - (b.order || 0));
+      const sortedAttributes = [...attributes.application]
+        .filter((attr) => !isCatalogueHiddenApplicationAttribute(attr))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
 
       return sortedAttributes.map((attribute: Attribute) => ({
         accessorKey: attribute.id,
@@ -428,10 +409,7 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
 
     const dynamicColumns = getApplicationAttributeColumns();
 
-    return [
-      ...initialColumns,
-      ...dynamicColumns,
-    ];
+    return dynamicColumns;
   }, [attributes]);
 
   const table = useReactTable({
@@ -506,6 +484,14 @@ const ApplicationsTable = ({ category, applications }: ApplicationsTableProps) =
 
   return (
     <div className="space-y-4">
+      {category && filterAttributes.length > 0 && (
+        <ApplicationTableFilters
+          category={category}
+          filterAttributes={filterAttributes}
+          applications={applications}
+          onFiltersChange={handleFiltersChange}
+        />
+      )}
       <div className="rounded-lg border bg-white relative" style={{ overflow: 'visible' }}>
         {/* Left scroll gradient overlay */}
         {showLeftScroll && (

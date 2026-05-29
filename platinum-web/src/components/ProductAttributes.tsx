@@ -1,3 +1,4 @@
+import { REFERENCE_FIELD_LABELS } from "../constants/referenceFieldLabels";
 import { Attribute, Category } from "../models/category";
 import { Item, Variant, AttributeValue } from "../models/item";
 import { Reference } from "../models/reference";
@@ -25,30 +26,54 @@ export const ProductAttributes = ({
   reference,
   applications = [],
 }: ProductAttributesProps) => {
-  const renderAttributes = (attributes: Attribute[] | undefined, values: AttributeValue[], isLastSection: boolean = false) => {
+  const filterDetailAttributes = (attrs: Attribute[] | undefined) =>
+    attrs?.filter(
+      (attr) =>
+        attr.name.toLowerCase() !== "descripción" &&
+        attr.visibleInProductDetail !== false
+    );
+
+  const renderAttributes = (
+    attributes: Attribute[] | undefined,
+    values: AttributeValue[],
+    isLastSection: boolean = false,
+    roundTopCorners: boolean = false
+  ) => {
     if (!attributes || attributes.length === 0) return null;
 
-    return attributes.map((attribute, index) => {
-      const valueObj = values.find((val) => val.idAttribute === attribute.id);
-      const displayValue =
-        valueObj?.valueString ||
-        valueObj?.valueNumber?.toString() ||
-        valueObj?.valueBoolean?.toString() ||
-        valueObj?.valueDate?.toString() ||
-        "No value";
+    const rows = attributes
+      .map((attribute) => {
+        const valueObj = values.find((val) => val.idAttribute === attribute.id);
+        const displayValue =
+          valueObj?.valueString ??
+          (valueObj?.valueNumber != null ? String(valueObj.valueNumber) : undefined) ??
+          (valueObj?.valueBoolean != null ? String(valueObj.valueBoolean) : undefined) ??
+          (valueObj?.valueDate ? String(valueObj.valueDate) : undefined);
 
-      const isLastRow = isLastSection && index === attributes.length - 1;
+        if (displayValue == null || displayValue.trim() === "") return null;
+
+        return { attribute, displayValue };
+      })
+      .filter((row): row is { attribute: Attribute; displayValue: string } => row !== null);
+
+    return rows.map((row, index) => {
+      const { attribute, displayValue } = row;
+      const isLastRow = isLastSection && index === rows.length - 1;
+      const isFirstRow = roundTopCorners && index === 0;
 
       return (
         <TableRow
           key={attribute.id}
-          className={`${index % 2 !== 0
-            ? "bg-white"
-            : "bg-[#f5f5f5]"
-            }`}
+          className={`${index % 2 !== 0 ? "bg-white" : "bg-[#f5f5f5]"}`}
         >
-          <TableCell className={`font-bold w-1/3 ${isLastRow ? 'rounded-bl-lg' : ''}`}>{attribute.displayName || attribute.name}</TableCell>
-          <TableCell className={isLastRow ? 'rounded-br-lg' : ''}>{displayValue}</TableCell>
+          <TableCell
+            className={`font-bold w-1/3 ${isFirstRow ? "rounded-tl-lg" : ""} ${isLastRow ? "rounded-bl-lg" : ""}`}
+          >
+            {attribute.displayName || attribute.name}
+          </TableCell>
+          <TableCell className={`${isFirstRow ? "rounded-tr-lg" : ""} ${isLastRow ? "rounded-br-lg" : ""}`}>
+            {displayValue}
+          </TableCell>
         </TableRow>
       );
     });
@@ -69,32 +94,22 @@ export const ProductAttributes = ({
           <section>
             <Table className="border-separate border-spacing-0">
               <TableBody>
-                <TableRow className="bg-white">
-                  <TableCell className="font-bold w-1/3 rounded-tl-lg">Nombre</TableCell>
-                  <TableCell className="rounded-tr-lg">{selectedProduct.name}</TableCell>
-                </TableRow>
-                {selectedProduct.sku && (
-                  <TableRow className="bg-[#f5f5f5]">
-                    <TableCell className="font-bold w-1/3">SKU</TableCell>
-                    <TableCell>{selectedProduct.sku}</TableCell>
-                  </TableRow>
-                )}
                 {selectedVariant && selectedVariant.sku && (
                   <TableRow className="bg-[#f5f5f5]">
                     <TableCell className="font-bold w-1/3">SKU Variante</TableCell>
                     <TableCell>{selectedVariant.sku}</TableCell>
                   </TableRow>
                 )}
-                {selectedProduct.description && (
-                  <TableRow className={selectedProduct.sku ? "bg-white" : "bg-[#f5f5f5]"}>
-                    <TableCell className="font-bold w-1/3">Descripción</TableCell>
-                    <TableCell>{selectedProduct.description}</TableCell>
-                  </TableRow>
-                )}
                 {hasProductAttributes && (() => {
-                  const productAttrs = category.attributes!.product!.filter(attr => attr.name.toLowerCase() !== 'descripción');
+                  const productAttrs = filterDetailAttributes(category.attributes!.product) ?? [];
                   const hasMoreSections = hasVariantAttributes || hasReferenceAttributes || hasApplicationAttributes;
-                  return renderAttributes(productAttrs, selectedProduct.attributeValues, !hasMoreSections);
+                  const isFirstSection = !selectedProduct.sku && !(selectedVariant?.sku);
+                  return renderAttributes(
+                    productAttrs,
+                    selectedProduct.attributeValues,
+                    !hasMoreSections,
+                    isFirstSection
+                  );
                 })()}
               </TableBody>
             </Table>
@@ -131,29 +146,29 @@ export const ProductAttributes = ({
                 {/* Display direct reference fields first */}
                 {reference.referenceBrand && (
                   <TableRow className="bg-white">
-                    <TableCell className="font-bold w-1/3">Marca de Referencia</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.referenceBrand}</TableCell>
                     <TableCell>{reference.referenceBrand}</TableCell>
                   </TableRow>
                 )}
                 <TableRow className={reference.referenceBrand ? 'bg-[#f5f5f5]' : 'bg-white'}>
-                  <TableCell className="font-bold w-1/3">Número de Referencia</TableCell>
+                  <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.referenceNumber}</TableCell>
                   <TableCell>{reference.referenceNumber}</TableCell>
                 </TableRow>
                 {reference.typeOfPart && (
                   <TableRow className="bg-white">
-                    <TableCell className="font-bold w-1/3">Tipo de Parte</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.typeOfPart}</TableCell>
                     <TableCell>{reference.typeOfPart}</TableCell>
                   </TableRow>
                 )}
                 {reference.type && (
                   <TableRow className={reference.typeOfPart ? 'bg-[#f5f5f5]' : 'bg-white'}>
-                    <TableCell className="font-bold w-1/3">Tipo</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.referenceType}</TableCell>
                     <TableCell>{reference.type}</TableCell>
                   </TableRow>
                 )}
                 {reference.description && (
                   <TableRow className={reference.type ? 'bg-white' : 'bg-[#f5f5f5]'}>
-                    <TableCell className="font-bold w-1/3">Descripción:</TableCell>
+                    <TableCell className="font-bold w-1/3">{REFERENCE_FIELD_LABELS.description}:</TableCell>
                     <TableCell>{reference.description}</TableCell>
                   </TableRow>
                 )}
