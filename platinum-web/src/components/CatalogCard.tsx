@@ -1,10 +1,11 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import {
   getDisplayImageUrl,
   getImageClassName,
-  IMAGE_PLACEHOLDER_BG_CLASS,
-  isMissingImageUrl,
+  getImageSurfaceClassName,
   onImageErrorFallback,
+  shouldUsePlaceholderBackground,
 } from "../utils/imagePlaceholder";
 
 type CatalogCardVariant = "default" | "labelOnly";
@@ -28,6 +29,13 @@ function CatalogCard({
 }: CatalogCardProps) {
   const displayCount =
     count !== undefined && count !== null ? count : null;
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
+
+  useEffect(() => {
+    setImageLoadFailed(false);
+  }, [imageUrl]);
+
+  const usePlaceholderStyle = shouldUsePlaceholderBackground(imageUrl, imageLoadFailed);
 
   const interactiveProps = {
     role: "button" as const,
@@ -61,13 +69,16 @@ function CatalogCard({
       {...interactiveProps}
       className="cursor-pointer overflow-hidden transition-shadow hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-naranja focus-visible:ring-offset-2"
     >
-      <div className={`w-full aspect-square flex items-center justify-center border-b ${isMissingImageUrl(imageUrl) ? IMAGE_PLACEHOLDER_BG_CLASS : "bg-white"}`}>
+      <div className={`w-full aspect-square flex items-center justify-center border-b ${getImageSurfaceClassName(imageUrl, imageLoadFailed, "rounded-t-lg")}`}>
         <img
           src={getDisplayImageUrl(imageUrl)}
           alt={title}
-          className={getImageClassName(imageUrl, "w-full h-full object-contain")}
+          className={getImageClassName(imageUrl, "w-full h-full object-contain", usePlaceholderStyle)}
           loading="lazy"
-          onError={onImageErrorFallback}
+          onError={(event) => {
+            setImageLoadFailed(true);
+            onImageErrorFallback(event);
+          }}
         />
       </div>
       <CardContent className="p-4 bg-gray-50 text-center">

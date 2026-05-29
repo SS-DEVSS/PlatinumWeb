@@ -4,6 +4,7 @@ export const IMAGE_PLACEHOLDER = "/placeholder.png";
 export const IMAGE_PLACEHOLDER_BG = "#999999";
 export const IMAGE_PLACEHOLDER_BG_CLASS = "bg-[#999999]";
 export const IMAGE_PLACEHOLDER_SCALE_CLASS = "scale-[0.88]";
+export const IMAGE_PLACEHOLDER_SURFACE_CLASS = `${IMAGE_PLACEHOLDER_BG_CLASS} rounded-lg overflow-hidden`;
 
 export function isMissingImageUrl(url: string | null | undefined): boolean {
   if (url == null || typeof url !== "string") return true;
@@ -26,12 +27,32 @@ export function getDisplayImageUrl(url: string | null | undefined): string {
 
 export function getImageClassName(
   url: string | null | undefined,
-  baseClass: string
+  baseClass: string,
+  usePlaceholderStyle = false
 ): string {
-  if (isMissingImageUrl(url)) {
+  if (usePlaceholderStyle || isMissingImageUrl(url)) {
     return `${baseClass} ${IMAGE_PLACEHOLDER_SCALE_CLASS}`.trim();
   }
   return baseClass;
+}
+
+export function shouldUsePlaceholderBackground(
+  url: string | null | undefined,
+  loadFailed = false
+): boolean {
+  return isMissingImageUrl(url) || loadFailed;
+}
+
+export function getImageSurfaceClassName(
+  url: string | null | undefined,
+  loadFailed = false,
+  extraClass = ""
+): string {
+  const surfaceClass = shouldUsePlaceholderBackground(url, loadFailed)
+    ? IMAGE_PLACEHOLDER_SURFACE_CLASS
+    : "bg-white";
+
+  return extraClass ? `${surfaceClass} ${extraClass}`.trim() : surfaceClass;
 }
 
 export function onImageErrorFallback(event: SyntheticEvent<HTMLImageElement>): void {
