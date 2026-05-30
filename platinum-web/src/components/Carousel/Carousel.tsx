@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
 
@@ -10,43 +10,9 @@ import "./styles.css";
 import { fetchBanners } from "../../services/banners.api";
 import { Banner } from "../../models/banner";
 
-const FALLBACK_IMAGES = ["BANNER_1.jpg", "BANNER_2.jpg", "BANNER_3.jpg", "BANNER_4.jpg"];
+const FALLBACK_IMAGES = ["BANNER_1.jpg"];
 
-/** Primer banner local: se muestra al instante mientras llega la API */
-const HERO_PLACEHOLDER: Banner = {
-  id: "hero-placeholder",
-  desktopUrl: "/images/carrousel/BANNER_1.jpg",
-  mobileUrl: "/images/carrousel/BANNER_1.jpg",
-  altText: "Banner promocional Platinum Driveline",
-};
-
-function BannerSlide({
-  banner,
-  eager,
-}: {
-  banner: Banner;
-  eager?: boolean;
-}) {
-  const alt =
-    (banner.altText && banner.altText.trim()) ||
-    (banner.title && banner.title.trim()) ||
-    "Banner promocional Platinum Driveline";
-
-  return (
-    <SwiperSlide>
-      <picture>
-        <source media="(max-width: 767px)" srcSet={banner.mobileUrl} />
-        <img
-          src={banner.desktopUrl}
-          alt={alt}
-          className="h-auto w-full"
-          loading={eager ? "eager" : "lazy"}
-          fetchPriority={eager ? "high" : undefined}
-        />
-      </picture>
-    </SwiperSlide>
-  );
-}
+const HERO_PLACEHOLDER_SRC = "/images/carrousel/BANNER_1.jpg";
 
 export default function Carousel() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -82,31 +48,28 @@ export default function Carousel() {
     return () => controller.abort();
   }, []);
 
-  const slides = useMemo(() => {
-    if (loading) return [HERO_PLACEHOLDER];
-    if (!useFallback && banners.length > 0) return banners;
-    return FALLBACK_IMAGES.map((file, index) => ({
-      id: `fallback-${index}`,
-      desktopUrl: `/images/carrousel/${file}`,
-      mobileUrl: `/images/carrousel/${file}`,
-      altText: "Banner promocional Platinum Driveline",
-    }));
-  }, [loading, useFallback, banners]);
+  if (loading) {
+    return (
+      <img
+        src={HERO_PLACEHOLDER_SRC}
+        alt="Banner promocional Platinum Driveline"
+        className="block w-full"
+        loading="eager"
+        fetchPriority="high"
+      />
+    );
+  }
 
-  const slideCount = slides.length;
-  const enableCarouselMotion = !loading && slideCount > 1;
-  const swiperKey = loading
-    ? "placeholder"
-    : useFallback
-      ? "fallback"
-      : `api-${slides.map((s) => s.id).join("-")}`;
+  const slidesFromApi = !useFallback && banners.length > 0;
+  const slideCount = slidesFromApi ? banners.length : FALLBACK_IMAGES.length;
+  const enableCarouselMotion = slideCount > 1;
 
   return (
-    <div className="w-full overflow-hidden">
     <Swiper
-      key={swiperKey}
-      slidesPerView={1}
+      className="mySwiper"
+      modules={[Autoplay, Pagination, Navigation]}
       spaceBetween={0}
+      slidesPerView={1}
       centeredSlides={false}
       loop={enableCarouselMotion}
       watchSlidesProgress={enableCarouselMotion}
@@ -118,21 +81,45 @@ export default function Carousel() {
             }
           : false
       }
-      pagination={{
-        clickable: true,
-      }}
+      pagination={{ clickable: true }}
       navigation={enableCarouselMotion}
-      modules={[Autoplay, Pagination, Navigation]}
-      className="mySwiper"
+      breakpoints={{
+        768: {
+          spaceBetween: 30,
+          centeredSlides: true,
+        },
+      }}
     >
-      {slides.map((banner, index) => (
-        <BannerSlide
-          key={banner.id}
-          banner={banner}
-          eager={loading && index === 0}
-        />
-      ))}
+      {slidesFromApi
+        ? banners.map((banner) => {
+            const alt =
+              (banner.altText && banner.altText.trim()) ||
+              (banner.title && banner.title.trim()) ||
+              "Banner promocional Platinum Driveline";
+            return (
+              <SwiperSlide key={banner.id}>
+                <picture>
+                  <source media="(max-width: 767px)" srcSet={banner.mobileUrl} />
+                  <img
+                    src={banner.desktopUrl}
+                    alt={alt}
+                    className="bg-cover"
+                    loading="lazy"
+                  />
+                </picture>
+              </SwiperSlide>
+            );
+          })
+        : FALLBACK_IMAGES.map((image) => (
+            <SwiperSlide key={image}>
+              <img
+                src={`/images/carrousel/${image}`}
+                alt="Banner promocional Platinum Driveline"
+                className="bg-cover"
+                loading="lazy"
+              />
+            </SwiperSlide>
+          ))}
     </Swiper>
-    </div>
   );
 }
