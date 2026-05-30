@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination, Navigation } from "swiper/modules";
 
@@ -12,6 +12,42 @@ import { Banner } from "../../models/banner";
 
 const FALLBACK_IMAGES = ["BANNER_1.jpg", "BANNER_2.jpg", "BANNER_3.jpg", "BANNER_4.jpg"];
 
+/** Primer banner local: se muestra al instante mientras llega la API */
+const HERO_PLACEHOLDER: Banner = {
+  id: "hero-placeholder",
+  desktopUrl: "/images/carrousel/BANNER_1.jpg",
+  mobileUrl: "/images/carrousel/BANNER_1.jpg",
+  altText: "Banner promocional Platinum Driveline",
+};
+
+function BannerSlide({
+  banner,
+  eager,
+}: {
+  banner: Banner;
+  eager?: boolean;
+}) {
+  const alt =
+    (banner.altText && banner.altText.trim()) ||
+    (banner.title && banner.title.trim()) ||
+    "Banner promocional Platinum Driveline";
+
+  return (
+    <SwiperSlide>
+      <picture>
+        <source media="(max-width: 767px)" srcSet={banner.mobileUrl} />
+        <img
+          src={banner.desktopUrl}
+          alt={alt}
+          className="h-auto w-full"
+          loading={eager ? "eager" : "lazy"}
+          fetchPriority={eager ? "high" : undefined}
+        />
+      </picture>
+    </SwiperSlide>
+  );
+}
+
 export default function Carousel() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +58,9 @@ export default function Carousel() {
     setLoading(true);
     fetchBanners(1, 50, controller.signal)
       .then(({ banners: list }) => {
-        const next = (list ?? []).slice().sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        const next = (list ?? [])
+          .slice()
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         if (next.length === 0) {
           setUseFallback(true);
           setBanners([]);
@@ -44,25 +82,32 @@ export default function Carousel() {
     return () => controller.abort();
   }, []);
 
-  const slidesFromApi = !useFallback && banners.length > 0;
-  const slideCount = slidesFromApi ? banners.length : FALLBACK_IMAGES.length;
-  const enableCarouselMotion = slideCount > 1;
+  const slides = useMemo(() => {
+    if (loading) return [HERO_PLACEHOLDER];
+    if (!useFallback && banners.length > 0) return banners;
+    return FALLBACK_IMAGES.map((file, index) => ({
+      id: `fallback-${index}`,
+      desktopUrl: `/images/carrousel/${file}`,
+      mobileUrl: `/images/carrousel/${file}`,
+      altText: "Banner promocional Platinum Driveline",
+    }));
+  }, [loading, useFallback, banners]);
 
-  if (loading) {
-    return (
-      <div
-        className="w-full bg-muted animate-pulse rounded-none"
-        style={{ aspectRatio: "21 / 9", minHeight: "160px" }}
-        aria-busy="true"
-        aria-label="Cargando banners"
-      />
-    );
-  }
+  const slideCount = slides.length;
+  const enableCarouselMotion = !loading && slideCount > 1;
+  const swiperKey = loading
+    ? "placeholder"
+    : useFallback
+      ? "fallback"
+      : `api-${slides.map((s) => s.id).join("-")}`;
 
   return (
+    <div className="w-full overflow-hidden">
     <Swiper
-      spaceBetween={30}
-      centeredSlides={true}
+      key={swiperKey}
+      slidesPerView={1}
+      spaceBetween={0}
+      centeredSlides={false}
       loop={enableCarouselMotion}
       watchSlidesProgress={enableCarouselMotion}
       autoplay={
@@ -80,31 +125,14 @@ export default function Carousel() {
       modules={[Autoplay, Pagination, Navigation]}
       className="mySwiper"
     >
-      {slidesFromApi
-        ? banners.map((banner) => {
-            const alt =
-              (banner.altText && banner.altText.trim()) ||
-              (banner.title && banner.title.trim()) ||
-              "Banner promocional Platinum Driveline";
-            return (
-              <SwiperSlide key={banner.id}>
-                <picture>
-                  <source media="(max-width: 767px)" srcSet={banner.mobileUrl} />
-                  <img src={banner.desktopUrl} alt={alt} className="bg-cover" loading="lazy" />
-                </picture>
-              </SwiperSlide>
-            );
-          })
-        : FALLBACK_IMAGES.map((image) => (
-            <SwiperSlide key={image}>
-              <img
-                src={`/images/carrousel/${image}`}
-                alt=""
-                className="bg-cover"
-                loading="lazy"
-              />
-            </SwiperSlide>
-          ))}
+      {slides.map((banner, index) => (
+        <BannerSlide
+          key={banner.id}
+          banner={banner}
+          eager={loading && index === 0}
+        />
+      ))}
     </Swiper>
+    </div>
   );
 }

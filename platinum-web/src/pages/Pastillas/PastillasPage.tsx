@@ -1,5 +1,70 @@
+import { useState } from "react";
 import ContactButton from "../../components/ContactButton";
 import PlatinumLayout from "../../Layouts/PlatinumLayout";
+import frenosImg from "../../assets/frenos.png";
+
+function BoletinCard({
+  href,
+  imageSrc,
+  title,
+}: {
+  href: string;
+  imageSrc: string;
+  title: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  const markLoaded = () => setLoaded(true);
+
+  return (
+    <a
+      href={href}
+      download
+      className="group block w-full max-w-[288px] overflow-hidden rounded-2xl border border-slate-100 bg-white transition-shadow hover:shadow-md sm:w-72"
+    >
+      <div
+        className="relative aspect-[3/4] w-full overflow-hidden border-b border-slate-200 bg-white"
+        aria-busy={!loaded}
+      >
+        {!loaded && (
+          <div
+            className="absolute inset-0 z-10 flex flex-col gap-4 border border-slate-200 bg-white p-6 animate-pulse"
+            aria-label="Cargando vista previa del boletín"
+          >
+            <div className="h-6 w-2/3 rounded-md bg-slate-300" />
+            <div className="min-h-0 flex-1 rounded-lg bg-slate-200" />
+            <div className="space-y-2">
+              <div className="h-3 w-full rounded bg-slate-200" />
+              <div className="h-3 w-4/5 rounded bg-slate-200" />
+              <div className="h-3 w-3/5 rounded bg-slate-200" />
+            </div>
+          </div>
+        )}
+        <img
+          src={imageSrc}
+          alt={title}
+          width={288}
+          height={384}
+          loading="lazy"
+          decoding="async"
+          onLoad={markLoaded}
+          ref={(img) => {
+            if (img?.complete) markLoaded();
+          }}
+          className={`h-full w-full object-contain object-center transition-opacity duration-300 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      </div>
+      <div className="p-5">
+        <p className="text-sm font-medium text-gray-900">{title}</p>
+        <p className="mt-2 text-sm font-semibold text-naranja group-hover:underline">
+          Descargar →
+        </p>
+      </div>
+    </a>
+  );
+}
 
 function PastillasPage() {
   return (
@@ -20,19 +85,17 @@ function PastillasPage() {
             Regresar
           </a>
           <span className="text-slate-600">|</span>
-          <p className="text-slate-400 text-sm font-semibold uppercase tracking-widest">
-            Platinum Driveline
-          </p>
-          <span className="text-slate-600">|</span>
-          <span className="text-white text-lg font-bold">Pastillas de Freno</span>
+          <span className="text-white text-lg font-bold">
+            Pastillas de Freno
+          </span>
         </div>
 
         <div className="bg-white rounded-2xl overflow-hidden flex flex-col md:flex-row">
           <div className="bg-slate-100 md:w-2/5 flex items-center justify-center p-8">
             <img
-              src="/images/cajas/CajaPastilla.png"
+              src={frenosImg}
               alt="Pastillas de Freno"
-              className="w-72 object-contain"
+              className="h-52 w-auto max-w-[260px] object-contain md:h-56"
             />
           </div>
           <div className="md:w-3/5 p-8 lg:p-12 flex flex-col justify-center">
@@ -112,26 +175,12 @@ function PastillasPage() {
         <h2 className="text-2xl font-semibold text-gray-900 mb-8">
           Nuestros Boletines
         </h2>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <a
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <BoletinCard
             href="/download/boletinInstalacion.jpg"
-            download
-            className="group bg-white rounded-2xl overflow-hidden border border-slate-100 hover:shadow-md transition-shadow w-full sm:w-72"
-          >
-            <img
-              src="/download/boletinInstalacion.jpg"
-              alt="Boletín Instalación"
-              className="w-full object-contain border-b border-slate-100"
-            />
-            <div className="p-5">
-              <p className="font-medium text-gray-900 text-sm">
-                Recomendaciones de Instalación
-              </p>
-              <p className="text-naranja text-sm font-semibold mt-2 group-hover:underline">
-                Descargar →
-              </p>
-            </div>
-          </a>
+            imageSrc="/download/boletinInstalacion.jpg"
+            title="Recomendaciones de Instalación"
+          />
         </div>
       </section>
 
