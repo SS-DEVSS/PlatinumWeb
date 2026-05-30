@@ -1,43 +1,84 @@
+import nuestrosProductos1 from "../assets/Nuestros_Productos_1.png";
+import nuestrosProductos2 from "../assets/Nuestros_Productos_2.png";
+import nuestrosProductos3 from "../assets/Nuestros_Productos_3.png";
+
+const PRODUCT_LINES = [
+  {
+    title: "Kits + CSC",
+    imageSrc: nuestrosProductos1,
+    imageAlt: "Kits de embrague Platinum con CSC",
+  },
+  {
+    title: "HD",
+    imageSrc: nuestrosProductos2,
+    imageAlt: "Embrague heavy duty Platinum",
+  },
+  {
+    title: "Volante Motriz",
+    imageSrc: nuestrosProductos3,
+    imageAlt: "Volante motriz Platinum",
+  },
+] as const;
+
 function Productos() {
   return (
-    <main>
-      <h1 className="mb-10 font-medium">Nuestros Productos</h1>
+    <main className="pb-12 lg:pb-16">
+      <h1 className="mb-10 px-6 font-medium md:px-10 lg:px-16 xl:px-24">
+        Nuestros Productos
+      </h1>
 
-      <section className="bg-[#F5F6F8] rounded-2xl flex flex-col items-center text-center mt-6">
-        <a href="/Productos/Kit">
-          <h2 className="text-[35px] font-medium mt-9">Kits + CSC</h2>
-          <p className="text-naranja font-regular text-lg mt-4 hover:underline">
-            Más información
-          </p>
-          <section className="flex flex-col md:flex-row items-center justify-center gap-12 mb-20 mt-8 px-8">
-            <img className="w-[420px]" src="/images/componentes/FD05-1.png" alt="Kit" />
-            <article className="flex justify-center">
-              <img className="w-[280px]" src="/images/componentes/SFC511PL.png" alt="CSC" />
-            </article>
+      <section id="embrague" className="scroll-mt-24 w-full">
+        <article className="w-full rounded-2xl bg-[#F5F6F8] py-2 text-center">
+          <section className="mb-12 mt-6 flex w-full flex-col items-stretch gap-10 px-4 md:flex-row md:items-start md:justify-between md:gap-6 md:px-6 lg:gap-8">
+            {PRODUCT_LINES.map((line) => (
+              <div
+                key={line.title}
+                className="flex w-full min-w-0 flex-col items-center md:flex-1"
+              >
+                <h2 className="text-2xl font-medium md:text-[35px]">
+                  {line.title}
+                </h2>
+                <img
+                  src={line.imageSrc}
+                  alt={line.imageAlt}
+                  className="mt-6 w-full max-w-none object-contain md:mt-8"
+                />
+              </div>
+            ))}
           </section>
-        </a>
+        </article>
       </section>
 
-      <h1 className="my-12 p-0 font-medium">Nuestros Componentes</h1>
+      <div className="my-12 flex flex-col items-center px-6 text-center md:px-10 lg:px-16 xl:px-24">
+        <h2 className="font-medium md:text-4xl">Componentes principales</h2>
+      </div>
 
-      <section className="flex flex-col md:flex-row justify-between gap-6">
-        <article className="bg-[#F5F6F8] rounded-2xl basis-1/2 flex flex-col items-center text-center py-2">
+      <section className="flex flex-col justify-between gap-6 md:flex-row">
+        <article className="flex basis-1/2 flex-col items-center rounded-2xl bg-[#F5F6F8] py-2 text-center">
           <a href="/Productos/Plato">
-            <h2 className="text-[35px] font-medium mt-9">Plato</h2>
-            <p className="text-naranja font-regular text-lg mt-1 mb-5 hover:underline">
+            <h2 className="mt-9 text-[35px] font-medium">Plato</h2>
+            <p className="mb-5 mt-1 text-lg font-regular text-naranja hover:underline">
               Más información
             </p>
-            <img src="/images/componentes/VW03-2.png" alt="Plato" className="mb-12 w-[360px]" />
+            <img
+              src="/images/componentes/VW03-2.png"
+              alt="Plato"
+              className="mb-12 w-[360px] max-w-full"
+            />
           </a>
         </article>
 
-        <article className="bg-[#F5F6F8] rounded-2xl basis-1/2 flex flex-col items-center text-center py-2">
+        <article className="flex basis-1/2 flex-col items-center rounded-2xl bg-[#F5F6F8] py-2 text-center">
           <a href="/Productos/Disco">
-            <h2 className="text-[35px] font-medium mt-9">Disco</h2>
-            <p className="text-naranja font-regular text-lg mt-1 mb-5 hover:underline">
+            <h2 className="mt-9 text-[35px] font-medium">Disco</h2>
+            <p className="mb-5 mt-1 text-lg font-regular text-naranja hover:underline">
               Más información
             </p>
-            <img src="/images/componentes/NS73-3.png" alt="Disco" className="mb-12 w-[360px]" />
+            <img
+              src="/images/componentes/NS73-3.png"
+              alt="Disco"
+              className="mb-12 w-[360px] max-w-full"
+            />
           </a>
         </article>
       </section>

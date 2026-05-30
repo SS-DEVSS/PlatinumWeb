@@ -9,7 +9,9 @@ type BrandCardProps = {
 const BrandCard = ({ image, text, brand, link, text_button }: BrandCardProps) => {
   const getAccent = () => {
     switch (text) {
-      case "Pastilla de Freno": return { color: "text-red-500", bg: "bg-red-500 hover:bg-red-600" };
+      case "Pastillas de Freno":
+      case "Pastilla de Freno":
+        return { color: "text-red-500", bg: "bg-red-500 hover:bg-red-600" };
       case "Sistema de Embrague": return { color: "text-naranja", bg: "bg-naranja hover:bg-orange-500" };
       case "Suspensión": return { color: "text-azul_delphi", bg: "bg-azul_delphi hover:bg-blue-600" };
       default: return { color: "text-naranja", bg: "bg-naranja hover:bg-orange-500" };

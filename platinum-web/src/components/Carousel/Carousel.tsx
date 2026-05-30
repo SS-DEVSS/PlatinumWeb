@@ -10,7 +10,9 @@ import "./styles.css";
 import { fetchBanners } from "../../services/banners.api";
 import { Banner } from "../../models/banner";
 
-const FALLBACK_IMAGES = ["BANNER_1.jpg", "BANNER_2.jpg", "BANNER_3.jpg", "BANNER_4.jpg"];
+const FALLBACK_IMAGES = ["BANNER_1.jpg"];
+
+const HERO_PLACEHOLDER_SRC = "/images/carrousel/BANNER_1.jpg";
 
 export default function Carousel() {
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -22,7 +24,9 @@ export default function Carousel() {
     setLoading(true);
     fetchBanners(1, 50, controller.signal)
       .then(({ banners: list }) => {
-        const next = (list ?? []).slice().sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        const next = (list ?? [])
+          .slice()
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         if (next.length === 0) {
           setUseFallback(true);
           setBanners([]);
@@ -44,25 +48,29 @@ export default function Carousel() {
     return () => controller.abort();
   }, []);
 
-  const slidesFromApi = !useFallback && banners.length > 0;
-  const slideCount = slidesFromApi ? banners.length : FALLBACK_IMAGES.length;
-  const enableCarouselMotion = slideCount > 1;
-
   if (loading) {
     return (
-      <div
-        className="w-full bg-muted animate-pulse rounded-none"
-        style={{ aspectRatio: "21 / 9", minHeight: "160px" }}
-        aria-busy="true"
-        aria-label="Cargando banners"
+      <img
+        src={HERO_PLACEHOLDER_SRC}
+        alt="Banner promocional Platinum Driveline"
+        className="block w-full"
+        loading="eager"
+        fetchPriority="high"
       />
     );
   }
 
+  const slidesFromApi = !useFallback && banners.length > 0;
+  const slideCount = slidesFromApi ? banners.length : FALLBACK_IMAGES.length;
+  const enableCarouselMotion = slideCount > 1;
+
   return (
     <Swiper
-      spaceBetween={30}
-      centeredSlides={true}
+      className="mySwiper"
+      modules={[Autoplay, Pagination, Navigation]}
+      spaceBetween={0}
+      slidesPerView={1}
+      centeredSlides={false}
       loop={enableCarouselMotion}
       watchSlidesProgress={enableCarouselMotion}
       autoplay={
@@ -73,12 +81,14 @@ export default function Carousel() {
             }
           : false
       }
-      pagination={{
-        clickable: true,
-      }}
+      pagination={{ clickable: true }}
       navigation={enableCarouselMotion}
-      modules={[Autoplay, Pagination, Navigation]}
-      className="mySwiper"
+      breakpoints={{
+        768: {
+          spaceBetween: 30,
+          centeredSlides: true,
+        },
+      }}
     >
       {slidesFromApi
         ? banners.map((banner) => {
@@ -90,7 +100,12 @@ export default function Carousel() {
               <SwiperSlide key={banner.id}>
                 <picture>
                   <source media="(max-width: 767px)" srcSet={banner.mobileUrl} />
-                  <img src={banner.desktopUrl} alt={alt} className="bg-cover" loading="lazy" />
+                  <img
+                    src={banner.desktopUrl}
+                    alt={alt}
+                    className="bg-cover"
+                    loading="lazy"
+                  />
                 </picture>
               </SwiperSlide>
             );
@@ -99,7 +114,7 @@ export default function Carousel() {
             <SwiperSlide key={image}>
               <img
                 src={`/images/carrousel/${image}`}
-                alt=""
+                alt="Banner promocional Platinum Driveline"
                 className="bg-cover"
                 loading="lazy"
               />

@@ -45,6 +45,7 @@ import {
   findSubcategoryInTree,
 } from "../../utils/subcategoryPath";
 import { getCategoryFilterLabel } from "../../utils/categoryHierarchyFilter";
+import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import {
   CATALOGO_LAST_STATE_KEY,
   type CatalogPersistedState,
@@ -1081,14 +1082,7 @@ const Catalogo = () => {
   if (loadingBrands) {
     return (
       <PlatinumLayout>
-        <section className="px-4 sm:px-6 md:px-12 lg:px-20 py-6 sm:py-8 bg-[#E4E4E4]">
-          <div className="min-h-[280px] flex items-center justify-center">
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-8 w-8 border-4 border-naranja border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-gray-600">Cargando catálogo...</p>
-            </div>
-          </div>
-        </section>
+        <SkeletonCatalog />
       </PlatinumLayout>
     );
   }

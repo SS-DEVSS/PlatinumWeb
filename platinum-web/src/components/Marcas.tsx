@@ -14,7 +14,7 @@ const Marcas = () => {
         />
         <BrandCard
           image={"CajaPastilla"}
-          text={"Pastilla de Freno"}
+          text={"Pastillas de Freno"}
           brand={"PLATINUM DRIVELINE"}
           link={"pastillas"}
           text_button={"Visitar"}
