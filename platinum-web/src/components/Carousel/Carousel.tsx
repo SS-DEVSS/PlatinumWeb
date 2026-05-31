@@ -68,8 +68,8 @@ export default function Carousel() {
     <Swiper
       className="mySwiper"
       modules={[Autoplay, Pagination, Navigation]}
-      spaceBetween={0}
       slidesPerView={1}
+      spaceBetween={0}
       centeredSlides={false}
       loop={enableCarouselMotion}
       watchSlidesProgress={enableCarouselMotion}
@@ -103,7 +103,7 @@ export default function Carousel() {
                   <img
                     src={banner.desktopUrl}
                     alt={alt}
-                    className="bg-cover"
+                    className="block w-full"
                     loading="lazy"
                   />
                 </picture>
@@ -115,7 +115,7 @@ export default function Carousel() {
               <img
                 src={`/images/carrousel/${image}`}
                 alt="Banner promocional Platinum Driveline"
-                className="bg-cover"
+                className="block w-full"
                 loading="lazy"
               />
             </SwiperSlide>

@@ -132,7 +132,7 @@ export default function Contacto() {
 
           {/* Form */}
           <div className="w-full lg:w-4/6">
-            <h2 className="md:hidden text-center font-medium text-3xl pb-8 px-4 text-black">
+            <h2 className="page-title md:hidden pb-8 px-4 text-black">
               Llene el formulario de Contacto
             </h2>
 

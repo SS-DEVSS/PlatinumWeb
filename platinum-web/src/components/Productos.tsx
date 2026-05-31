@@ -23,7 +23,7 @@ const PRODUCT_LINES = [
 function Productos() {
   return (
     <main className="pb-12 lg:pb-16">
-      <h1 className="mb-10 px-6 font-medium md:px-10 lg:px-16 xl:px-24">
+      <h1 className="mb-10 px-6 md:px-10 lg:px-16 xl:px-24">
         Nuestros Productos
       </h1>
 
@@ -50,7 +50,7 @@ function Productos() {
       </section>
 
       <div className="my-12 flex flex-col items-center px-6 text-center md:px-10 lg:px-16 xl:px-24">
-        <h2 className="font-medium md:text-4xl">Componentes principales</h2>
+        <h2 className="page-title md:mb-0">Componentes principales</h2>
       </div>
 
       <section className="flex flex-col justify-between gap-6 md:flex-row">

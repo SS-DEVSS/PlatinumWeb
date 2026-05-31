@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { menuItems } from "../data/menuData";
 import NavItem from "./NavItem";
 import { isNavActive } from "../utils/navActive";
@@ -30,19 +30,7 @@ const NavMobile = ({ toggleMenu }: { toggleMenu: () => void }) => {
         })}
       </ul>
 
-      <div className="px-5 pb-6 mt-2">
-        <Link to="/Catalogo">
-          <div className="bg-gris_oscuro flex items-center justify-between px-5 py-4 rounded-xl text-white font-medium text-sm">
-            <div className="flex items-center gap-3">
-              <img className="w-5" src="/icons/webWhite.png" alt="web" />
-              <span>Catálogo Electrónico</span>
-            </div>
-            <img src="/icons/arrowWhite.png" alt="" className="w-4 opacity-60" />
-          </div>
-        </Link>
-      </div>
-
-      <div className="px-5 pb-8 flex gap-5 items-center">
+      <div className="px-5 pb-8 pt-2 flex gap-5 items-center">
         <a href="mailto:ventas@platinumdriveline.mx">
           <img src="/icons/emailNaranja.png" alt="email" className="w-6" />
         </a>

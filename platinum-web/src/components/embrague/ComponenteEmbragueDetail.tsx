@@ -112,7 +112,7 @@ function ComponenteEmbragueDetail({
                   <span className="inline-flex w-fit rounded-full bg-naranja/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-naranja">
                     Embrague
                   </span>
-                  <h1 className="text-left text-3xl font-bold leading-tight text-gris_oscuro md:text-4xl">
+                  <h1 className="!text-left text-gris_oscuro">
                     {title}
                   </h1>
                 </div>
@@ -131,7 +131,7 @@ function ComponenteEmbragueDetail({
 
         {related.length > 0 && (
           <section className="bg-[#F5F6F8] px-6 py-12 lg:px-16 xl:px-24">
-            <h2 className="mb-10 text-center text-2xl font-medium text-gris_oscuro md:text-3xl">
+            <h2 className="page-title mb-10 text-gris_oscuro">
               También te puede interesar
             </h2>
             {related.length === 1 ? (

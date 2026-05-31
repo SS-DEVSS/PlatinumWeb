@@ -67,21 +67,19 @@
     @apply bg-background text-foreground;
   }
 }
-h1 {
-  font-weight: 300;
-  text-align: center;
-  font-size: 50px;
+@layer components {
+  .page-title {
+    @apply text-2xl sm:text-4xl font-bold tracking-tight text-center text-gray-900;
+  }
 }
 
-@media (max-width: 640px) {
-  h1 {
-    font-size: 32px;
-  }
+h1 {
+  @apply page-title;
 }
 
 @media (max-width: 440px) {
   h1 {
-    font-size: 26px;
-    padding: 0 10px;
+    padding-left: 0.625rem;
+    padding-right: 0.625rem;
   }
 }

@@ -172,9 +172,7 @@ function PastillasPage() {
 
       {/* Boletines */}
       <section className="px-6 lg:px-16 xl:px-24 py-14 bg-[#F5F6F8]">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-8">
-          Nuestros Boletines
-        </h2>
+        <h2 className="page-title mb-8">Nuestros Boletines</h2>
         <div className="flex flex-col gap-4 sm:flex-row">
           <BoletinCard
             href="/download/boletinInstalacion.jpg"

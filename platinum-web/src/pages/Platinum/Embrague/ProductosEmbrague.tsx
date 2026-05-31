@@ -8,7 +8,7 @@ function ProductosEmbrague() {
     <PlatinumLayout>
       {/* Hero */}
       <section className="px-6 md:px-10 lg:px-16 xl:px-24 py-14 bg-white">
-        <h1 className="text-gray-900 text-4xl font-bold mb-12">
+        <h1 className="mb-12">
           Nuestra Calidad
         </h1>
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
@@ -19,7 +19,7 @@ function ProductosEmbrague() {
               className="w-full max-w-sm mx-auto h-56 object-contain mb-8"
             />
             <h3 className="text-gray-900 text-xl font-semibold mb-4">
-              Introducción del Programa de 12 fábricas
+              Introducción del Programa
             </h3>
             <div className="space-y-3 text-gray-500 text-[15px] leading-relaxed">
               <p>
@@ -34,7 +34,8 @@ function ProductosEmbrague() {
               </p>
               <ul className="list-disc ml-5 space-y-1 text-gray-400">
                 <li>Plato y Disco</li>
-                <li>Collarín Mecánico o Collarín Hidráulico (CSC)</li>
+                <li>Collarín Mecánico</li>
+                <li>Collarín Hidráulico (CSC)</li>
                 <li>Volante de Inercia</li>
                 <li>Cilindros esclavos y maestros</li>
                 <li>Servo actuadores</li>

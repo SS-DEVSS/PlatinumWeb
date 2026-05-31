@@ -8,7 +8,7 @@ function Privacidad() {
         {/* Header estilo carta */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10 pb-6 border-b border-gray-200">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 uppercase tracking-wide">
+            <h1 className="uppercase tracking-wide">
               Aviso de Privacidad Integral
             </h1>
             <p className="text-gray-500 text-sm mt-1">

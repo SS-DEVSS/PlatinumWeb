@@ -1119,7 +1119,7 @@ const Catalogo = () => {
         {viewLevel === "categories" && selectedBrand && (
           <div className="mb-6 max-w-6xl mx-auto">
             <div className="mb-6 text-center space-y-2">
-              <h3 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight mt-6">
+              <h3 className="page-title mt-6">
                 Seleccione una categoría
               </h3>
               <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
