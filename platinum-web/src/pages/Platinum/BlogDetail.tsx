@@ -111,7 +111,7 @@ function BlogDetail() {
                 className="w-full max-h-[460px] object-cover rounded-lg mb-6"
               />
             ) : null}
-            <h1 className="text-3xl font-semibold text-gris_oscuro">{blog.title}</h1>
+            <h1 className="!text-left text-gris_oscuro">{blog.title}</h1>
             <div
               className="mt-4 text-slate-700 leading-7 [&_p]:mb-3"
               dangerouslySetInnerHTML={{ __html: blog.description }}

@@ -6,7 +6,7 @@ function QuienesSomos() {
   return (
     <PlatinumLayout>
       <section className="bg-gris_oscuro px-6 lg:px-16 xl:px-24 py-12">
-        <h1 className="text-3xl font-bold text-white mb-10">Conoce Sobre Nosotros</h1>
+        <h1 className="mb-10 text-white">Conoce Sobre Nosotros</h1>
 
         <div className="flex flex-col xl:flex-row gap-10 xl:gap-16 mb-4">
           <div className="w-full sm:w-2/3 md:w-1/2 xl:w-2/5 mx-auto xl:mx-0 flex-shrink-0">

@@ -98,7 +98,7 @@ function Boletines() {
   return (
     <PlatinumLayout>
       <main className="px-5 py-6 lg:py-9 xl:px-40">
-        <h1 className="pb-4 text-center">Nuestros Boletines</h1>
+        <h1 className="pb-4">Nuestros Boletines</h1>
         <div className="mx-auto mb-8 flex max-w-2xl flex-col items-center text-center">
           <p className="mb-6 text-sm leading-relaxed text-slate-600 md:text-base">
             Consulta documentación técnica, productos relacionados y referencias

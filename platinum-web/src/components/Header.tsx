@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import NavItem from "./NavItem";
 import NavMobile from "./NavMobile";
+import CatalogMobileBanner from "./CatalogMobileBanner";
 import { Link } from "react-router-dom";
 import { menuItems } from "../data/menuData";
 
@@ -22,7 +23,9 @@ function Header() {
 
   return (
     <header>
-      {/* Top bar */}
+      <CatalogMobileBanner />
+
+      {/* Top bar desktop */}
       <div className="hidden nav2:flex bg-naranja/90 px-12 2xl:px-16 py-1.5 justify-between items-center text-white text-xs">
         <div className="flex gap-4 items-center">
           <Link

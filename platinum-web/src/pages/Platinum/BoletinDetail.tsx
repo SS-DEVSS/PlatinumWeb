@@ -81,7 +81,7 @@ function BoletinDetail() {
               <FileText className="h-3.5 w-3.5" />
               Boletín técnico
             </div>
-            <h1 className="text-3xl font-semibold text-gris_oscuro">{boletin.title}</h1>
+            <h1 className="!text-left text-gris_oscuro">{boletin.title}</h1>
             <p className="mt-4 text-slate-700 leading-7 text-sm lg:text-base">
               {boletin.description || "Boletín técnico"}
             </p>
