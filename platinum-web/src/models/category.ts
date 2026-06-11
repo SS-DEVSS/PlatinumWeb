@@ -26,6 +26,7 @@ export interface Attribute {
   scope: string;
   visibleInCatalog?: boolean;
   visibleInProductDetail?: boolean;
+  filterRequired?: boolean;
 }
 
 export enum CategoryAttributesTypes {

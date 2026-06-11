@@ -10,6 +10,7 @@ import { useProductsByCategory } from "../../hooks/useProductsByCategory";
 import { useSubcategoriesMap } from "../../hooks/useSubcategoriesMap";
 import { ProductsResponse } from "../../services/products.api";
 import FilterSection from "../../components/FilterSection";
+import { removeFilterAndAfter, sortFilterAttributes } from "../../utils/webCatalogFilter";
 import { CategoryHierarchyFilter } from "../../components/CategoryHierarchyFilter";
 import ProductsTable from "../../components/ProductsTable";
 import CatalogCard from "../../components/CatalogCard";
@@ -704,9 +705,15 @@ const Catalogo = () => {
   };
 
   const removeVehicleFilterPill = (attributeId: string) => {
-    const index = filtro.vehiculo.selectedFilters.findIndex((f) => f.attributeId === attributeId);
-    if (index === -1) return;
-    const nextFilters = filtro.vehiculo.selectedFilters.slice(0, index);
+    const categoryForFilters = categoryData || selectedCategory;
+    const filterAttributes = sortFilterAttributes(
+      categoryForFilters?.attributes?.application ?? []
+    );
+    const nextFilters = removeFilterAndAfter(
+      filterAttributes,
+      filtro.vehiculo.selectedFilters,
+      attributeId
+    );
     setFiltro((prev) => ({
       ...prev,
       vehiculo: { selectedFilters: nextFilters },

@@ -17,7 +17,11 @@ import { cn } from "../lib/utils";
 import { Attribute, Category } from "../models/category";
 import { useItemContext } from "../context/use-item-context";
 import { AttributeValue } from "../models/item";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  dedupeFilterOptionValues,
+  normalizeFilterOptionDisplayValue,
+} from "../utils/applicationAttributeValue";
 
 type FilterComponentProps = {
   attribute: Attribute;
@@ -26,7 +30,7 @@ type FilterComponentProps = {
     numParte: string;
     referencia: string;
     vehiculo?: {
-      selectedFilters?: Array<{ attributeId: string, value: string }>;
+      selectedFilters?: Array<{ attributeId: string; value: string }>;
     };
   };
   open: boolean;
@@ -51,34 +55,40 @@ const FilterComponent = ({
   const { valuesAttributes } = useItemContext();
   const [itemsToDisplay, setItemsToDisplay] = useState<string[]>([]);
 
+  const selectedDisplayValue = useMemo(
+    () => normalizeFilterOptionDisplayValue(selectedValue, attribute),
+    [selectedValue, attribute]
+  );
+
   useEffect(() => {
-    // If we have specific available options for this filter, use those
     if (availableOptions && availableOptions.length > 0) {
-      setItemsToDisplay(availableOptions);
+      setItemsToDisplay(dedupeFilterOptionValues(availableOptions, attribute));
     } else if (!enabled && selectedValue === "") {
-      // If filter is disabled and no value selected, show empty list
       setItemsToDisplay([]);
     } else {
-      // Otherwise get all possible values for this attribute
       const getValues = valuesAttributes.filter(
         (attributeObject) => attributeObject.attributeId === attribute.id
       );
 
-      const allValues = getValues[0]?.values
-        .flat()
-        .map((attributeValue: AttributeValue) => {
-          return attributeValue.valueString ||
-            attributeValue.valueNumber?.toString() ||
-            attributeValue.valueBoolean?.toString() ||
-            attributeValue.valueDate?.toString();
-        })
-        .filter((value): value is string => value !== null && value !== undefined && typeof value === 'string') || [];
+      const allValues =
+        getValues[0]?.values
+          .flat()
+          .map((attributeValue: AttributeValue) => {
+            return (
+              attributeValue.valueString ||
+              attributeValue.valueNumber?.toString() ||
+              attributeValue.valueBoolean?.toString() ||
+              attributeValue.valueDate?.toString()
+            );
+          })
+          .filter(
+            (value): value is string =>
+              value !== null && value !== undefined && typeof value === "string"
+          ) || [];
 
-      // Remove duplicates and sort
-      const uniqueValues = Array.from(new Set(allValues)).sort();
-      setItemsToDisplay(uniqueValues);
+      setItemsToDisplay(dedupeFilterOptionValues(allValues, attribute));
     }
-  }, [attribute.id, valuesAttributes, enabled, selectedValue, availableOptions]);
+  }, [attribute, valuesAttributes, enabled, selectedValue, availableOptions]);
 
   return (
     <Popover open={open} onOpenChange={onToggleOpen}>
@@ -93,7 +103,7 @@ const FilterComponent = ({
           {selectedValue ? (
             <div>
               <h4 className="font-bold text-left mb-1">{attribute.displayName || attribute.name}</h4>
-              {selectedValue}
+              {selectedDisplayValue}
             </div>
           ) : (
             <div className="text-left">
@@ -121,7 +131,14 @@ const FilterComponent = ({
         onWheel={(event) => event.stopPropagation()}
         onTouchMove={(event) => event.stopPropagation()}
       >
-        <Command className="max-h-[min(320px,var(--radix-popover-content-available-height))]">
+        <Command
+          className="max-h-[min(320px,var(--radix-popover-content-available-height))]"
+          filter={(value, search) => {
+            const query = search.trim().toLowerCase();
+            if (!query) return 1;
+            return value.toLowerCase().includes(query) ? 1 : 0;
+          }}
+        >
           <CommandInput
             placeholder={`Buscar ${(attribute.displayName || attribute.name).toLowerCase()}...`}
           />
@@ -138,7 +155,7 @@ const FilterComponent = ({
             <CommandGroup>
               <CommandItem
                 className="hover:bg-gray-100 hover:cursor-pointer"
-                value=""
+                value="__clear__"
                 onSelect={() => onSelect("")}
               >
                 <Check
@@ -146,26 +163,25 @@ const FilterComponent = ({
                     "mr-2 h-4 w-4",
                     selectedValue === "" ? "opacity-100" : "opacity-0"
                   )}
-                />{" "}
+                />
                 <span>Sin Selección</span>
               </CommandItem>
 
-              {itemsToDisplay.map((value: string, index: number) => (
+              {itemsToDisplay.map((displayValue) => (
                 <CommandItem
                   className="hover:cursor-pointer"
-                  key={index}
-                  value={value}
-                  onSelect={(name: string) => {
-                    onSelect(name);
-                  }}
+                  key={displayValue}
+                  value={displayValue}
+                  keywords={[displayValue]}
+                  onSelect={() => onSelect(displayValue)}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      selectedValue === value ? "opacity-100" : "opacity-0"
+                      selectedDisplayValue === displayValue ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {value}
+                  {displayValue}
                 </CommandItem>
               ))}
             </CommandGroup>
