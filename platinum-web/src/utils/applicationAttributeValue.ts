@@ -2,6 +2,8 @@ import { Application } from "../models/application";
 import { Attribute, CategoryAttributesTypes } from "../models/category";
 import { AttributeValue } from "../models/item";
 
+type FilterOptionRawValue = string | number | boolean | Date;
+
 /** Max application-attribute filters on product detail compatibilities table. */
 export const APPLICATION_TABLE_FILTER_LIMIT = 4;
 
@@ -51,10 +53,10 @@ const isPlausibleYear = (value: number): boolean =>
   Number.isInteger(value) && value >= 1900 && value <= 2100;
 
 export const normalizeFilterOptionDisplayValue = (
-  value: string | number | boolean,
+  value: FilterOptionRawValue,
   attribute: Attribute
 ): string => {
-  const asString = String(value).trim();
+  const asString = value instanceof Date ? value.toISOString() : String(value).trim();
   const yearAttribute = isYearAttribute(attribute);
 
   if (yearAttribute) {
@@ -71,7 +73,7 @@ export const normalizeFilterOptionDisplayValue = (
 };
 
 export const sortFilterOptionValues = (
-  values: Array<string | number | boolean>,
+  values: FilterOptionRawValue[],
   attribute: Attribute
 ): string[] => {
   const normalized = values.map((value) => normalizeFilterOptionDisplayValue(value, attribute));
@@ -87,7 +89,7 @@ export const sortFilterOptionValues = (
 };
 
 export const dedupeFilterOptionValues = (
-  values: Array<string | number | boolean>,
+  values: FilterOptionRawValue[],
   attribute: Attribute
 ): string[] => sortFilterOptionValues(values, attribute);
 
