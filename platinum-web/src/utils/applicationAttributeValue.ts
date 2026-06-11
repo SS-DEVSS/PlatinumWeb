@@ -2,6 +2,8 @@ import { Application } from "../models/application";
 import { Attribute, CategoryAttributesTypes } from "../models/category";
 import { AttributeValue } from "../models/item";
 
+type FilterOptionRawValue = string | number | boolean | Date;
+
 /** Max application-attribute filters on product detail compatibilities table. */
 export const APPLICATION_TABLE_FILTER_LIMIT = 4;
 
@@ -13,10 +15,17 @@ export const isCatalogueHiddenApplicationAttribute = (attribute: Attribute): boo
 };
 
 export const extractYearFromDate = (dateValue: Date | string | null | undefined): number | null => {
-  if (!dateValue) return null;
+  if (dateValue == null) return null;
+
+  const trimmed = String(dateValue).trim();
+  if (/^\d{4}$/.test(trimmed)) {
+    const year = Number(trimmed);
+    return Number.isNaN(year) ? null : year;
+  }
+
   try {
-    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-    if (!isNaN(date.getTime())) return date.getFullYear();
+    const date = dateValue instanceof Date ? dateValue : new Date(trimmed);
+    if (!Number.isNaN(date.getTime())) return date.getUTCFullYear();
   } catch {
     // ignore
   }
@@ -40,6 +49,50 @@ const isYearAttribute = (attribute: Attribute): boolean => {
   );
 };
 
+const isPlausibleYear = (value: number): boolean =>
+  Number.isInteger(value) && value >= 1900 && value <= 2100;
+
+export const normalizeFilterOptionDisplayValue = (
+  value: FilterOptionRawValue,
+  attribute: Attribute
+): string => {
+  const asString = value instanceof Date ? value.toISOString() : String(value).trim();
+  const yearAttribute = isYearAttribute(attribute);
+
+  if (yearAttribute) {
+    const yearFromDate = extractYearFromDate(asString);
+    if (yearFromDate !== null) return String(yearFromDate);
+
+    const numericYear = Number(asString);
+    if (!Number.isNaN(numericYear) && isPlausibleYear(numericYear)) {
+      return String(numericYear);
+    }
+  }
+
+  return asString;
+};
+
+export const sortFilterOptionValues = (
+  values: FilterOptionRawValue[],
+  attribute: Attribute
+): string[] => {
+  const normalized = values.map((value) => normalizeFilterOptionDisplayValue(value, attribute));
+  const uniqueValues = Array.from(new Set(normalized));
+
+  if (isYearAttribute(attribute)) {
+    return uniqueValues.sort((left, right) => Number(left) - Number(right));
+  }
+
+  return uniqueValues.sort((left, right) =>
+    left.localeCompare(right, undefined, { numeric: true })
+  );
+};
+
+export const dedupeFilterOptionValues = (
+  values: FilterOptionRawValue[],
+  attribute: Attribute
+): string[] => sortFilterOptionValues(values, attribute);
+
 export const getApplicationAttributeDisplayValue = (
   application: Application,
   attribute: Attribute
@@ -50,6 +103,9 @@ export const getApplicationAttributeDisplayValue = (
 
   if (isYearAttribute(attribute)) {
     if (attrValue?.valueDate) return formatDateValue(attrValue.valueDate);
+    if (attrValue?.valueNumber != null && isPlausibleYear(Number(attrValue.valueNumber))) {
+      return String(attrValue.valueNumber);
+    }
     if (attrValue?.valueString) {
       const dateFromString = new Date(attrValue.valueString);
       if (!isNaN(dateFromString.getTime())) return dateFromString.getFullYear().toString();
@@ -99,5 +155,5 @@ export const getDistinctApplicationFilterOptions = (
     if (display && display !== "-") values.add(display);
   });
 
-  return Array.from(values).sort((a, b) => a.localeCompare(b, "es"));
+  return sortFilterOptionValues(Array.from(values), attribute);
 };

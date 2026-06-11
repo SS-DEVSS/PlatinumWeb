@@ -1,8 +1,13 @@
-import { Category, Attribute } from "../models/category";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FilterComponent from "./FilterComponent";
-
-type VehicleFilterSelection = { attributeId: string; value: string };
+import { Attribute, Category } from "../models/category";
+import {
+  applyFilterSelection,
+  buildAttributeStatesFromFilters,
+  sortFilterAttributes,
+  VehicleFilterSelection,
+} from "../utils/webCatalogFilter";
+import { dedupeFilterOptionValues, normalizeFilterOptionDisplayValue } from "../utils/applicationAttributeValue";
 
 type AttributeState = {
   open: boolean;
@@ -27,30 +32,6 @@ type FilterSectionProps = {
   ) => void;
 };
 
-function buildAttributeStatesFromFilters(
-  filterAttributes: Attribute[],
-  selectedFilters: VehicleFilterSelection[]
-): Record<string, AttributeState> {
-  const order = filterAttributes.map((attribute) => attribute.id);
-  const valueById = new Map(selectedFilters.map((filter) => [filter.attributeId, filter.value]));
-  const lastSelectedIndex =
-    selectedFilters.length > 0
-      ? order.indexOf(selectedFilters[selectedFilters.length - 1].attributeId)
-      : -1;
-
-  return filterAttributes.reduce<Record<string, AttributeState>>((acc, attribute, index) => {
-    const disabled =
-      selectedFilters.length === 0 ? index !== 0 : index > lastSelectedIndex + 1;
-
-    acc[attribute.id] = {
-      open: false,
-      selectedValue: valueById.get(attribute.id) ?? "",
-      disabled,
-    };
-    return acc;
-  }, {});
-}
-
 const FilterSection = ({
   category,
   filtroInfo,
@@ -68,7 +49,7 @@ const FilterSection = ({
     } else if (category?.attributes?.variant && category.attributes.variant.length > 0) {
       attributes = category.attributes.variant;
     }
-    return attributes.sort((a, b) => (a.order || 0) - (b.order || 0));
+    return sortFilterAttributes(attributes);
   }, [category?.attributes?.application, category?.attributes?.variant]);
 
   const persistedFilters = filtroInfo.vehiculo?.selectedFilters ?? [];
@@ -88,72 +69,38 @@ const FilterSection = ({
   const getOptionsForAttribute = useMemo(() => {
     return (attributeId: string): string[] => {
       if (filterOptions && filterOptions[attributeId]) {
-        return filterOptions[attributeId].map((value) => String(value));
+        const attribute = filterAttributes.find((item) => item.id === attributeId);
+        if (!attribute) {
+          return filterOptions[attributeId].map((value) => String(value));
+        }
+        return dedupeFilterOptionValues(filterOptions[attributeId], attribute);
       }
       return [];
     };
-  }, [filterOptions]);
+  }, [filterOptions, filterAttributes]);
 
   const handleSelect = (attributeId: string, name: string) => {
     setAttributeStates((prevState) => {
-      const attributeOrder = filterAttributes.map((attr) => attr.id);
-      const currentIndex = attributeOrder.indexOf(attributeId);
-      const updatedState = { ...prevState };
+      const currentFilters = filterAttributes
+        .filter((attribute) => prevState[attribute.id]?.selectedValue)
+        .map((attribute) => ({
+          attributeId: attribute.id,
+          value: prevState[attribute.id]?.selectedValue || "",
+        }));
 
-      updatedState[attributeId] = {
-        ...updatedState[attributeId],
-        selectedValue: name,
-        open: false,
-      };
-
-      if (!name) {
-        for (let i = currentIndex + 1; i < attributeOrder.length; i++) {
-          const nextAttrId = attributeOrder[i];
-          updatedState[nextAttrId] = {
-            ...updatedState[nextAttrId],
-            selectedValue: "",
-            disabled: true,
-          };
-        }
-      } else {
-        for (let i = currentIndex + 1; i < attributeOrder.length; i++) {
-          const nextAttrId = attributeOrder[i];
-          updatedState[nextAttrId] = {
-            ...updatedState[nextAttrId],
-            selectedValue: "",
-            disabled: i !== currentIndex + 1,
-          };
-        }
-      }
-
-      let newFilters: VehicleFilterSelection[];
-
-      if (!name) {
-        newFilters = attributeOrder
-          .slice(0, currentIndex)
-          .map((attrId) => ({
-            attributeId: attrId,
-            value: updatedState[attrId]?.selectedValue || "",
-          }))
-          .filter((filter) => filter.value !== "");
-      } else {
-        newFilters = attributeOrder
-          .slice(0, currentIndex + 1)
-          .map((attrId) => ({
-            attributeId: attrId,
-            value:
-              attrId === attributeId
-                ? name
-                : updatedState[attrId]?.selectedValue || prevState[attrId]?.selectedValue || "",
-          }))
-          .filter((filter) => filter.value !== "");
-      }
+      const newFilters = applyFilterSelection(
+        filterAttributes,
+        currentFilters,
+        attributeId,
+        name
+      );
+      const nextState = buildAttributeStatesFromFilters(filterAttributes, newFilters);
 
       if (onFilterChange) {
         onFilterChange(newFilters);
       }
 
-      return updatedState;
+      return nextState;
     });
   };
 
@@ -170,7 +117,10 @@ const FilterSection = ({
       .map((attr) => ({
         attributeId: attr.id,
         attributeName: attr.displayName || attr.name,
-        value: attributeStates[attr.id]?.selectedValue || "",
+        value: normalizeFilterOptionDisplayValue(
+          attributeStates[attr.id]?.selectedValue || "",
+          attr
+        ),
       }));
   }, [attributeStates, filterAttributes]);
 
