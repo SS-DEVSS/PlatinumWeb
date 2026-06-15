@@ -1,5 +1,5 @@
 // hooks/useProductsByCategory.ts
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchProductsByCategory } from "../services/products.api";
 import type { CatalogProductSort } from "../models/catalogSort";
 
@@ -27,5 +27,6 @@ export const useProductsByCategory = (
       ),
     enabled: !!categoryId,
     staleTime: 15 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 };

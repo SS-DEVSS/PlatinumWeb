@@ -145,6 +145,9 @@ const Catalogo = () => {
   const [isLargeScreen, setIsLargeScreen] = useState(false);
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [debouncedVehicleFilters, setDebouncedVehicleFilters] = useState<
+    Array<{ attributeId: string; value: string }>
+  >([]);
 
   /** Cache breadcrumb paths by subcategoryId so levels are not lost across re-renders. */
   const [breadcrumbPathCache, setBreadcrumbPathCache] = useState<Record<string, Subcategory[]>>({});
@@ -156,15 +159,15 @@ const Catalogo = () => {
   const searchQuery = debouncedSearch;
 
   const filtersDict = useMemo(() => {
-    if (filtro.vehiculo.selectedFilters.length > 0) {
+    if (debouncedVehicleFilters.length > 0) {
       const dict: Record<string, string> = {};
-      filtro.vehiculo.selectedFilters.forEach((f) => {
+      debouncedVehicleFilters.forEach((f) => {
         dict[f.attributeId] = f.value;
       });
       return dict;
     }
     return undefined;
-  }, [filtro.vehiculo.selectedFilters]);
+  }, [debouncedVehicleFilters]);
 
   const availableCategories = useMemo(() => {
     const list = selectedBrand?.categories || [];
@@ -438,10 +441,10 @@ const Catalogo = () => {
   useEffect(() => {
     if (!selectedCategory?.id) return;
     const categoryId = selectedCategory.id;
-    const hasFilters = filtro.vehiculo.selectedFilters.length > 0;
+    const hasFilters = debouncedVehicleFilters.length > 0;
 
     const filtersDict: Record<string, string> | undefined = hasFilters
-      ? filtro.vehiculo.selectedFilters.reduce<Record<string, string>>((acc, f) => {
+      ? debouncedVehicleFilters.reduce<Record<string, string>>((acc, f) => {
           acc[f.attributeId] = f.value;
           return acc;
         }, {})
@@ -486,7 +489,7 @@ const Catalogo = () => {
     };
   }, [
     selectedCategory?.id,
-    filtro.vehiculo.selectedFilters,
+    debouncedVehicleFilters,
     getCategoryFilters,
     peekCategoryFilters,
   ]);
@@ -499,6 +502,13 @@ const Catalogo = () => {
   }, [filtro.searchText]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedVehicleFilters(filtro.vehiculo.selectedFilters);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [filtro.vehiculo.selectedFilters]);
+
+  useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
     const updateScreen = () => setIsLargeScreen(mediaQuery.matches);
     updateScreen();
@@ -508,7 +518,7 @@ const Catalogo = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [filtro.vehiculo.selectedFilters, searchQuery, selectedSubcategoryId]);
+  }, [debouncedVehicleFilters, searchQuery, selectedSubcategoryId]);
 
   const handleBrandChange = (brandId: string) => {
     const brand = brands.find((b) => b.id === brandId) || null;

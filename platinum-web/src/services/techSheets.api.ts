@@ -31,6 +31,14 @@ export const fetchTechSheets = async (
   };
 };
 
+export const fetchTechSheetsByProduct = async (
+  productId: string,
+  signal?: AbortSignal
+): Promise<TechnicalSheet[]> => {
+  const { data } = await client.get(`/ts/product/${productId}`, { signal });
+  return (data.technicalSheets || []) as TechnicalSheet[];
+};
+
 export const fetchTechSheetById = async (
   id: string,
   signal?: AbortSignal
