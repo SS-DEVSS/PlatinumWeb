@@ -7,13 +7,19 @@ import {
   fetchCategoryFilters,
 } from "../services/categories.api";
 
-export const useCategories = () => {
+interface UseCategoriesOptions {
+  includeCategoryList?: boolean;
+}
+
+export const useCategories = (options?: UseCategoriesOptions) => {
   const queryClient = useQueryClient();
+  const includeCategoryList = options?.includeCategoryList ?? false;
 
   const { data: categories = [], isLoading, error } = useQuery({
     queryKey: ["categories"],
     queryFn: ({ signal }) => fetchAllCategories(signal),
     staleTime: 30 * 60 * 1000,
+    enabled: includeCategoryList,
   });
 
   const getCategoryById = useCallback(async (id?: Category["id"]) => {

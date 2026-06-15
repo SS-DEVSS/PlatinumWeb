@@ -51,7 +51,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 import { Reference } from "../../models/reference";
-import { fetchTechSheets } from "../../services/techSheets.api";
+import { fetchTechSheetsByProduct } from "../../services/techSheets.api";
 
 const ProductDetail = () => {
   const navigate = useNavigate();
@@ -106,13 +106,8 @@ const ProductDetail = () => {
       setRelatedSheets([]);
       return;
     }
-    fetchTechSheets(1, 300, controller.signal)
-      .then(({ technicalSheets }) => {
-        const linked = technicalSheets.filter((sheet) =>
-          (sheet.products || []).some((product) => product.id === item.id)
-        );
-        setRelatedSheets(linked);
-      })
+    fetchTechSheetsByProduct(item.id, controller.signal)
+      .then((technicalSheets) => setRelatedSheets(technicalSheets))
       .catch(() => setRelatedSheets([]));
     return () => controller.abort();
   }, [item?.id]);

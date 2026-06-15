@@ -1,28 +1,35 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
 import "./index.css";
-import QuienesSomos from "./pages/Platinum/QuienesSomos";
-import ProductosEmbrague from "./pages/Platinum/Embrague/ProductosEmbrague";
-import Kit from "./pages/Platinum/Embrague/Kit";
-import Disco from "./pages/Platinum/Embrague/Disco";
-import Plato from "./pages/Platinum/Embrague/Plato";
-import Boletines from "./pages/Platinum/Boletines";
-import BoletinDetail from "./pages/Platinum/BoletinDetail";
-import Blogs from "./pages/Platinum/Blogs";
-import BlogDetail from "./pages/Platinum/BlogDetail";
-import Galeria from "./pages/Platinum/Galeria";
-import Contacto from "./pages/Platinum/Contacto";
-import DelphiPage from "./pages/Delphi/DelphiPage";
-import PastillasPage from "./pages/Pastillas/PastillasPage";
-import Catalogo from "./pages/Platinum/Catalogo";
-import ProductDetail from "./pages/Platinum/ProductDetail";
 import ErrorPage from "./pages/ErrorPage";
-import Privacidad from "./pages/Platinum/Privacidad";
 import { ItemContextProvider } from "./context/Item-context";
 import { Toaster } from "./components/ui/toaster";
+
+const QuienesSomos = lazy(() => import("./pages/Platinum/QuienesSomos"));
+const ProductosEmbrague = lazy(() => import("./pages/Platinum/Embrague/ProductosEmbrague"));
+const Kit = lazy(() => import("./pages/Platinum/Embrague/Kit"));
+const Disco = lazy(() => import("./pages/Platinum/Embrague/Disco"));
+const Plato = lazy(() => import("./pages/Platinum/Embrague/Plato"));
+const Boletines = lazy(() => import("./pages/Platinum/Boletines"));
+const BoletinDetail = lazy(() => import("./pages/Platinum/BoletinDetail"));
+const Blogs = lazy(() => import("./pages/Platinum/Blogs"));
+const BlogDetail = lazy(() => import("./pages/Platinum/BlogDetail"));
+const Galeria = lazy(() => import("./pages/Platinum/Galeria"));
+const Contacto = lazy(() => import("./pages/Platinum/Contacto"));
+const DelphiPage = lazy(() => import("./pages/Delphi/DelphiPage"));
+const PastillasPage = lazy(() => import("./pages/Pastillas/PastillasPage"));
+const Catalogo = lazy(() => import("./pages/Platinum/Catalogo"));
+const ProductDetail = lazy(() => import("./pages/Platinum/ProductDetail"));
+const Privacidad = lazy(() => import("./pages/Platinum/Privacidad"));
+
+const RouteFallback = () => (
+  <div className="flex min-h-screen items-center justify-center bg-[#E4E4E4]">
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#20314f] border-t-transparent" />
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,7 +47,11 @@ const queryClient = new QueryClient({
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Outlet />,
+    element: (
+      <Suspense fallback={<RouteFallback />}>
+        <Outlet />
+      </Suspense>
+    ),
     errorElement: <ErrorPage />,
     children: [
       { index: true, element: <App /> },
