@@ -27,17 +27,26 @@ export type CatalogPersistedState = {
 
 export const CATALOGO_LAST_STATE_KEY = "catalogo-last-state";
 
-export function readCatalogPersistedState(): CatalogPersistedState | null {
-  const raw = localStorage.getItem(CATALOGO_LAST_STATE_KEY);
-  if (!raw) return null;
+export function readCatalogPersistedState(): Partial<CatalogPersistedState> | null {
+  // Try direct key first, fall back to extracting brandId from old full JSON state
+  const directBrandId = localStorage.getItem("catalogo-selected-marca");
+  if (directBrandId) return { brandId: directBrandId };
 
   try {
-    return JSON.parse(raw) as CatalogPersistedState;
+    const raw = localStorage.getItem(CATALOGO_LAST_STATE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CatalogPersistedState>;
+    if (parsed.brandId) return { brandId: parsed.brandId };
   } catch {
-    return null;
+    // ignore
   }
+  return null;
 }
 
 export function writeCatalogPersistedState(state: CatalogPersistedState): void {
-  localStorage.setItem(CATALOGO_LAST_STATE_KEY, JSON.stringify(state));
+  if (state.brandId) {
+    localStorage.setItem("catalogo-selected-marca", state.brandId);
+  }
+  // Clear old full JSON state so it doesn't interfere
+  localStorage.removeItem(CATALOGO_LAST_STATE_KEY);
 }
