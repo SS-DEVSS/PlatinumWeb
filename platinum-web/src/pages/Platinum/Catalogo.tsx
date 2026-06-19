@@ -48,8 +48,6 @@ import {
 import { getCategoryFilterLabel } from "../../utils/categoryHierarchyFilter";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import {
-  CATALOGO_LAST_STATE_KEY,
-  type CatalogPersistedState,
   type CatalogViewLevel,
   writeCatalogPersistedState,
 } from "../../utils/catalogState";
@@ -154,7 +152,6 @@ const Catalogo = () => {
 
   const fetchingCategoryRef = useRef<string | null>(null);
   const fetchingFiltersRef = useRef<string | null>(null);
-  const hasRestoredSelectionsRef = useRef(false);
 
   const searchQuery = debouncedSearch;
 
@@ -265,77 +262,41 @@ const Catalogo = () => {
     [selectedCategory, selectedSubcategoryId, subcategoriesByCategoryId]
   );
 
-  // Restore catalog state (brand, category, level, subcategories, filters) on mount.
+  // Restore brand + category on mount.
   useEffect(() => {
-    if (brands.length > 0 && !selectedBrand && !hasRestoredSelectionsRef.current) {
-      const savedStateRaw = localStorage.getItem(CATALOGO_LAST_STATE_KEY);
-      let restoredFromLastState = false;
-
-      const applyPersistedFilters = (parsed: Partial<CatalogPersistedState>) => {
-        const searchText = parsed.searchText ?? "";
-        setFiltro({
-          searchText,
-          vehiculo: { selectedFilters: parsed.vehicleFilters ?? [] },
-        });
-        setDebouncedSearch(searchText.trim());
-        setActiveVehicleFilters(parsed.activeVehicleFilters ?? []);
-        setPage(parsed.page ?? 1);
-        setPageSize(parsed.pageSize ?? 30);
-        setCatalogSort(parsed.catalogSort ?? "sku_asc");
-      };
-
-      if (savedStateRaw) {
-        try {
-          const parsed = JSON.parse(savedStateRaw) as Partial<CatalogPersistedState>;
-
-          const brandFromState =
-            parsed.brandId && brandsMap[parsed.brandId]
-              ? brandsMap[parsed.brandId]
-              : null;
-
-          if (brandFromState) {
-            setSelectedBrand(brandFromState);
-            localStorage.setItem("catalogo-selected-marca", brandFromState.id);
-
-            const categoryFromState =
-              parsed.categoryId &&
-              brandFromState.categories?.find((c) => c.id === parsed.categoryId);
-
-            if (categoryFromState) {
-              setSelectedCategory(categoryFromState);
-              localStorage.setItem("catalogo-selected-categoria", categoryFromState.id);
-              setViewLevel(parsed.viewLevel ?? "subcategories");
-              setSelectedSubcategoryId(parsed.selectedSubcategoryId ?? null);
-              setDrillParentSubcategoryId(parsed.drillParentSubcategoryId ?? null);
-              applyPersistedFilters(parsed);
-            } else {
-              setViewLevel("categories");
-            }
-
-            hasRestoredSelectionsRef.current = true;
-            restoredFromLastState = true;
-          }
-        } catch {
-          // Si falla el parseo, seguimos con el flujo normal.
-        }
-      }
-
-      // Fallback: lógica anterior basada solo en marca guardada.
-      if (!restoredFromLastState) {
-        const savedMarca = localStorage.getItem("catalogo-selected-marca");
-        const brandToSelect = savedMarca && brandsMap[savedMarca]
-          ? brandsMap[savedMarca]
-          : brands[0];
-
-        if (brandToSelect) {
-          setSelectedBrand(brandToSelect);
-          localStorage.setItem("catalogo-selected-marca", brandToSelect.id);
-          setViewLevel("categories");
-          hasRestoredSelectionsRef.current = true;
-        }
+    if (brands.length === 0) return;
+    if (selectedBrand) return;
+    const savedBrandId = localStorage.getItem("catalogo-selected-marca");
+    const savedCategoryId = localStorage.getItem("catalogo-selected-categoria");
+    const brandToSelect = savedBrandId && brandsMap[savedBrandId]
+      ? brandsMap[savedBrandId]
+      : brands[0];
+    if (brandToSelect) {
+      setSelectedBrand(brandToSelect);
+      const categoryToSelect = savedCategoryId
+        ? brandToSelect.categories?.find((c) => c.id === savedCategoryId) ?? null
+        : null;
+      if (categoryToSelect) {
+        setSelectedCategory(categoryToSelect);
+        setViewLevel("subcategories");
+      } else {
+        setViewLevel("categories");
       }
     }
   }, [brands, brandsMap, selectedBrand]);
+
+  // Save brand + category to localStorage whenever they change.
+  useEffect(() => {
+    if (selectedBrand?.id) {
+      localStorage.setItem("catalogo-selected-marca", selectedBrand.id);
+    }
+  }, [selectedBrand?.id]);
+
+  useEffect(() => {
+    if (selectedCategory?.id) {
+      localStorage.setItem("catalogo-selected-categoria", selectedCategory.id);
+    }
+  }, [selectedCategory?.id]);
 
   // Persist the last catalog state so it can be restored when returning from product detail.
   useEffect(() => {
@@ -703,10 +664,8 @@ const Catalogo = () => {
 
   const handleVehicleFilterChange = (filters: Array<{ attributeId: string; value: string }>) => {
     setFiltro((prev) => ({
-      ...prev,
-      vehiculo: {
-        selectedFilters: filters,
-      },
+      searchText: filters.length > 0 ? "" : prev.searchText,
+      vehiculo: { selectedFilters: filters },
     }));
     setPage(1);
     if (filters.length > 0) {
@@ -789,12 +748,17 @@ const Catalogo = () => {
       <Input
         placeholder="Buscar por SKU o referencia"
         value={filtro.searchText}
-        onChange={(e) =>
+        onChange={(e) => {
+          const val = e.target.value;
           setFiltro((prev) => ({
-            ...prev,
-            searchText: e.target.value,
-          }))
-        }
+            searchText: val,
+            vehiculo: val.trim() ? { selectedFilters: [] } : prev.vehiculo,
+          }));
+          if (val.trim()) {
+            setActiveVehicleFilters([]);
+            setVehicleFiltersResetKey((k) => k + 1);
+          }
+        }}
         className="bg-white h-10 text-sm pl-10"
       />
     </div>
@@ -856,7 +820,7 @@ const Catalogo = () => {
   const renderBrandSelect = () => (
     <div className="flex flex-col">
       <Label className="font-semibold text-xs sm:text-sm mb-1.5 text-gray-700">Línea de producto</Label>
-      <Select onValueChange={handleBrandChange} value={selectedBrand?.id || ""}>
+      <Select onValueChange={handleBrandChange} value={selectedBrand?.id || localStorage.getItem("catalogo-selected-marca") || ""}>
         <SelectTrigger className="h-9 sm:h-10 w-full">
           {selectedBrand ? (
             <div className="flex items-center gap-2">
