@@ -2,9 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
   Row,
   PaginationState,
@@ -222,12 +219,9 @@ const ProductsTable = ({
     data: mappedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    pageCount: pageCount, // Server-side page count
+    pageCount: pageCount,
     state: {
       columnVisibility,
       rowSelection,
@@ -236,7 +230,7 @@ const ProductsTable = ({
         pageSize,
       },
     },
-    manualPagination: true, // Enable server-side pagination
+    manualPagination: true,
     onPaginationChange: (updater: Updater<PaginationState>) => {
       // Calculate new values
       let newPageIndex = pageIndex;

@@ -241,7 +241,7 @@ const Catalogo = () => {
     return ids;
   }, [showProducts, selectedSubcategoryId, subcategoriesTree]);
 
-  const { data, isLoading, error: productsError } = useProductsByCategory(
+  const { data, isLoading, isFetching, error: productsError } = useProductsByCategory(
     showProducts ? selectedCategory?.id : undefined,
     page,
     pageSize,
@@ -254,6 +254,11 @@ const Catalogo = () => {
   const products = (data as ProductsResponse | undefined)?.products ?? [];
   const totalItems = (data as ProductsResponse | undefined)?.total ?? 0;
   const totalPages = (data as ProductsResponse | undefined)?.totalPages ?? 1;
+  const isFilterPending =
+    filtro.searchText.trim() !== debouncedSearch ||
+    JSON.stringify(filtro.vehiculo.selectedFilters) !==
+      JSON.stringify(debouncedVehicleFilters);
+  const isProductsLoading = isLoading || isFetching || isFilterPending;
 
   const selectedCategoryFilterLabel = useMemo(
     () =>
@@ -1200,7 +1205,7 @@ const Catalogo = () => {
               <ProductsTable
                 category={categoryData}
                 products={products}
-                loading={isLoading}
+                loading={isProductsLoading}
                 pageIndex={page - 1}
                 pageSize={pageSize}
                 pageCount={totalPages}
@@ -1223,7 +1228,7 @@ const Catalogo = () => {
               <ProductsTable
                 category={categoryData}
                 products={products}
-                loading={isLoading}
+                loading={isProductsLoading}
                 pageIndex={page - 1}
                 pageSize={pageSize}
                 pageCount={totalPages}
