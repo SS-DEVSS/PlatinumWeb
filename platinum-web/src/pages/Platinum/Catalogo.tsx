@@ -48,6 +48,8 @@ import {
 import { getCategoryFilterLabel } from "../../utils/categoryHierarchyFilter";
 import SkeletonCatalog from "../../skeletons/SkeletonCatalog";
 import {
+  CATALOGO_LAST_STATE_KEY,
+  type CatalogPersistedState,
   type CatalogViewLevel,
   writeCatalogPersistedState,
 } from "../../utils/catalogState";
@@ -152,6 +154,7 @@ const Catalogo = () => {
 
   const fetchingCategoryRef = useRef<string | null>(null);
   const fetchingFiltersRef = useRef<string | null>(null);
+  const hasRestoredSelectionsRef = useRef(false);
 
   const searchQuery = debouncedSearch;
 
@@ -238,7 +241,7 @@ const Catalogo = () => {
     return ids;
   }, [showProducts, selectedSubcategoryId, subcategoriesTree]);
 
-  const { data, isLoading, error: productsError } = useProductsByCategory(
+  const { data, isLoading, isFetching, error: productsError } = useProductsByCategory(
     showProducts ? selectedCategory?.id : undefined,
     page,
     pageSize,
@@ -251,6 +254,11 @@ const Catalogo = () => {
   const products = (data as ProductsResponse | undefined)?.products ?? [];
   const totalItems = (data as ProductsResponse | undefined)?.total ?? 0;
   const totalPages = (data as ProductsResponse | undefined)?.totalPages ?? 1;
+  const isFilterPending =
+    filtro.searchText.trim() !== debouncedSearch ||
+    JSON.stringify(filtro.vehiculo.selectedFilters) !==
+      JSON.stringify(debouncedVehicleFilters);
+  const isProductsLoading = isLoading || isFetching || isFilterPending;
 
   const selectedCategoryFilterLabel = useMemo(
     () =>
@@ -262,25 +270,82 @@ const Catalogo = () => {
     [selectedCategory, selectedSubcategoryId, subcategoriesByCategoryId]
   );
 
-  // Restore brand + category on mount.
+  // Restore catalog state (brand, category, level, subcategories, filters) on mount.
   useEffect(() => {
-    if (brands.length === 0) return;
-    if (selectedBrand) return;
-    const savedBrandId = localStorage.getItem("catalogo-selected-marca");
-    const savedCategoryId = localStorage.getItem("catalogo-selected-categoria");
-    const brandToSelect = savedBrandId && brandsMap[savedBrandId]
-      ? brandsMap[savedBrandId]
-      : brands[0];
-    if (brandToSelect) {
-      setSelectedBrand(brandToSelect);
-      const categoryToSelect = savedCategoryId
-        ? brandToSelect.categories?.find((c) => c.id === savedCategoryId) ?? null
-        : null;
-      if (categoryToSelect) {
-        setSelectedCategory(categoryToSelect);
-        setViewLevel("subcategories");
-      } else {
-        setViewLevel("categories");
+    if (brands.length > 0 && !selectedBrand && !hasRestoredSelectionsRef.current) {
+      const savedStateRaw = localStorage.getItem(CATALOGO_LAST_STATE_KEY);
+      let restoredFromLastState = false;
+
+      const applyPersistedFilters = (parsed: Partial<CatalogPersistedState>) => {
+        const searchText = parsed.searchText ?? "";
+        setFiltro({
+          searchText,
+          vehiculo: { selectedFilters: parsed.vehicleFilters ?? [] },
+        });
+        setDebouncedSearch(searchText.trim());
+        setActiveVehicleFilters(parsed.activeVehicleFilters ?? []);
+        setPage(parsed.page ?? 1);
+        setPageSize(parsed.pageSize ?? 30);
+        setCatalogSort(parsed.catalogSort ?? "sku_asc");
+      };
+
+      if (savedStateRaw) {
+        try {
+          const parsed = JSON.parse(savedStateRaw) as Partial<CatalogPersistedState>;
+
+          const brandFromState =
+            parsed.brandId && brandsMap[parsed.brandId]
+              ? brandsMap[parsed.brandId]
+              : null;
+
+          if (brandFromState) {
+            setSelectedBrand(brandFromState);
+            localStorage.setItem("catalogo-selected-marca", brandFromState.id);
+
+            const categoryFromState =
+              parsed.categoryId &&
+              brandFromState.categories?.find((c) => c.id === parsed.categoryId);
+
+            if (categoryFromState) {
+              setSelectedCategory(categoryFromState);
+              localStorage.setItem("catalogo-selected-categoria", categoryFromState.id);
+              setViewLevel(parsed.viewLevel ?? "subcategories");
+              setSelectedSubcategoryId(parsed.selectedSubcategoryId ?? null);
+              setDrillParentSubcategoryId(parsed.drillParentSubcategoryId ?? null);
+              applyPersistedFilters(parsed);
+            } else {
+              setViewLevel("categories");
+            }
+
+            hasRestoredSelectionsRef.current = true;
+            restoredFromLastState = true;
+          }
+        } catch {
+          // Si falla el parseo, seguimos con el flujo normal.
+        }
+      }
+
+      if (!restoredFromLastState) {
+        const savedBrandId = localStorage.getItem("catalogo-selected-marca");
+        const savedCategoryId = localStorage.getItem("catalogo-selected-categoria");
+        const brandToSelect = savedBrandId && brandsMap[savedBrandId]
+          ? brandsMap[savedBrandId]
+          : brands[0];
+
+        if (brandToSelect) {
+          setSelectedBrand(brandToSelect);
+          localStorage.setItem("catalogo-selected-marca", brandToSelect.id);
+          const categoryToSelect = savedCategoryId
+            ? brandToSelect.categories?.find((c) => c.id === savedCategoryId) ?? null
+            : null;
+          if (categoryToSelect) {
+            setSelectedCategory(categoryToSelect);
+            setViewLevel("subcategories");
+          } else {
+            setViewLevel("categories");
+          }
+          hasRestoredSelectionsRef.current = true;
+        }
       }
     }
   }, [brands, brandsMap, selectedBrand]);
@@ -1140,7 +1205,7 @@ const Catalogo = () => {
               <ProductsTable
                 category={categoryData}
                 products={products}
-                loading={isLoading}
+                loading={isProductsLoading}
                 pageIndex={page - 1}
                 pageSize={pageSize}
                 pageCount={totalPages}
@@ -1163,7 +1228,7 @@ const Catalogo = () => {
               <ProductsTable
                 category={categoryData}
                 products={products}
-                loading={isLoading}
+                loading={isProductsLoading}
                 pageIndex={page - 1}
                 pageSize={pageSize}
                 pageCount={totalPages}
