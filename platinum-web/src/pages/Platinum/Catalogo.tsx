@@ -898,7 +898,7 @@ const Catalogo = () => {
               <span className="text-sm truncate">{selectedBrand.name}</span>
             </div>
           ) : (
-            <SelectValue placeholder="Seleccionar Marca" />
+            <SelectValue placeholder="Seleccionar línea de producto" />
           )}
         </SelectTrigger>
         <SelectContent>
@@ -1188,7 +1188,7 @@ const Catalogo = () => {
             </div>
             {availableCategories.length === 0 && (
               <p className="text-gray-600 text-center py-8">
-                No hay categorías disponibles para esta marca.
+                No hay categorías disponibles para esta línea de producto.
               </p>
             )}
           </div>
