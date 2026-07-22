@@ -27,7 +27,7 @@ function BlogDetail() {
   useEffect(() => {
     const controller = new AbortController();
     if (!id) {
-      setError("Blog inválido.");
+      setError("Noticia inválida.");
       setLoading(false);
       return;
     }
@@ -38,7 +38,7 @@ function BlogDetail() {
       .catch((error: unknown) => {
         const isCanceled = isAbortLikeError(error);
         if (!isCanceled) {
-          setError("No se pudo cargar el blog.");
+          setError("No se pudo cargar la noticia.");
           console.error("[BlogDetail] Error loading blog:", error);
         }
       })
@@ -86,7 +86,7 @@ function BlogDetail() {
       <main className="px-5 xl:px-40 py-6">
         <div className="py-6">
           <Link to="/Blogs" className="text-sm text-naranja hover:underline">
-            ← Volver a blogs
+            ← Volver a noticias
           </Link>
         </div>
         {loading ? (
@@ -101,7 +101,7 @@ function BlogDetail() {
             <Skeleton className="h-4 w-10/12" />
           </article>
         ) : error || !blog ? (
-          <p className="text-sm text-slate-600">{error || "Blog no encontrado."}</p>
+          <p className="text-sm text-slate-600">{error || "Noticia no encontrada."}</p>
         ) : (
           <article className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
             {blog.coverImagePath ? (

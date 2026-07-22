@@ -26,7 +26,7 @@ const FeaturedProductsSection = () => {
         setFeaturedProducts(response.products);
       } catch (err: unknown) {
         console.error("Error loading featured products:", err);
-        setError("Error al cargar productos destacados");
+        setError("Error al cargar nuevas integraciones");
       } finally {
         setLoading(false);
       }

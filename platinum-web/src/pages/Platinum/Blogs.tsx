@@ -38,7 +38,7 @@ function Blogs() {
       .catch((error: unknown) => {
         const isCanceled = isAbortLikeError(error);
         if (!isCanceled) {
-          setError("No se pudieron cargar los blogs.");
+          setError("No se pudieron cargar las noticias.");
           console.error("[Blogs] Error loading blog posts:", error);
         }
       })
@@ -54,17 +54,17 @@ function Blogs() {
   return (
     <PlatinumLayout>
       <main className="px-5 xl:px-40 py-6 lg:py-9">
-        <h1 className="pb-6 lg:pb-9">Nuestros Blogs</h1>
+        <h1 className="pb-6 lg:pb-9">Noticias</h1>
         <p className="mb-6 text-sm text-slate-600">
-          Noticias, lanzamientos y contenido técnico de nuestro catálogo.
+          Lanzamientos y contenido técnico de nuestro catálogo.
         </p>
         {!loading && !error && blogs.length > 0 ? (
           <div className="mb-6">
-            <label className="mr-2 text-sm text-slate-600" htmlFor="blogs-sort-order">
+            <label className="mr-2 text-sm text-slate-600" htmlFor="noticias-sort-order">
               Ordenar:
             </label>
             <select
-              id="blogs-sort-order"
+              id="noticias-sort-order"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
               className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700"
@@ -79,14 +79,14 @@ function Blogs() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2">
                 <div className="h-8 w-8 border-4 border-naranja border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-slate-600">Cargando blogs...</p>
+                <p className="text-sm text-slate-600">Cargando noticias...</p>
               </div>
             </div>
           </section>
         ) : error ? (
           <p className="text-sm text-red-600">{error}</p>
         ) : blogs.length === 0 ? (
-          <p className="text-sm text-slate-600">No hay blogs disponibles.</p>
+          <p className="text-sm text-slate-600">No hay noticias disponibles.</p>
         ) : (
           <section className="relative mb-8">
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -110,7 +110,7 @@ function Blogs() {
                         {stripHtml(blog.description || parsed.htmlContent).slice(0, 180)}
                       </p>
                       <Link to={`/Blogs/${blog.id}`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-naranja hover:underline">
-                        Ver blog
+                        Ver noticia
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </section>
@@ -122,7 +122,7 @@ function Blogs() {
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/65 backdrop-blur-[1px] rounded-xl">
                 <div className="flex flex-col items-center gap-2">
                   <div className="h-8 w-8 border-4 border-naranja border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-slate-600">Actualizando blogs...</p>
+                  <p className="text-sm text-slate-600">Actualizando noticias...</p>
                 </div>
               </div>
             )}
